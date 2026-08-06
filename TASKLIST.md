@@ -25,17 +25,17 @@ Referensi utama: [context.md](context.md). Setiap task di bawah harus konsisten 
 
 ## Phase 1 — Database Schema & Auth Foundation
 
-- [ ] Design ERD inti: `schools`, `teachers`, `students`, `classes`, `class_enrollments`, `curriculums`, `lesson_plans`, `meetings`, `attendances`, `check_ins`, `check_outs`, `teaching_reports`, `progress_records`, `users` (role mapping)
-- [ ] Semua tabel: UUID PK, `created_at`, `updated_at`, `deleted_at` (soft delete)
-- [ ] Prisma schema + migration pertama
-- [ ] Setup `users` table terhubung ke Supabase Auth (role: `admin` | `coordinator` | `teacher`)
-- [ ] Row Level Security (RLS) policy dasar per role:
+- [x] Design ERD inti: `schools`, `teachers`, `students`, `classes`, `class_enrollments`, `curriculums`, `lesson_plans`, `meetings`, `attendances`, `check_ins`, `check_outs`, `teaching_reports`, `progress_records`, `parent_reports`, `student_follow_ups`, `users` (role mapping) — 17 tabel total
+- [x] Semua tabel: UUID PK, `created_at`, `updated_at`, `deleted_at` (soft delete where applicable)
+- [x] Prisma schema + migration pertama (Prisma downgrade 7→6 karena v7 buang dukungan `url`/`directUrl` di schema.prisma)
+- [x] Setup `users` table terhubung ke Supabase Auth (trigger `on_auth_user_created` sync role dari `user_metadata`, FK cascade ke `auth.users`)
+- [x] Row Level Security (RLS) policy per role — semua 17 tabel:
   - Admin: full CRUD semua tabel
   - Coordinator: read-only semua, no write ke master data
-  - Teacher: read-only ke data miliknya sendiri (kelas yang di-assign), write terbatas ke check-in/attendance/check-out/report miliknya
-- [ ] Middleware Next.js buat proteksi route by role
-- [ ] Login page + session handling (Supabase Auth)
-- [ ] Role-based redirect setelah login (Admin → dashboard admin, Teacher → Today's Class, Coordinator → monitoring dashboard)
+  - Teacher: read-only ke data miliknya sendiri (kelas yang di-assign, termasuk saat jadi substitute), write terbatas ke check-in/attendance/check-out/report miliknya
+- [x] Middleware Next.js buat proteksi route by role (`src/middleware.ts`)
+- [x] Login page + session handling (Supabase Auth, RHF + Zod)
+- [x] Role-based redirect setelah login (Admin → `/dashboard`, Teacher → `/today`, Coordinator → `/monitoring`)
 
 **Exit criteria:** 3 role bisa login, masing-masing landing di halaman yang benar, RLS block akses lintas-role di level DB (coba manual via API, bukan cuma UI).
 
