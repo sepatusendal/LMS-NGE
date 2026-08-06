@@ -9,7 +9,7 @@ export async function fetchSchools(): Promise<School[]> {
     .is("deletedAt", null)
     .order("name");
   if (error) throw error;
-  return data;
+  return data as unknown as School[];
 }
 
 export async function createSchool(input: SchoolInput) {

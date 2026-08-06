@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Loader2, MapPin, Clock, CheckCircle, AlertCircle, Play, LogOut, FileText } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -8,8 +8,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useTodayClasses, useStartClass, useCheckOut } from "@/features/meetings/use-today";
+import { updateCheckInPhoto } from "@/features/meetings/queries";
 import { AttendanceForm } from "@/features/meetings/attendance-form";
 import { ReportForm } from "@/features/meetings/report-form";
+import { FileUpload } from "@/features/drive/file-upload";
+import { HandoverSummaryPanel } from "@/features/substitutes/handover-summary-panel";
+import { ABSENCE_REASON_LABEL } from "@/features/substitutes/schema";
 
 const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   not_started: { label: "Belum Mulai", variant: "secondary" },
@@ -17,6 +21,7 @@ const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secon
   attendance_done: { label: "Check-out", variant: "outline" },
   checked_out: { label: "Isi Report", variant: "outline" },
   report_submitted: { label: "Selesai", variant: "default" },
+  course_completed: { label: "Kelas Selesai", variant: "default" },
 };
 
 export default function TodayPage() {
@@ -24,6 +29,14 @@ export default function TodayPage() {
   const startClass = useStartClass();
   const checkOut = useCheckOut();
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
+  const [handoverClassId, setHandoverClassId] = useState<string | null>(null);
+  const collapseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (collapseTimeoutRef.current) clearTimeout(collapseTimeoutRef.current);
+    };
+  }, []);
 
   const todayDate = useMemo(() => {
     return new Date().toLocaleDateString("id-ID", {
@@ -122,6 +135,16 @@ export default function TodayPage() {
                   </Badge>
                 </div>
 
+                {c.isSubstitute && (
+                  <div className="bg-amber-50 text-amber-800 mt-3 rounded-md px-3 py-2 text-xs">
+                    Anda mengajar sebagai pengganti{" "}
+                    <span className="font-medium">{c.originalTeacherName}</span>
+                    {c.substituteReason && (
+                      <> — {ABSENCE_REASON_LABEL[c.substituteReason] ?? c.substituteReason}</>
+                    )}
+                  </div>
+                )}
+
                 {c.checkInTime && (
                   <div className="mt-3 flex gap-4 text-xs">
                     <span className="text-muted-foreground">
@@ -160,6 +183,19 @@ export default function TodayPage() {
                       </Badge>
                     )}
                   </div>
+                )}
+
+                {c.isSubstitute && c.lessonPlanId && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="mt-2 w-full"
+                    onClick={() =>
+                      setHandoverClassId((prev) => (prev === c.classId ? null : c.classId))
+                    }
+                  >
+                    {handoverClassId === c.classId ? "Tutup Handover Summary" : "Lihat Handover Summary"}
+                  </Button>
                 )}
 
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -257,9 +293,27 @@ export default function TodayPage() {
                       </span>
                     </div>
                   )}
+
+                  {c.meetingStatus === "course_completed" && (
+                    <div className="flex w-full items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 text-sm">
+                      <CheckCircle className="text-emerald-600 size-4" />
+                      <span className="text-emerald-700 font-medium">
+                        Semua pertemuan telah selesai
+                      </span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
+
+            {handoverClassId === c.classId && c.lessonPlanId && (
+              <Card>
+                <CardContent className="pt-4">
+                  <h3 className="mb-3 text-sm font-medium">Handover Summary</h3>
+                  <HandoverSummaryPanel classId={c.classId} lessonPlanId={c.lessonPlanId} />
+                </CardContent>
+              </Card>
+            )}
 
             {isExpanded && c.meetingStatus === "checked_in" && c.meetingId && (
               <Card>
@@ -269,11 +323,24 @@ export default function TodayPage() {
                     meetingId={c.meetingId}
                     classId={c.classId}
                     onDone={() => {
-                      setTimeout(() => {
+                      if (collapseTimeoutRef.current) clearTimeout(collapseTimeoutRef.current);
+                      collapseTimeoutRef.current = setTimeout(() => {
                         setExpandedClassId(null);
                       }, 1500);
                     }}
                   />
+                  <div className="mt-3 border-t pt-3">
+                    <p className="text-muted-foreground mb-2 text-xs">
+                      Foto kelas (opsional)
+                    </p>
+                    <FileUpload
+                      onUploaded={(driveFileId, fileName) => {
+                        if (driveFileId) {
+                          updateCheckInPhoto(c.meetingId!, driveFileId, fileName);
+                        }
+                      }}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             )}

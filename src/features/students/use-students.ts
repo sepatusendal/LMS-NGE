@@ -10,8 +10,11 @@ import type { StudentInput } from "./schema";
 
 const STUDENTS_KEY = ["students"];
 
-export function useStudents() {
-  return useQuery({ queryKey: STUDENTS_KEY, queryFn: fetchStudents });
+export function useStudents(schoolId?: string) {
+  return useQuery({
+    queryKey: [...STUDENTS_KEY, schoolId || "all"],
+    queryFn: () => fetchStudents(schoolId),
+  });
 }
 
 export function useCreateStudent() {

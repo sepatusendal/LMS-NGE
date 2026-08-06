@@ -22,6 +22,9 @@ export async function middleware(request: NextRequest) {
 
   if (!user) {
     if (pathname === "/login") return response;
+    if (pathname.startsWith("/parent-report")) return response;
+    if (pathname.startsWith("/api/parent-report")) return response;
+    if (pathname.startsWith("/api/parent-reports") && pathname.endsWith("/download")) return response;
     return redirectTo(request, response, "/login");
   }
 
@@ -29,8 +32,13 @@ export async function middleware(request: NextRequest) {
     .from("users")
     .select("role")
     .eq("id", user.id)
-    .single();
-  const role = (profile?.role as AppRole) ?? "TEACHER";
+    .maybeSingle();
+
+  if (!profile) {
+    return redirectTo(request, response, "/login");
+  }
+
+  const role = profile.role as AppRole;
 
   if (pathname === "/login") {
     return redirectTo(request, response, roleLandingPath[role]);

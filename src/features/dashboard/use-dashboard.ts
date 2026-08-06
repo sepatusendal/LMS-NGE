@@ -1,0 +1,30 @@
+import { useQuery } from "@tanstack/react-query";
+import { fetchOpenFollowUps, fetchReportNotes, fetchReportStats, fetchTeacherAttendance } from "./queries";
+
+export function useTeacherAttendance(days: number) {
+  return useQuery({
+    queryKey: ["dashboard-teacher-attendance", days],
+    queryFn: () => fetchTeacherAttendance(days),
+  });
+}
+
+export function useReportStats(days: number) {
+  return useQuery({
+    queryKey: ["dashboard-report-stats", days],
+    queryFn: () => fetchReportStats(days),
+  });
+}
+
+export function useOpenFollowUps() {
+  return useQuery({
+    queryKey: ["dashboard-open-followups"],
+    queryFn: () => fetchOpenFollowUps(8),
+  });
+}
+
+export function useReportNotes() {
+  return useQuery({
+    queryKey: ["dashboard-report-notes"],
+    queryFn: () => fetchReportNotes(8),
+  });
+}

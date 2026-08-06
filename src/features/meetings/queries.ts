@@ -10,6 +10,30 @@ function getTodayDayOfWeek(): number {
 // start time (context.md 5.1: "Late status is calculated automatically").
 const LATE_GRACE_MINUTES = 10;
 
+interface ScheduleOverrideRow {
+  classId: string;
+  startTime: string;
+  endTime: string;
+  teacherId: string;
+}
+
+async function fetchTodayOverrides(
+  classIds: string[],
+  today: number,
+): Promise<Map<string, ScheduleOverrideRow>> {
+  if (classIds.length === 0) return new Map();
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("class_schedule_overrides")
+    .select("classId, startTime, endTime, teacherId")
+    .in("classId", classIds)
+    .eq("dayOfWeek", today);
+  if (error) throw error;
+  const map = new Map<string, ScheduleOverrideRow>();
+  (data as unknown as ScheduleOverrideRow[]).forEach((row) => map.set(row.classId, row));
+  return map;
+}
+
 function computeIsLate(scheduleStartTime: string): boolean {
   const [hour, minute] = scheduleStartTime.split(":").map(Number);
   const now = new Date();
@@ -34,11 +58,21 @@ export async function startClass(
     .select("classId, classes(scheduleStartTime)")
     .eq("id", lessonPlanId)
     .single();
-  const cls = toOne(
-    (lpRow as { classes: { scheduleStartTime: string } | { scheduleStartTime: string }[] | null } | null)
-      ?.classes,
-  );
-  const isLate = cls ? computeIsLate(cls.scheduleStartTime) : false;
+  const lp = lpRow as { classId: string; classes: { scheduleStartTime: string } | { scheduleStartTime: string }[] | null } | null;
+  const cls = toOne(lp?.classes);
+
+  const today = getTodayDayOfWeek();
+  const { data: override } = lp?.classId
+    ? await supabase
+        .from("class_schedule_overrides")
+        .select("startTime")
+        .eq("classId", lp.classId)
+        .eq("dayOfWeek", today)
+        .maybeSingle()
+    : { data: null };
+
+  const effectiveStartTime = (override as { startTime: string } | null)?.startTime ?? cls?.scheduleStartTime;
+  const isLate = effectiveStartTime ? computeIsLate(effectiveStartTime) : false;
 
   const { data: existing } = await supabase
     .from("meetings")
@@ -66,8 +100,26 @@ export async function startClass(
       })
       .select("id")
       .single();
-    if (mErr) throw mErr;
-    meetingId = (meeting as { id: string }).id;
+    if (mErr) {
+      // 23505 = Postgres unique-violation. A concurrent call (e.g. a double
+      // tap on "Mulai Kelas") can race past the `existing` check above and
+      // both try to insert — the UNIQUE constraint on lessonPlanId stops the
+      // duplicate row, but without this, the loser would see a raw DB error
+      // instead of gracefully picking up the meeting the winner just created.
+      if (mErr.code === "23505") {
+        const { data: raced, error: racedErr } = await supabase
+          .from("meetings")
+          .select("id")
+          .eq("lessonPlanId", lessonPlanId)
+          .single();
+        if (racedErr) throw racedErr;
+        meetingId = (raced as { id: string }).id;
+      } else {
+        throw mErr;
+      }
+    } else {
+      meetingId = (meeting as { id: string }).id;
+    }
   }
 
   const { error } = await supabase.from("check_ins").insert({
@@ -118,6 +170,13 @@ interface MeetingRow {
     | null;
   attendances: { id: string }[] | null;
   teachingReport: { id: string } | { id: string }[] | null;
+  assignedTeacherId: string;
+  actualTeacherId: string | null;
+  substituteReason: string | null;
+  assignedTeacher:
+    | { users: { fullName: string } | null }
+    | { users: { fullName: string } | null }[]
+    | null;
 }
 
 function toOne<T>(rel: T | T[] | null | undefined): T | null {
@@ -134,18 +193,77 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
   const supabase = createClient();
   const today = getTodayDayOfWeek();
 
-  const { data: classes, error: classErr } = await supabase
+  const { data: ownClasses, error: classErr } = await supabase
     .from("classes")
     .select(CLASS_SELECT)
     .eq("teacherId", teacherId)
     .eq("isActive", true)
-    .is("deletedAt", null)
-    .order("scheduleStartTime");
+    .is("deletedAt", null);
   if (classErr) throw classErr;
 
-  const todayClasses = (classes as unknown as ClassRow[]).filter((c) =>
-    c.scheduleDaysOfWeek.includes(today),
+  // Classes where a per-day override hands *today* to this teacher, even
+  // when they aren't the class's default teacherId (Houstan/Canberra-style
+  // split classes — see ClassScheduleOverride).
+  const { data: myTodayOverrides, error: ovErr } = await supabase
+    .from("class_schedule_overrides")
+    .select("classId")
+    .eq("teacherId", teacherId)
+    .eq("dayOfWeek", today);
+  if (ovErr) throw ovErr;
+
+  // Meetings where this teacher was assigned as a one-off substitute for
+  // *today's* specific lesson (context.md Section 6 — Admin marks the
+  // original teacher absent and assigns a substitute for one meeting; this
+  // is independent of the class's recurring day/teacher pattern above).
+  const todayDateStr = new Date().toISOString().slice(0, 10);
+  const { data: substituteMeetings, error: subErr } = await supabase
+    .from("meetings")
+    .select("lessonPlanId, lesson_plans!inner(classId, scheduledDate)")
+    .eq("actualTeacherId", teacherId)
+    .eq("lesson_plans.scheduledDate", todayDateStr);
+  if (subErr) throw subErr;
+
+  const substituteClassIds = new Set(
+    (substituteMeetings as unknown as { lesson_plans: { classId: string } | { classId: string }[] | null }[])
+      .map((m) => toOne(m.lesson_plans)?.classId)
+      .filter((id): id is string => Boolean(id)),
   );
+
+  const ownClassIds = new Set((ownClasses as unknown as ClassRow[]).map((c) => c.id));
+  const extraClassIds = [
+    ...(myTodayOverrides as unknown as { classId: string }[]).map((o) => o.classId),
+    ...substituteClassIds,
+  ].filter((id) => !ownClassIds.has(id));
+
+  let extraClasses: ClassRow[] = [];
+  if (extraClassIds.length > 0) {
+    const { data, error } = await supabase
+      .from("classes")
+      .select(CLASS_SELECT)
+      .in("id", [...new Set(extraClassIds)])
+      .eq("isActive", true)
+      .is("deletedAt", null);
+    if (error) throw error;
+    extraClasses = data as unknown as ClassRow[];
+  }
+
+  const candidates = [...(ownClasses as unknown as ClassRow[]), ...extraClasses];
+  const overridesByClass = await fetchTodayOverrides(candidates.map((c) => c.id), today);
+
+  const todayClasses = candidates
+    .filter((c) => {
+      if (substituteClassIds.has(c.id)) return true;
+      const ov = overridesByClass.get(c.id);
+      // An override for today is authoritative (may hand the class to someone
+      // else, or take it away). No override: fall back to the weekly pattern.
+      if (ov) return ov.teacherId === teacherId;
+      return c.scheduleDaysOfWeek.includes(today);
+    })
+    .map((c) => {
+      const ov = overridesByClass.get(c.id);
+      return ov ? { ...c, scheduleStartTime: ov.startTime, scheduleEndTime: ov.endTime } : c;
+    })
+    .sort((a, b) => a.scheduleStartTime.localeCompare(b.scheduleStartTime));
 
   if (todayClasses.length === 0) return [];
 
@@ -168,7 +286,9 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
 
   const { data: meetings, error: meetErr } = await supabase
     .from("meetings")
-    .select("id, lessonPlanId, status, checkIn:check_ins(id, checkInTime, isLate), checkOut:check_outs(id, checkOutTime, durationMinutes), attendances(id), teachingReport:teaching_reports(id)")
+    .select(
+      "id, lessonPlanId, status, checkIn:check_ins(id, checkInTime, isLate), checkOut:check_outs(id, checkOutTime, durationMinutes), attendances(id), teachingReport:teaching_reports(id), assignedTeacherId, actualTeacherId, substituteReason, assignedTeacher:teachers!meetings_assignedTeacherId_fkey(users(fullName))",
+    )
     .in("lessonPlanId", (lessonPlans as unknown as LessonPlanRow[]).map((lp) => lp.id));
   if (meetErr) throw meetErr;
 
@@ -188,11 +308,31 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
     (completedCounts as unknown as { lessonPlanId: string }[]).map((c) => c.lessonPlanId),
   );
 
+  // Classes with nobody enrolled yet can't produce attendance rows — treat
+  // attendance as trivially done for them so check-out doesn't get stuck
+  // waiting on a step that can never be satisfied (AttendanceForm shows a
+  // "Lanjutkan" button in this case instead of a roster to submit).
+  const { data: enrollments, error: enrollErr } = await supabase
+    .from("class_enrollments")
+    .select("classId")
+    .in("classId", classIds)
+    .is("unenrolledAt", null);
+  if (enrollErr) throw enrollErr;
+
+  const enrolledCountByClass = new Map<string, number>();
+  (enrollments as unknown as { classId: string }[]).forEach((e) => {
+    enrolledCountByClass.set(e.classId, (enrolledCountByClass.get(e.classId) ?? 0) + 1);
+  });
+
   return todayClasses.map((cls): TodayClass => {
     const plans = lpByClass.get(cls.id) || [];
     const sorted = [...plans].sort((a, b) => a.meetingNumber - b.meetingNumber);
 
     const nextPlan = sorted.find((lp) => !completedLpIds.has(lp.id));
+    // All lesson plans exist and are COMPLETED: there is no pending meeting.
+    // Don't silently fall back to the last (already-finished) plan as if it
+    // were upcoming — surface it as a distinct "course finished" state.
+    const courseCompleted = !nextPlan && sorted.length > 0;
     const plan = nextPlan || sorted[sorted.length - 1] || null;
 
     if (!plan) {
@@ -217,6 +357,10 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
         durationMinutes: null,
         hasAttendance: false,
         hasReport: false,
+        isSubstitute: false,
+        originalTeacherName: null,
+        substituteReason: null,
+        courseCompleted: false,
       };
     }
 
@@ -226,7 +370,10 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
     const teachingReport = toOne(meeting?.teachingReport);
     const hasCheckIn = Boolean(checkIn);
     const hasCheckOut = Boolean(checkOut);
-    const hasAttendance = Boolean(meeting?.attendances && meeting.attendances.length > 0);
+    const hasAttendance =
+      hasCheckIn &&
+      (Boolean(meeting?.attendances && meeting.attendances.length > 0) ||
+        (enrolledCountByClass.get(cls.id) ?? 0) === 0);
     const hasReport = Boolean(teachingReport);
 
     let meetingStatus = "not_started";
@@ -234,6 +381,15 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
     else if (hasCheckOut) meetingStatus = "checked_out";
     else if (hasAttendance) meetingStatus = "attendance_done";
     else if (hasCheckIn) meetingStatus = "checked_in";
+    // Every lesson plan is COMPLETED and there's nothing left to teach — make
+    // that explicit instead of letting the last plan's own meeting status
+    // (which may still read "not_started"/"checked_in" depending on how it
+    // was marked complete) be mistaken for an upcoming class.
+    if (courseCompleted) meetingStatus = "course_completed";
+
+    const isSubstitute = Boolean(
+      meeting && meeting.assignedTeacherId !== teacherId && meeting.actualTeacherId === teacherId,
+    );
 
     return {
       classId: cls.id,
@@ -256,6 +412,10 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
       durationMinutes: checkOut?.durationMinutes ?? null,
       hasAttendance,
       hasReport,
+      isSubstitute,
+      originalTeacherName: isSubstitute ? (toOne(meeting?.assignedTeacher)?.users?.fullName ?? null) : null,
+      substituteReason: isSubstitute ? (meeting?.substituteReason ?? null) : null,
+      courseCompleted,
     };
   });
 }
@@ -292,6 +452,19 @@ export async function doCheckIn(input: CheckInInput): Promise<void> {
     notes: input.notes ?? null,
     isLate: false,
   });
+  if (error) throw error;
+}
+
+export async function updateCheckInPhoto(
+  meetingId: string,
+  driveFileId: string,
+  fileName: string,
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("check_ins")
+    .update({ photoDriveFileId: driveFileId, photoFileName: fileName })
+    .eq("meetingId", meetingId);
   if (error) throw error;
 }
 

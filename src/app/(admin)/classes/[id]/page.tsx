@@ -26,9 +26,10 @@ import {
   useEnrollStudent,
   useUnenrollStudent,
 } from "@/features/classes/use-roster";
-import { DAY_OPTIONS } from "@/features/classes/schema";
-
-const DAY_LABEL = Object.fromEntries(DAY_OPTIONS.map((d) => [d.value, d.label]));
+import { DAY_LABEL } from "@/features/classes/schema";
+import { ScheduleOverridesPanel } from "@/features/classes/schedule-overrides-panel";
+import { SubstitutePanel } from "@/features/substitutes/substitute-panel";
+import { ClassTimeline } from "@/features/meetings/class-timeline";
 
 export default function ClassDetailPage() {
   const params = useParams<{ id: string }>();
@@ -83,6 +84,10 @@ export default function ClassDetailPage() {
           {classItem.curriculumName ? ` · ${classItem.curriculumName}` : ""}
         </p>
       </div>
+
+      <SubstitutePanel classId={classItem.id} />
+
+      <ScheduleOverridesPanel classItem={classItem} />
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -159,6 +164,11 @@ export default function ClassDetailPage() {
             </TableBody>
           </Table>
         </div>
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="font-medium">Timeline Kelas</h2>
+        <ClassTimeline classId={classItem.id} />
       </div>
     </div>
   );

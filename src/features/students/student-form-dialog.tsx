@@ -28,10 +28,12 @@ export function StudentFormDialog({
   open,
   onOpenChange,
   student,
+  defaultSchoolId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   student?: Student;
+  defaultSchoolId?: string;
 }) {
   const isEdit = Boolean(student);
   const { data: schools } = useSchools();
@@ -50,11 +52,11 @@ export function StudentFormDialog({
     if (open) {
       reset({
         fullName: student?.fullName ?? "",
-        schoolId: student?.schoolId ?? "",
+        schoolId: student?.schoolId ?? defaultSchoolId ?? "",
         nis: student?.nis ?? "",
       });
     }
-  }, [open, student, reset]);
+  }, [open, student, defaultSchoolId, reset]);
 
   async function onSubmit(values: StudentInput) {
     if (isEdit && student) {

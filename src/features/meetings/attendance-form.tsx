@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, AlertCircle } from "lucide-react";
 import { useClassRoster } from "@/features/classes/use-roster";
 import { useBulkAttendance, useAttendances } from "@/features/attendances/use-attendances";
 import { STATUS_LABEL, ATTENDANCE_STATUS_OPTIONS } from "@/features/attendances/schema";
@@ -30,27 +30,21 @@ export function AttendanceForm({ meetingId, classId, onDone }: Props) {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (!existing || !roster) return;
+    if (!roster || existingLoading) return;
     const existingMap: Record<string, string> = {};
-    existing.forEach((a) => {
-      existingMap[a.studentId] = a.status;
+    if (existing && existing.length > 0) {
+      existing.forEach((a) => {
+        existingMap[a.studentId] = a.status;
+      });
+      setSaved(true);
+    }
+    setStatusMap((prev) => {
+      const map: Record<string, string> = {};
+      roster.forEach((s) => {
+        map[s.studentId] = prev[s.studentId] || existingMap[s.studentId] || "PRESENT";
+      });
+      return map;
     });
-    setSaved(existing.length > 0);
-
-    const map: Record<string, string> = {};
-    roster.forEach((s) => {
-      map[s.studentId] = existingMap[s.studentId] || "PRESENT";
-    });
-    setStatusMap(map);
-  }, [existing, roster]);
-
-  useEffect(() => {
-    if (!roster || existingLoading || (existing && existing.length > 0)) return;
-    const map: Record<string, string> = {};
-    roster.forEach((s) => {
-      map[s.studentId] = "PRESENT";
-    });
-    setStatusMap(map);
   }, [roster, existing, existingLoading]);
 
   function handleStatusChange(studentId: string, status: string) {
@@ -83,9 +77,24 @@ export function AttendanceForm({ meetingId, classId, onDone }: Props) {
 
   if (!roster || roster.length === 0) {
     return (
-      <p className="text-muted-foreground py-4 text-sm">
-        Belum ada siswa di kelas ini.
-      </p>
+      <div className="space-y-3 py-2">
+        <div className="text-muted-foreground flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm">
+          <AlertCircle className="text-amber-600 mt-0.5 size-4 shrink-0" />
+          <span>
+            Kelas ini belum memiliki siswa. Silakan lanjutkan ke tahap berikutnya.
+          </span>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => {
+            onDone?.();
+          }}
+        >
+          Lanjutkan
+        </Button>
+      </div>
     );
   }
 

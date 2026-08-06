@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -28,7 +29,18 @@ export function createSchoolColumns(
   onEdit: (school: School) => void,
 ): ColumnDef<School>[] {
   return [
-    { accessorKey: "name", header: "Nama Sekolah" },
+    {
+      accessorKey: "name",
+      header: "Nama Sekolah",
+      cell: ({ row }) => (
+        <Link
+          href={`/schools/${row.original.id}`}
+          className="text-primary font-medium hover:underline"
+        >
+          {row.original.name}
+        </Link>
+      ),
+    },
     {
       accessorKey: "address",
       header: "Alamat",

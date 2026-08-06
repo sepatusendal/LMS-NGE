@@ -1,4 +1,6 @@
 import { ComplianceAlert } from "@/features/lesson-plans/compliance-alert";
+import { StatusBoard } from "@/features/monitoring/status-board";
+import { AnalyticsCharts } from "@/features/monitoring/analytics-charts";
 
 export default function MonitoringPage() {
   return (
@@ -10,6 +12,8 @@ export default function MonitoringPage() {
         </p>
       </div>
 
+      <StatusBoard />
+      <AnalyticsCharts />
       <ComplianceAlert />
     </div>
   );

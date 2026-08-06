@@ -1,8 +1,9 @@
 import { z } from "zod";
 
 export const OBJECTIVES_OPTIONS = ["YES", "PARTIALLY", "NO"] as const;
+export type ObjectivesAchieved = (typeof OBJECTIVES_OPTIONS)[number];
 
-export const OBJECTIVES_LABEL: Record<string, string> = {
+export const OBJECTIVES_LABEL: Record<ObjectivesAchieved, string> = {
   YES: "Tercapai",
   PARTIALLY: "Sebagian",
   NO: "Belum Tercapai",
@@ -33,7 +34,7 @@ export interface TeachingReport {
   replacementReason: string | null;
   actualTeachingDate: string;
   skills: string[];
-  objectivesAchieved: string | null;
+  objectivesAchieved: ObjectivesAchieved | null;
   whatWentWell: string | null;
   whatNeedsImprovement: string | null;
   nextLessonNotes: string | null;

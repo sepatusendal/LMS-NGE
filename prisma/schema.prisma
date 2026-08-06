@@ -83,6 +83,7 @@ model Teacher {
   checkOuts           CheckOut[]
   reportsAsOriginal   TeachingReport[] @relation("ReportOriginalTeacher")
   reportsAsSubstitute TeachingReport[] @relation("ReportSubstituteTeacher")
+  scheduleOverrides   ClassScheduleOverride[]
 
   @@map("teachers")
 }
@@ -164,10 +165,34 @@ model Class {
   teacher     Teacher           @relation("ClassPrimaryTeacher", fields: [teacherId], references: [id])
   enrollments ClassEnrollment[]
   lessonPlans LessonPlan[]
+  scheduleOverrides ClassScheduleOverride[]
 
   @@index([schoolId])
   @@index([teacherId])
   @@map("classes")
+}
+
+/// Per-day exception to a Class's default schedule/teacher (context.md:
+/// some classes meet with a different tutor and/or time on each of their
+/// two weekly days — e.g. "Houstan": Bu Eni Wed 14:30-15:30, Latifa Sat
+/// 07:30-08:30). Absence of a row for a given dayOfWeek means the class's
+/// own teacherId/scheduleStartTime/scheduleEndTime apply as-is.
+model ClassScheduleOverride {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  classId    String   @db.Uuid
+  dayOfWeek  Int // 0 = Sunday .. 6 = Saturday
+  startTime  String // "HH:mm"
+  endTime    String // "HH:mm"
+  teacherId  String   @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+
+  class   Class   @relation(fields: [classId], references: [id])
+  teacher Teacher @relation(fields: [teacherId], references: [id])
+
+  @@unique([classId, dayOfWeek])
+  @@index([teacherId])
+  @@map("class_schedule_overrides")
 }
 
 model ClassEnrollment {

@@ -15,8 +15,10 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 import { useCreateReport } from "@/features/reports/use-reports";
 import { useClassRoster } from "@/features/classes/use-roster";
+import { FileUpload } from "@/features/drive/file-upload";
 import {
   reportSchema,
   SKILL_OPTIONS,
@@ -32,10 +34,13 @@ interface Props {
 
 export function ReportForm({ meetingId, classId }: Props) {
   const createReport = useCreateReport(meetingId);
-  const { data: roster } = useClassRoster(classId);
+  const { data: roster, refetch: refetchRoster } = useClassRoster(classId);
   const [followUps, setFollowUps] = useState<{ studentId: string; studentName: string; note: string }[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [followUpNote, setFollowUpNote] = useState("");
+  const [isCheckingRoster, setIsCheckingRoster] = useState(false);
+  const [photoDriveFileId, setPhotoDriveFileId] = useState("");
+  const [photoFileName, setPhotoFileName] = useState("");
 
   const {
     register,
@@ -50,15 +55,33 @@ export function ReportForm({ meetingId, classId }: Props) {
     },
   });
 
-  function addFollowUp() {
+  async function addFollowUp() {
     if (!selectedStudentId || !followUpNote.trim()) return;
-    const student = roster?.find((s) => s.studentId === selectedStudentId);
-    setFollowUps((prev) => [
-      ...prev,
-      { studentId: selectedStudentId, studentName: student?.fullName ?? selectedStudentId, note: followUpNote.trim() },
-    ]);
-    setSelectedStudentId("");
-    setFollowUpNote("");
+
+    setIsCheckingRoster(true);
+    try {
+      // Re-check enrollment against the latest roster right before recording
+      // the follow-up — the roster fetched at mount may be stale if the
+      // student was unenrolled in the meantime.
+      const { data: freshRoster } = await refetchRoster();
+      const student = freshRoster?.find((s) => s.studentId === selectedStudentId);
+      if (!student) {
+        toast.error("Siswa tidak lagi terdaftar di kelas ini", {
+          description: "Daftar siswa telah diperbarui. Silakan pilih siswa lain.",
+        });
+        setSelectedStudentId("");
+        return;
+      }
+
+      setFollowUps((prev) => [
+        ...prev,
+        { studentId: selectedStudentId, studentName: student.fullName, note: followUpNote.trim() },
+      ]);
+      setSelectedStudentId("");
+      setFollowUpNote("");
+    } finally {
+      setIsCheckingRoster(false);
+    }
   }
 
   function removeFollowUp(index: number) {
@@ -75,6 +98,8 @@ export function ReportForm({ meetingId, classId }: Props) {
       nextLessonNotes: v.nextLessonNotes,
       homeworkAssigned: v.homeworkAssigned,
       followUps: followUps.map((f) => ({ studentId: f.studentId, note: f.note })),
+      photoDriveFileId: photoDriveFileId || undefined,
+      photoFileName: photoFileName || undefined,
     });
   }
 
@@ -170,7 +195,7 @@ export function ReportForm({ meetingId, classId }: Props) {
             value={followUpNote}
             onChange={(e) => setFollowUpNote(e.target.value)}
           />
-          <Button type="button" variant="outline" size="sm" onClick={addFollowUp}>
+          <Button type="button" variant="outline" size="sm" onClick={addFollowUp} disabled={isCheckingRoster}>
             +
           </Button>
         </div>
@@ -186,6 +211,18 @@ export function ReportForm({ meetingId, classId }: Props) {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="space-y-2">
+        <Label>Foto Aktivitas (opsional)</Label>
+        <FileUpload
+          label="Upload Foto Kegiatan"
+          currentFile={photoFileName || null}
+          onUploaded={(id, name) => {
+            setPhotoDriveFileId(id);
+            setPhotoFileName(name);
+          }}
+        />
       </div>
 
       <Button type="submit" className="w-full" disabled={createReport.isPending}>

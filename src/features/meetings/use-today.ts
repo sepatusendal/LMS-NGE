@@ -12,12 +12,19 @@ export function useTodayClasses(): {
   isError: boolean;
   error: Error | null;
 } {
-  const { data: teacher } = useCurrentTeacher();
-  return useQuery({
+  const { data: teacher, isLoading: teacherLoading, isError: teacherIsError, error: teacherError } = useCurrentTeacher();
+  const query = useQuery({
     queryKey: TODAY_KEY,
     queryFn: () => fetchTodayClasses(teacher!.teacherId),
     enabled: Boolean(teacher?.teacherId),
   });
+
+  return {
+    data: query.data,
+    isLoading: teacherLoading || query.isLoading,
+    isError: teacherIsError || query.isError,
+    error: teacherError || query.error,
+  };
 }
 
 export function useStartClass() {

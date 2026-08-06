@@ -16,7 +16,11 @@ export default async function Home() {
     .from("users")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
-  redirect(roleLandingPath[(profile?.role as AppRole) ?? "TEACHER"]);
+  if (!profile) {
+    redirect("/login");
+  }
+
+  redirect(roleLandingPath[profile.role as AppRole]);
 }

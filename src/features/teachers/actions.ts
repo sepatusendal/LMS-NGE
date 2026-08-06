@@ -1,11 +1,12 @@
 "use server";
 
+import { randomBytes, randomInt } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { teacherCreateSchema, type TeacherCreateInput } from "./schema";
 
 function generateTempPassword() {
-  return `Nge${Math.random().toString(36).slice(2, 8)}${Math.floor(Math.random() * 100)}!`;
+  return `Nge${randomBytes(6).toString("base64url").slice(0, 6)}${randomInt(100)}!`;
 }
 
 async function assertIsAdmin() {

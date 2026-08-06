@@ -1,0 +1,242 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { ExternalLink, FileDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  useGenerateParentReport,
+  useParentReportDraft,
+  useUpdateDraftComment,
+} from "@/features/parent-reports/use-parent-reports";
+import { MONTH_LABEL } from "@/features/parent-reports/schema";
+
+const OBJECTIVES_LABEL: Record<string, string> = {
+  YES: "Tercapai",
+  PARTIALLY: "Sebagian",
+  NO: "Belum Tercapai",
+};
+const OBJECTIVES_BADGE: Record<string, "default" | "secondary" | "destructive"> = {
+  YES: "default",
+  PARTIALLY: "secondary",
+  NO: "destructive",
+};
+
+export default function ParentReportReviewPage() {
+  const params = useSearchParams();
+  const studentId = params.get("studentId") ?? "";
+  const month = Number(params.get("month") ?? 0);
+  const year = Number(params.get("year") ?? 0);
+
+  const { data: draft, isLoading } = useParentReportDraft(studentId, month, year);
+  const updateComment = useUpdateDraftComment();
+  const generate = useGenerateParentReport();
+
+  const [comment, setComment] = useState("");
+  const syncedDraftIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (draft && syncedDraftIdRef.current !== draft.id) {
+      setComment(draft.teacherCommentsFinal);
+      syncedDraftIdRef.current = draft.id;
+    }
+  }, [draft]);
+
+  if (!studentId || !month || !year) {
+    return <p className="text-muted-foreground text-sm">Parameter laporan tidak lengkap.</p>;
+  }
+  if (isLoading || !draft) {
+    return <p className="text-muted-foreground text-sm">Memuat data...</p>;
+  }
+
+  const { periodData } = draft;
+  const attendanceRate =
+    periodData.attendance.total > 0
+      ? Math.round(
+          ((periodData.attendance.present + periodData.attendance.late) / periodData.attendance.total) * 100,
+        )
+      : 0;
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <Link href="/parent-reports" className="text-muted-foreground text-sm hover:underline">
+          ← Kembali ke Laporan Orang Tua
+        </Link>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h1 className="text-xl font-semibold">
+              {periodData.studentName}
+              {draft.status === "GENERATED" && (
+                <Badge className="ml-2" variant="default">
+                  Sudah Digenerate
+                </Badge>
+              )}
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {periodData.schoolName} · Periode {MONTH_LABEL[month]} {year}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {draft.status === "GENERATED" && (
+              <a href={`/api/parent-reports/${draft.id}/download`}>
+                <Button variant="outline">
+                  <FileDown className="size-4" />
+                  Unduh PDF
+                </Button>
+              </a>
+            )}
+            {draft.pdfDriveFileId && (
+              <a
+                href={`https://drive.google.com/file/d/${draft.pdfDriveFileId}/view`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="outline">
+                  <ExternalLink className="size-4" />
+                  Drive
+                </Button>
+              </a>
+            )}
+            <Button
+              onClick={async () => {
+                if (comment !== draft.teacherCommentsFinal) {
+                  await updateComment.mutateAsync({ id: draft.id, text: comment });
+                }
+                generate.mutate(draft.id);
+              }}
+              disabled={generate.isPending}
+            >
+              <FileDown className="size-4" />
+              {generate.isPending
+                ? "Generating..."
+                : draft.status === "GENERATED"
+                  ? "Generate Ulang PDF"
+                  : "Generate PDF"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {periodData.lessonsCompleted === 0 && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+          Belum ada pertemuan tercatat untuk siswa ini pada periode {MONTH_LABEL[month]} {year}.
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-2xl font-semibold">{attendanceRate}%</p>
+            <p className="text-muted-foreground text-xs">Tingkat Kehadiran</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-2xl font-semibold">{periodData.attendance.present}</p>
+            <p className="text-muted-foreground text-xs">Hadir</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-2xl font-semibold">{periodData.attendance.late}</p>
+            <p className="text-muted-foreground text-xs">Terlambat</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-2xl font-semibold">{periodData.attendance.excused}</p>
+            <p className="text-muted-foreground text-xs">Izin</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-2xl font-semibold">{periodData.attendance.absent}</p>
+            <p className="text-muted-foreground text-xs">Tanpa Keterangan</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Progress & Kemampuan</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <p>
+            <span className="text-muted-foreground">Pertemuan selesai: </span>
+            {periodData.lessonsCompleted}
+          </p>
+          <p>
+            <span className="text-muted-foreground">Kemampuan dilatih: </span>
+            {periodData.skillsCovered.join(", ") || "-"}
+          </p>
+        </CardContent>
+      </Card>
+
+      {periodData.teachingReports.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Rangkuman Pertemuan</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tanggal</TableHead>
+                  <TableHead>Kelas</TableHead>
+                  <TableHead>Topik</TableHead>
+                  <TableHead className="text-right">Tujuan</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {periodData.teachingReports.map((r) => (
+                  <TableRow key={r.meetingId}>
+                    <TableCell className="whitespace-nowrap">{r.date}</TableCell>
+                    <TableCell>{r.className}</TableCell>
+                    <TableCell className="text-muted-foreground">{r.topic}</TableCell>
+                    <TableCell className="text-right">
+                      {r.objectivesAchieved && (
+                        <Badge variant={OBJECTIVES_BADGE[r.objectivesAchieved]} className="text-[10px]">
+                          {OBJECTIVES_LABEL[r.objectivesAchieved]}
+                        </Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Komentar Guru & Rekomendasi</CardTitle>
+          <p className="text-muted-foreground text-xs">
+            Auto-draft dari Daily Teaching Report periode ini — edit dulu sebelum generate PDF.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            rows={8}
+            className="text-sm"
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

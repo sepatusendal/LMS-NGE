@@ -11,13 +11,19 @@ interface StudentRow {
   schools: { name: string } | null;
 }
 
-export async function fetchStudents(): Promise<Student[]> {
+export async function fetchStudents(schoolId?: string): Promise<Student[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("students")
     .select("id, fullName, schoolId, nis, isActive, createdAt, schools(name)")
     .is("deletedAt", null)
     .order("fullName");
+
+  if (schoolId) {
+    query = query.eq("schoolId", schoolId);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
 
   return (data as unknown as StudentRow[]).map((row) => ({

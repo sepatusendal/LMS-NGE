@@ -4,6 +4,14 @@ import { useMemo } from "react";
 import { AlertTriangle, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useClasses } from "@/features/classes/use-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
 
@@ -74,11 +82,16 @@ export function ComplianceAlert() {
   const isLoading = classesLoading || plansLoading;
 
   return (
-    <Card>
+    <Card className="border-l-4" style={{ borderLeftColor: "var(--status-critical)" }}>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
+        <CardTitle className="flex items-center gap-2 text-sm">
           <AlertTriangle className="text-destructive size-4" />
           Kepatuhan Lesson Plan
+          {!isLoading && (
+            <span className="text-muted-foreground ml-auto text-xs font-normal">
+              {nonCompliant.length}/{classes?.length ?? 0} kelas perlu perhatian
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -87,44 +100,38 @@ export function ComplianceAlert() {
         ) : nonCompliant.length === 0 ? (
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle className="text-emerald-500 size-4" />
-            <span>
-              Semua kelas aman — lesson plan tersedia minimal 2 minggu ke
-              depan.
-            </span>
+            <span>Semua kelas aman — lesson plan tersedia min. 2 minggu ke depan.</span>
           </div>
         ) : (
-          <div className="space-y-3">
-            <p className="text-muted-foreground text-sm">
-              {nonCompliant.length} dari {classes?.length ?? 0} kelas{" "}
-              perlu lesson plan segera:
-            </p>
-            <div className="divide-y rounded-lg border">
-              {nonCompliant.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between px-3 py-2"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{c.name}</p>
-                    <p className="text-muted-foreground truncate text-xs">
-                      {c.schoolName} · {c.teacherName}
-                    </p>
-                  </div>
-                  <Badge
-                    variant={
-                      c.latestDate === null ? "destructive" : "secondary"
-                    }
-                    className="ml-2 shrink-0"
-                  >
-                    {c.latestDate === null
-                      ? "Belum ada"
-                      : c.daysLeft < 0
-                        ? `${Math.abs(c.daysLeft)} hari terlambat`
-                        : `${c.daysLeft} hari tersisa`}
-                  </Badge>
-                </div>
-              ))}
-            </div>
+          <div className="max-h-80 overflow-y-auto rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Kelas</TableHead>
+                  <TableHead>Teacher</TableHead>
+                  <TableHead className="text-right">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {nonCompliant.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium whitespace-nowrap">{c.name}</TableCell>
+                    <TableCell className="text-muted-foreground whitespace-nowrap">
+                      {c.teacherName}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant={c.latestDate === null ? "destructive" : "secondary"} className="text-xs">
+                        {c.latestDate === null
+                          ? "Belum ada"
+                          : c.daysLeft < 0
+                            ? `Telat ${Math.abs(c.daysLeft)}h`
+                            : `${c.daysLeft}h lagi`}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </CardContent>

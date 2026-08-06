@@ -9,7 +9,7 @@ export async function fetchCurriculums(): Promise<Curriculum[]> {
     .is("deletedAt", null)
     .order("gradeLevel");
   if (error) throw error;
-  return data;
+  return data as unknown as Curriculum[];
 }
 
 export async function createCurriculum(input: CurriculumInput) {
