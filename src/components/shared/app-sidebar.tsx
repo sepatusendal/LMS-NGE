@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 interface NavItem {
   href: string;
   label: string;
+  icon: LucideIcon;
 }
 
 export function AppSidebar({
@@ -30,7 +32,7 @@ export function AppSidebar({
   }
 
   return (
-    <aside className="flex w-full shrink-0 flex-col justify-between border-b p-4 md:h-dvh md:w-60 md:border-r md:border-b-0">
+    <aside className="flex h-dvh w-60 shrink-0 flex-col justify-between border-r p-4 max-md:hidden">
       <div className="space-y-6">
         <div className="space-y-1">
           <Image
@@ -43,20 +45,22 @@ export function AppSidebar({
             {roleLabel}
           </p>
         </div>
-        <nav className="flex flex-row gap-1 overflow-x-auto md:flex-col md:overflow-visible">
+        <nav className="flex flex-col gap-1">
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
+            const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap",
+                  "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap",
                   isActive
                     ? "bg-primary text-primary-foreground"
                     : "text-foreground hover:bg-muted",
                 )}
               >
+                <Icon className="size-4" aria-hidden="true" />
                 {item.label}
               </Link>
             );

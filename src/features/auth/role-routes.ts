@@ -15,6 +15,8 @@ const ROUTE_PREFIX_ROLES: Array<{ prefix: string; roles: AppRole[] }> = [
   { prefix: "/curriculum", roles: ["ADMIN"] },
   { prefix: "/monitoring", roles: ["COORDINATOR"] },
   { prefix: "/today", roles: ["TEACHER"] },
+  { prefix: "/lesson-plan", roles: ["TEACHER"] },
+  { prefix: "/profile", roles: ["TEACHER"] },
 ];
 
 export function allowedRolesForPath(pathname: string): AppRole[] | null {

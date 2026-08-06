@@ -54,9 +54,9 @@ model User {
   fullName  String
   role      Role
   isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
 
   teacher              Teacher?
   parentReportsCreated ParentReport[] @relation("ParentReportGeneratedBy")
@@ -69,9 +69,9 @@ model Teacher {
   userId    String    @unique @db.Uuid
   phone     String?
   isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id])
 
@@ -98,9 +98,9 @@ model School {
   picName   String?
   picPhone  String?
   isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
 
   students Student[]
   classes  Class[]
@@ -114,9 +114,9 @@ model Student {
   fullName  String
   nis       String?
   isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
 
   school          School            @relation(fields: [schoolId], references: [id])
   enrollments     ClassEnrollment[]
@@ -135,9 +135,9 @@ model Curriculum {
   gradeLevel  String
   description String?
   isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt   DateTime? @db.Timestamptz(3)
 
   classes Class[]
 
@@ -155,9 +155,9 @@ model Class {
   scheduleStartTime  String // "HH:mm"
   scheduleEndTime    String // "HH:mm"
   isActive           Boolean   @default(true)
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  deletedAt          DateTime?
+  createdAt          DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt          DateTime? @db.Timestamptz(3)
 
   school      School            @relation(fields: [schoolId], references: [id])
   curriculum  Curriculum?       @relation(fields: [curriculumId], references: [id])
@@ -174,10 +174,10 @@ model ClassEnrollment {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   studentId    String    @db.Uuid
   classId      String    @db.Uuid
-  enrolledAt   DateTime  @default(now())
-  unenrolledAt DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  enrolledAt   DateTime  @default(now()) @db.Timestamptz(3)
+  unenrolledAt DateTime? @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
 
   student Student @relation(fields: [studentId], references: [id])
   class   Class   @relation(fields: [classId], references: [id])
@@ -222,9 +222,9 @@ model LessonPlan {
   differentiationExtension String?
   differentiationHomework  String?
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt DateTime? @db.Timestamptz(3)
 
   class            Class    @relation(fields: [classId], references: [id])
   createdByTeacher Teacher  @relation("LessonPlanAuthor", fields: [createdByTeacherId], references: [id])
@@ -242,8 +242,8 @@ model Meeting {
   actualTeacherId   String?       @db.Uuid
   substituteReason  String?
   status            MeetingStatus @default(SCHEDULED)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  createdAt         DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime      @updatedAt @db.Timestamptz(3)
 
   lessonPlan      LessonPlan @relation(fields: [lessonPlanId], references: [id])
   assignedTeacher Teacher    @relation("MeetingAssignedTeacher", fields: [assignedTeacherId], references: [id])
@@ -266,14 +266,14 @@ model CheckIn {
   id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   meetingId        String   @unique @db.Uuid
   teacherId        String   @db.Uuid
-  checkInTime      DateTime @default(now())
+  checkInTime      DateTime @default(now()) @db.Timestamptz(3)
   gpsLat           Float?
   gpsLng           Float?
   photoDriveFileId String?
   photoFileName    String?
   notes            String?
   isLate           Boolean  @default(false)
-  createdAt        DateTime @default(now())
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
 
   meeting Meeting @relation(fields: [meetingId], references: [id])
   teacher Teacher @relation(fields: [teacherId], references: [id])
@@ -285,12 +285,12 @@ model CheckOut {
   id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   meetingId        String   @unique @db.Uuid
   teacherId        String   @db.Uuid
-  checkOutTime     DateTime @default(now())
+  checkOutTime     DateTime @default(now()) @db.Timestamptz(3)
   durationMinutes  Int
   photoDriveFileId String?
   photoFileName    String?
   notes            String?
-  createdAt        DateTime @default(now())
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
 
   meeting Meeting @relation(fields: [meetingId], references: [id])
   teacher Teacher @relation(fields: [teacherId], references: [id])
@@ -304,8 +304,8 @@ model Attendance {
   studentId String           @db.Uuid
   status    AttendanceStatus
   notes     String?
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime         @updatedAt @db.Timestamptz(3)
 
   meeting Meeting @relation(fields: [meetingId], references: [id])
   student Student @relation(fields: [studentId], references: [id])
@@ -335,8 +335,8 @@ model TeachingReport {
   photoFileName        String?
   summary              String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   meeting           Meeting           @relation(fields: [meetingId], references: [id])
   originalTeacher   Teacher           @relation("ReportOriginalTeacher", fields: [originalTeacherId], references: [id])
@@ -353,8 +353,8 @@ model StudentFollowUp {
   teachingReportId String    @db.Uuid
   studentId        String    @db.Uuid
   note             String
-  resolvedAt       DateTime?
-  createdAt        DateTime  @default(now())
+  resolvedAt       DateTime? @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
 
   teachingReport TeachingReport @relation(fields: [teachingReportId], references: [id])
   student        Student        @relation(fields: [studentId], references: [id])
@@ -371,7 +371,7 @@ model ProgressRecord {
   teachingReportId String   @db.Uuid
   skillArea        String?
   note             String
-  createdAt        DateTime @default(now())
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
 
   student        Student        @relation(fields: [studentId], references: [id])
   teachingReport TeachingReport @relation(fields: [teachingReportId], references: [id])
@@ -395,9 +395,9 @@ model ParentReport {
   pdfDriveFileId       String?
   pdfFileName          String?
   generatedByUserId    String?            @db.Uuid
-  generatedAt          DateTime?
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  generatedAt          DateTime?          @db.Timestamptz(3)
+  createdAt            DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime           @updatedAt @db.Timestamptz(3)
 
   student     Student @relation(fields: [studentId], references: [id])
   generatedBy User?   @relation("ParentReportGeneratedBy", fields: [generatedByUserId], references: [id])

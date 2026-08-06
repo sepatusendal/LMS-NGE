@@ -65,12 +65,12 @@ Referensi utama: [context.md](context.md). Setiap task di bawah harus konsisten 
 
 **Koreksi dari plan awal (dikonfirmasi user):** Lesson Plan diisi **Teacher end-to-end** (jadwal + konten pedagogis), bukan di-scheduling Admin. Admin/Coordinator cuma monitor kepatuhan. Field lengkap & rasional udah didokumentasikan di context.md Section 5.5, schema-nya (`lesson_plans` table + RLS Teacher insert/update) udah dibuat di Phase 2 lanjutan. Sisa kerjaan di sini murni UI.
 
-- [ ] Halaman Teacher: form Lesson Plan lengkap (level, topic, objectives, skills, method, procedure, materials, vocabulary focus, stage-by-stage table, questions to ask, differentiation) — scoped ke kelas yang di-assign ke teacher itu
-- [ ] List/kalender Lesson Plan per kelas milik teacher, sorted by `week`/`meetingNumber`
-- [ ] Validasi/warning: kalau sebuah Class punya lesson plan kurang dari 2 minggu ke depan → flag di dashboard Admin/Coordinator ("Classes needing lesson plans")
-- [ ] View "Upcoming Lessons" read-only buat teacher lain (misal calon substitute) yang bukan pemilik kelas itu
-- [ ] Pastikan RLS + UI guard: teacher cuma bisa insert/edit lesson plan buat kelas yang dia pegang (assigned atau lagi jadi substitute), gak bisa edit punya kelas lain
-- [ ] (Opsional, setelah struktur ini stabil) Import data lesson plan dari `reference-data/contoh lesson plan.xlsx` sebagai referensi/starting data
+- [x] Halaman Teacher: form Lesson Plan lengkap (level, topic, objectives, skills, method, procedure, materials, vocabulary focus, stage-by-stage table, questions to ask, differentiation) — scoped ke kelas yang di-assign ke teacher itu (`/lesson-plan/new`, `/lesson-plan/[id]`)
+- [x] List Lesson Plan per kelas milik teacher, sorted by tanggal, dengan badge "Aman" / "Perlu Lesson Plan" (`/lesson-plan`)
+- [x] Validasi/warning: kalau sebuah Class punya lesson plan kurang dari 2 minggu ke depan → flag di dashboard Admin/Coordinator (`ComplianceAlert` component, dipasang di `/dashboard` & `/monitoring`)
+- [x] View "Lihat Lesson Plan" read-only buat teacher yang bukan pemilik kelas itu (`readOnly` prop di `LessonPlanForm`, dicek via `useMyClasses`)
+- [x] RLS + UI guard: teacher cuma bisa insert/edit lesson plan buat kelas yang dia pegang — **catatan:** sempet ketinggalan policy INSERT buat `meetings` (lihat log bug di bawah), udah di-fix
+- [ ] (Opsional) Import data lesson plan dari `reference-data/contoh lesson plan.xlsx` sebagai referensi/starting data — belum dikerjain
 
 **Exit criteria:** Teacher bisa isi lesson plan lengkap buat kelasnya sendiri 2+ minggu ke depan; Admin/Coordinator liat alert otomatis kalau ada kelas yang plan-nya mepet.
 
@@ -80,18 +80,24 @@ Referensi utama: [context.md](context.md). Setiap task di bawah harus konsisten 
 
 Ini yang paling kritis — harus persis ikutin sequence di Section 4 & business rules Section 5.1–5.4.
 
-- [ ] Halaman "Today's Class" — Teacher login langsung liat kelas hari ini aja (bukan semua kelas)
-- [ ] **Check-in**: form (waktu auto-capture, GPS optional, foto optional, notes optional) → simpan `check_ins`
-- [ ] Guard: Attendance route/button disabled sampai check-in ada untuk meeting itu
-- [ ] **Attendance**: list siswa di kelas, tandain hadir/tidak, gak bisa di-skip (submit button disabled kalau belum semua siswa ditandai)
-- [ ] Logika **Automatic Lesson Continuation** (Section 5.6): fungsi/service yang nentuin Previous/Current/Next lesson berdasarkan meeting yang udah completed — ini dipakai di banyak tempat, bikin sebagai shared service dari awal
-- [ ] Halaman Lesson Plan (read-only) muncul otomatis nunjukin lesson yang "Current" — teacher gak milih sendiri
-- [ ] **Check-out**: waktu auto-capture, durasi ngajar auto-calculated dari check-in, foto optional, notes optional
-- [ ] Guard: Teaching Report route disabled sampai check-out ada
-- [ ] **Daily Teaching Report** form: hasil belajar, catatan siswa, homework yang dikasih, dll — enforce satu report per meeting (unique constraint + UI guard)
-- [ ] Submit report → trigger **Progress Update otomatis** (service yang update `progress_records` berdasar isi report, gak ada input manual progress terpisah)
+- [x] Halaman "Today's Class" (`/today`) — Teacher login langsung liat kelas hari ini aja, difilter dari `scheduleDaysOfWeek`
+- [x] **Check-in**: sekalian pas tap "Mulai Kelas" (waktu auto-capture, `isLate` auto-dihitung dari jadwal + grace period 10 menit). GPS/foto belum ada input UI-nya — ditahan sampai Phase 9 (Google Drive) buat foto; GPS belum diprioritaskan, keduanya opsional per spec jadi gak blocking
+- [x] Guard: Attendance cuma muncul kalau meeting udah `checked_in`
+- [x] **Attendance**: list siswa di kelas (bulk upsert), default "Hadir", gak bisa lanjut check-out sebelum submit
+- [x] Logika **Automatic Lesson Continuation**: `fetchTodayClasses()` di `src/features/meetings/queries.ts` — cari lesson plan pertama yang belum `COMPLETED` per kelas, teacher gak pernah milih manual
+- [x] Lesson Plan (read-only preview) muncul otomatis pas status `attendance_done`, link ke detail lengkap
+- [x] **Check-out**: satu tap, durasi auto-calculated dari selisih check-in/check-out (`durationMinutes`)
+- [x] Guard: Report form cuma muncul kalau meeting udah `checked_out`
+- [x] **Daily Teaching Report** form: skills, objectives achieved, what went well/needs improvement, next lesson notes, homework, students needing follow-up — field-nya udah sesuai template asli. Satu report per meeting di-enforce lewat unique constraint `meetingId` di DB
+- [ ] Submit report → trigger **Progress Update otomatis** (`progress_records`) — **BELUM dikerjain**, `createReport()` sekarang cuma insert `teaching_reports` + `student_follow_ups`, gak nyentuh `progress_records` sama sekali. Ini exit-criteria item yang masih bolong.
 
-**Exit criteria:** satu siklus penuh — check-in sampai submit report — bisa dilakuin di HP, di bawah 5 menit end-to-end (test manual pakai stopwatch, ini success metric utama).
+**Status:** Alur inti (check-in → absensi → check-out → report) udah jalan end-to-end dan ke-verifikasi manual di browser (bukan cuma review kode). Yang masih kurang: auto Progress Update, dan capture foto/GPS opsional.
+
+**Bug ditemukan & di-fix selama development Phase 3/4 (log biar gak keulang):**
+1. RLS `meetings` gak punya policy `INSERT` buat Teacher — bikin "Mulai Kelas" ke-block Supabase pas check-in pertama kali. Fixed via migration `20260806080000_teacher_insert_meetings`.
+2. Query `fetchTodayClasses()` pakai `Boolean(meeting?.checkOut)` dkk buat cek status — kalau Supabase balikin relasi to-one sebagai array kosong `[]` (bukan `null`), itu tetap `true` di JS (`Boolean([]) === true`), jadi status meeting langsung keliatan "Selesai" padahal baru check-in. Fixed pakai helper `toOne()` yang handle kedua bentuk.
+3. **Bug besar:** semua kolom timestamp di DB tipe `TIMESTAMP` (tanpa timezone) → Supabase REST balikin string tanpa offset `Z` → browser (jalan di WIB/UTC+7) salah interpretasi jadi local time → semua perhitungan durasi/waktu meleset 7 jam (durasi check-out sempet kebaca 426 menit padahal aslinya ~12 menit). Fixed dengan migration `20260806090000_timestamptz_fix` yang convert 41 kolom timestamp di 16 tabel ke `TIMESTAMPTZ`, plus update `schema.prisma` biar konsisten (`@db.Timestamptz(3)`).
+4. `isLate` di check-in sempet hardcode `false` selalu — sekarang dihitung dari `scheduleStartTime` kelas + grace period 10 menit.
 
 ---
 

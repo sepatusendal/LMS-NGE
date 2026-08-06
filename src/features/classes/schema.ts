@@ -10,6 +10,10 @@ export const DAY_OPTIONS = [
   { value: "0", label: "Minggu" },
 ];
 
+export const DAY_LABEL: Record<string, string> = Object.fromEntries(
+  DAY_OPTIONS.map((d) => [d.value, d.label]),
+);
+
 export const classSchema = z.object({
   name: z.string().min(1, "Nama kelas wajib diisi"),
   schoolId: z.string().min(1, "Sekolah wajib dipilih"),

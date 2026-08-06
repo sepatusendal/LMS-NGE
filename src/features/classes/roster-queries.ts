@@ -4,19 +4,20 @@ export interface RosterStudent {
   enrollmentId: string;
   studentId: string;
   fullName: string;
+  nis: string | null;
 }
 
 interface EnrollmentRow {
   id: string;
   studentId: string;
-  students: { fullName: string } | null;
+  students: { fullName: string; nis: string | null } | null;
 }
 
 export async function fetchClassRoster(classId: string): Promise<RosterStudent[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("class_enrollments")
-    .select("id, studentId, students(fullName)")
+    .select("id, studentId, students(fullName, nis)")
     .eq("classId", classId)
     .is("unenrolledAt", null);
   if (error) throw error;
@@ -25,6 +26,7 @@ export async function fetchClassRoster(classId: string): Promise<RosterStudent[]
     enrollmentId: row.id,
     studentId: row.studentId,
     fullName: row.students?.fullName ?? "-",
+    nis: row.students?.nis ?? null,
   }));
 }
 
