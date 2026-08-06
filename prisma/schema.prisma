@@ -1,10 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
@@ -12,4 +7,362 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  COORDINATOR
+  TEACHER
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  EXCUSED
+  LATE
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum ParentReportStatus {
+  DRAFT
+  GENERATED
+}
+
+// ─────────────────────────────────────────────────────────────
+// Identity
+// ─────────────────────────────────────────────────────────────
+
+/// Mirrors auth.users — id matches the Supabase Auth user id 1:1.
+model User {
+  id        String    @id @db.Uuid
+  email     String    @unique
+  fullName  String
+  role      Role
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  teacher              Teacher?
+  parentReportsCreated ParentReport[] @relation("ParentReportGeneratedBy")
+
+  @@map("users")
+}
+
+model Teacher {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @unique @db.Uuid
+  phone     String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  classesAsPrimary    Class[]          @relation("ClassPrimaryTeacher")
+  meetingsAssigned    Meeting[]        @relation("MeetingAssignedTeacher")
+  meetingsActual      Meeting[]        @relation("MeetingActualTeacher")
+  checkIns            CheckIn[]
+  checkOuts           CheckOut[]
+  reportsAsOriginal   TeachingReport[] @relation("ReportOriginalTeacher")
+  reportsAsSubstitute TeachingReport[] @relation("ReportSubstituteTeacher")
+
+  @@map("teachers")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Master Data
+// ─────────────────────────────────────────────────────────────
+
+model School {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  address   String?
+  picName   String?
+  picPhone  String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  students Student[]
+  classes  Class[]
+
+  @@map("schools")
+}
+
+model Student {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId  String    @db.Uuid
+  fullName  String
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  school          School            @relation(fields: [schoolId], references: [id])
+  enrollments     ClassEnrollment[]
+  attendances     Attendance[]
+  followUps       StudentFollowUp[]
+  progressRecords ProgressRecord[]
+  parentReports   ParentReport[]
+
+  @@index([schoolId])
+  @@map("students")
+}
+
+model Curriculum {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  gradeLevel  String
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  classes Class[]
+
+  @@map("curriculums")
+}
+
+model Class {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId          String    @db.Uuid
+  curriculumId      String?   @db.Uuid
+  teacherId         String    @db.Uuid
+  name              String
+  scheduleDayOfWeek Int // 0 = Sunday .. 6 = Saturday
+  scheduleStartTime String // "HH:mm"
+  scheduleEndTime   String // "HH:mm"
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  school      School            @relation(fields: [schoolId], references: [id])
+  curriculum  Curriculum?       @relation(fields: [curriculumId], references: [id])
+  teacher     Teacher           @relation("ClassPrimaryTeacher", fields: [teacherId], references: [id])
+  enrollments ClassEnrollment[]
+  lessonPlans LessonPlan[]
+
+  @@index([schoolId])
+  @@index([teacherId])
+  @@map("classes")
+}
+
+model ClassEnrollment {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId    String    @db.Uuid
+  classId      String    @db.Uuid
+  enrolledAt   DateTime  @default(now())
+  unenrolledAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id])
+  class   Class   @relation(fields: [classId], references: [id])
+
+  @@unique([studentId, classId])
+  @@map("class_enrollments")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Lesson Plan & Meetings
+//
+// LessonPlan is the schedule (belongs to Class, not Teacher — see
+// context.md Section 5.5). Meeting is the operational realization of a
+// LessonPlan on a specific date, and is what Check-in/Attendance/
+// Check-out/Teaching Report all attach to (context.md Section 4).
+// ─────────────────────────────────────────────────────────────
+
+model LessonPlan {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  classId       String    @db.Uuid
+  meetingNumber Int
+  week          Int
+  topic         String
+  description   String?
+  scheduledDate DateTime  @db.Date
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  class   Class    @relation(fields: [classId], references: [id])
+  meeting Meeting?
+
+  @@unique([classId, meetingNumber])
+  @@index([classId, scheduledDate])
+  @@map("lesson_plans")
+}
+
+model Meeting {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lessonPlanId      String        @unique @db.Uuid
+  assignedTeacherId String        @db.Uuid
+  actualTeacherId   String?       @db.Uuid
+  substituteReason  String?
+  status            MeetingStatus @default(SCHEDULED)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  lessonPlan      LessonPlan @relation(fields: [lessonPlanId], references: [id])
+  assignedTeacher Teacher    @relation("MeetingAssignedTeacher", fields: [assignedTeacherId], references: [id])
+  actualTeacher   Teacher?   @relation("MeetingActualTeacher", fields: [actualTeacherId], references: [id])
+
+  checkIn        CheckIn?
+  checkOut       CheckOut?
+  attendances    Attendance[]
+  teachingReport TeachingReport?
+
+  @@index([status])
+  @@map("meetings")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Daily Teaching Workflow (context.md Section 5.1–5.4)
+// ─────────────────────────────────────────────────────────────
+
+model CheckIn {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId        String   @unique @db.Uuid
+  teacherId        String   @db.Uuid
+  checkInTime      DateTime @default(now())
+  gpsLat           Float?
+  gpsLng           Float?
+  photoDriveFileId String?
+  photoFileName    String?
+  notes            String?
+  isLate           Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  meeting Meeting @relation(fields: [meetingId], references: [id])
+  teacher Teacher @relation(fields: [teacherId], references: [id])
+
+  @@map("check_ins")
+}
+
+model CheckOut {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId        String   @unique @db.Uuid
+  teacherId        String   @db.Uuid
+  checkOutTime     DateTime @default(now())
+  durationMinutes  Int
+  photoDriveFileId String?
+  photoFileName    String?
+  notes            String?
+  createdAt        DateTime @default(now())
+
+  meeting Meeting @relation(fields: [meetingId], references: [id])
+  teacher Teacher @relation(fields: [teacherId], references: [id])
+
+  @@map("check_outs")
+}
+
+model Attendance {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId String           @db.Uuid
+  studentId String           @db.Uuid
+  status    AttendanceStatus
+  notes     String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  meeting Meeting @relation(fields: [meetingId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+
+  @@unique([meetingId, studentId])
+  @@index([studentId])
+  @@map("attendances")
+}
+
+/// One report per meeting — enforced via the unique meetingId (context.md Section 5.4).
+model TeachingReport {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  meetingId           String   @unique @db.Uuid
+  originalTeacherId   String   @db.Uuid
+  substituteTeacherId String?  @db.Uuid
+  replacementReason   String?
+  actualTeachingDate  DateTime @db.Date
+  summary             String
+  homeworkAssigned    String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  meeting           Meeting           @relation(fields: [meetingId], references: [id])
+  originalTeacher   Teacher           @relation("ReportOriginalTeacher", fields: [originalTeacherId], references: [id])
+  substituteTeacher Teacher?          @relation("ReportSubstituteTeacher", fields: [substituteTeacherId], references: [id])
+  followUps         StudentFollowUp[]
+  progressRecords   ProgressRecord[]
+
+  @@index([actualTeachingDate])
+  @@map("teaching_reports")
+}
+
+model StudentFollowUp {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teachingReportId String    @db.Uuid
+  studentId        String    @db.Uuid
+  note             String
+  resolvedAt       DateTime?
+  createdAt        DateTime  @default(now())
+
+  teachingReport TeachingReport @relation(fields: [teachingReportId], references: [id])
+  student        Student        @relation(fields: [studentId], references: [id])
+
+  @@index([studentId])
+  @@map("student_follow_ups")
+}
+
+/// Appended per meeting, derived from the Teaching Report — never manually entered
+/// (context.md Section 2.3: automation over manual input).
+model ProgressRecord {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId        String   @db.Uuid
+  teachingReportId String   @db.Uuid
+  skillArea        String?
+  note             String
+  createdAt        DateTime @default(now())
+
+  student        Student        @relation(fields: [studentId], references: [id])
+  teachingReport TeachingReport @relation(fields: [teachingReportId], references: [id])
+
+  @@index([studentId])
+  @@map("progress_records")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Parent Report (context.md Section 9)
+// ─────────────────────────────────────────────────────────────
+
+model ParentReport {
+  id                   String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId            String             @db.Uuid
+  periodMonth          Int
+  periodYear           Int
+  teacherCommentsDraft String?
+  teacherCommentsFinal String?
+  status               ParentReportStatus @default(DRAFT)
+  pdfDriveFileId       String?
+  pdfFileName          String?
+  generatedByUserId    String?            @db.Uuid
+  generatedAt          DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  student     Student @relation(fields: [studentId], references: [id])
+  generatedBy User?   @relation("ParentReportGeneratedBy", fields: [generatedByUserId], references: [id])
+
+  @@unique([studentId, periodMonth, periodYear])
+  @@map("parent_reports")
 }
