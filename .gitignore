@@ -48,3 +48,6 @@ next-env.d.ts
 
 # local testing notes — contains test account credentials, repo is public
 /TESTING.md
+
+# Claude Code session state
+.claude/scheduled_tasks.lock

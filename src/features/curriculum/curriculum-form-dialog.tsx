@@ -1,0 +1,107 @@
+"use client";
+
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  curriculumSchema,
+  type Curriculum,
+  type CurriculumInput,
+} from "./schema";
+import { useCreateCurriculum, useUpdateCurriculum } from "./use-curriculum";
+
+export function CurriculumFormDialog({
+  open,
+  onOpenChange,
+  curriculum,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  curriculum?: Curriculum;
+}) {
+  const isEdit = Boolean(curriculum);
+  const createCurriculum = useCreateCurriculum();
+  const updateCurriculum = useUpdateCurriculum();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CurriculumInput>({ resolver: zodResolver(curriculumSchema) });
+
+  useEffect(() => {
+    if (open) {
+      reset({
+        name: curriculum?.name ?? "",
+        gradeLevel: curriculum?.gradeLevel ?? "",
+        description: curriculum?.description ?? "",
+      });
+    }
+  }, [open, curriculum, reset]);
+
+  async function onSubmit(values: CurriculumInput) {
+    if (isEdit && curriculum) {
+      await updateCurriculum.mutateAsync({ id: curriculum.id, input: values });
+    } else {
+      await createCurriculum.mutateAsync(values);
+    }
+    onOpenChange(false);
+  }
+
+  const isSubmitting = createCurriculum.isPending || updateCurriculum.isPending;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {isEdit ? "Edit Kurikulum" : "Tambah Kurikulum"}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nama Kurikulum</Label>
+            <Input id="name" {...register("name")} />
+            {errors.name && (
+              <p className="text-destructive text-sm">{errors.name.message}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="gradeLevel">Grade Level</Label>
+            <Input
+              id="gradeLevel"
+              placeholder="mis. Elementary 3"
+              {...register("gradeLevel")}
+            />
+            {errors.gradeLevel && (
+              <p className="text-destructive text-sm">
+                {errors.gradeLevel.message}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Deskripsi</Label>
+            <Textarea id="description" {...register("description")} />
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -67,12 +68,19 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center p-4">
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-8 p-4">
+      <Image
+        src="/brand/nufa-logo.png"
+        alt="NUFA Global Education"
+        width={220}
+        height={63}
+        priority
+      />
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-xl">Masuk ke ECMS</CardTitle>
           <CardDescription>
-            NUFA Global Education — English Course Management System
+            English Course Management System
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -129,7 +129,7 @@ Design principles:
 | Friendly    | Plain, simple wording — no jargon                  |
 | Modern      | Rounded cards, spacious layout, modern data tables |
 
-Visual defaults: white background, navy primary color, rounded cards, modern data tables (TanStack Table + shadcn/ui).
+Visual defaults: white background, brand blue primary (`#4b60ac`), brand coral as the secondary accent (`#f15c5d`) — both sampled from the official NUFA Global Education logo — rounded cards, modern data tables (TanStack Table + shadcn/ui). Logo assets live in `public/brand/` (`nufa-logo.png` full wordmark, `nufa-mark.png` icon-only, used for favicon and compact placements).
 
 Every important action must be reachable within **three clicks**.
 
@@ -160,7 +160,7 @@ Owns master data and configuration. Responsible for:
 - Students
 - Classes
 - Curriculum
-- Lesson Plans (scheduling, not authoring content live)
+- Monitoring Lesson Plan compliance across all classes (not authoring content — see Section 5.5)
 - Monitoring across all schools
 - Parent Report generation
 
@@ -184,7 +184,7 @@ Front-line execution role. Responsible for:
 - Teaching (offline, in-person)
 - Check-in / Check-out
 - Attendance
-- Lesson Plan consumption (read-only)
+- Lesson Plan authoring for their own classes (schedule + pedagogical content — see Section 5.5)
 - Daily Teaching Report submission
 - Student progress (auto-derived, teacher confirms/comments only)
 
@@ -250,13 +250,23 @@ These rules encode NGE's real operational workflow. They constrain database desi
 - Exactly **one report per meeting** — enforced as a uniqueness constraint (one meeting → one report), not just a UI convention.
 - Can only be created after Check-out is complete for that meeting.
 - Report content feeds automatic Progress Update (Section 5.6) and later the Parent Report (Section 8).
+- Fields mirror the current Daily Teaching Report form (see `reference-data/`): class, attendance (derived from Section 5.2, not re-entered), lesson topic, skills covered, whether objectives were achieved (Yes/Partially/No), what went well, what needs improvement, students needing follow-up, next lesson notes, and an optional activity photo.
 
 ## 5.5 Lesson Plan
 
-- Lesson Plans belong to **Classes**, not to Teachers. A teacher only ever sees the plan attached to the class they are teaching that day.
-- Every Class must always have lesson plans scheduled **at least two weeks ahead** — this is an operational SLA the Administrator must maintain; the system should surface classes falling below this threshold.
-- Teachers can **preview** upcoming lessons (read-only).
-- Teachers **cannot modify** lesson plans, under any role or condition.
+**Corrected from the original spec** — confirmed against NGE's real workflow and the reference lesson plan template (see `reference-data/`): Lesson Plans are authored **end-to-end by the Teacher**, not scheduled by the Administrator.
+
+- Lesson Plans belong to **Classes**. The **Teacher assigned to that class** creates and owns its Lesson Plans — both the schedule (meeting number, week, date) and the full pedagogical content.
+- Every Class must always have lesson plans prepared **at least two weeks ahead** — this is an operational SLA the assigned Teacher must maintain. Admin/Coordinator get a compliance dashboard (classes falling below the two-week buffer) but do **not** author content themselves.
+- A Lesson Plan captures, at minimum (per the current template): level (SD/SMP/SMA), topic, learning objectives, skills covered (Listening/Speaking/Writing/Reading), teaching method, procedure (PPP/ESA), materials required, vocabulary/language focus, a stage-by-stage breakdown (Warm-up → Presentation → Guided Practice → Speaking Practice → Game/Pair Work → Production/Role Play → Reflection & Homework, each with tutor activity / student activity / media / assessment), questions to ask students, and differentiation notes (extra support, extension activities, homework).
+- Other teachers previewing a class they don't own (e.g. a prospective substitute) get **read-only** access. A Teacher can only create/edit Lesson Plans for classes they are the assigned (or currently substitute) teacher for.
+- Admin retains override CRUD (e.g. to fix an error while a teacher is unavailable), but this is an exception path, not the primary authorship flow.
+
+### Class Scheduling Notes (from reference data)
+
+- A Class typically meets **more than once a week** (e.g. "Senin & Kamis") — schedule as a set of weekdays, not a single day.
+- A Class has a physical **Room**, tracked alongside School/Teacher/Curriculum.
+- Students carry a **NIS** (nomor induk siswa) where available.
 
 ## 5.6 Lesson Continuity (Automatic)
 

@@ -37,6 +37,12 @@ enum ParentReportStatus {
   GENERATED
 }
 
+enum ObjectivesAchieved {
+  YES
+  PARTIALLY
+  NO
+}
+
 // ─────────────────────────────────────────────────────────────
 // Identity
 // ─────────────────────────────────────────────────────────────
@@ -72,6 +78,7 @@ model Teacher {
   classesAsPrimary    Class[]          @relation("ClassPrimaryTeacher")
   meetingsAssigned    Meeting[]        @relation("MeetingAssignedTeacher")
   meetingsActual      Meeting[]        @relation("MeetingActualTeacher")
+  lessonPlansAuthored LessonPlan[]     @relation("LessonPlanAuthor")
   checkIns            CheckIn[]
   checkOuts           CheckOut[]
   reportsAsOriginal   TeachingReport[] @relation("ReportOriginalTeacher")
@@ -105,6 +112,7 @@ model Student {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schoolId  String    @db.Uuid
   fullName  String
+  nis       String?
   isActive  Boolean   @default(true)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -137,18 +145,19 @@ model Curriculum {
 }
 
 model Class {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schoolId          String    @db.Uuid
-  curriculumId      String?   @db.Uuid
-  teacherId         String    @db.Uuid
-  name              String
-  scheduleDayOfWeek Int // 0 = Sunday .. 6 = Saturday
-  scheduleStartTime String // "HH:mm"
-  scheduleEndTime   String // "HH:mm"
-  isActive          Boolean   @default(true)
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  deletedAt         DateTime?
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId           String    @db.Uuid
+  curriculumId       String?   @db.Uuid
+  teacherId          String    @db.Uuid
+  name               String
+  room               String?
+  scheduleDaysOfWeek Int[] // 0 = Sunday .. 6 = Saturday; classes often meet 2x/week
+  scheduleStartTime  String // "HH:mm"
+  scheduleEndTime    String // "HH:mm"
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
 
   school      School            @relation(fields: [schoolId], references: [id])
   curriculum  Curriculum?       @relation(fields: [curriculumId], references: [id])
@@ -180,26 +189,46 @@ model ClassEnrollment {
 // ─────────────────────────────────────────────────────────────
 // Lesson Plan & Meetings
 //
-// LessonPlan is the schedule (belongs to Class, not Teacher — see
-// context.md Section 5.5). Meeting is the operational realization of a
-// LessonPlan on a specific date, and is what Check-in/Attendance/
-// Check-out/Teaching Report all attach to (context.md Section 4).
+// LessonPlan belongs to a Class and is authored end-to-end (schedule +
+// pedagogical content) by the Teacher assigned to that class, at least
+// two weeks ahead (context.md Section 5.5). Admin/Coordinator monitor
+// compliance but do not author content. Meeting is the operational
+// realization of a LessonPlan on a specific date, and is what
+// Check-in/Attendance/Check-out/Teaching Report all attach to
+// (context.md Section 4).
 // ─────────────────────────────────────────────────────────────
 
 model LessonPlan {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  classId       String    @db.Uuid
-  meetingNumber Int
-  week          Int
-  topic         String
-  description   String?
-  scheduledDate DateTime  @db.Date
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  classId            String   @db.Uuid
+  createdByTeacherId String   @db.Uuid
+  meetingNumber      Int
+  week               Int
+  scheduledDate      DateTime @db.Date
 
-  class   Class    @relation(fields: [classId], references: [id])
-  meeting Meeting?
+  level                    String? // SD / SMP / SMA
+  topic                    String
+  learningObjectives       String?
+  skills                   String[] @default([]) // Listening, Speaking, Writing, Reading
+  method                   String?
+  procedure                String? // PPP / ESA
+  materialsRequired        String[] @default([])
+  vocabularyFocus          String?
+  /// Array of { stage, tutorActivity, studentActivity, media, assessment } —
+  /// per-lesson freeform stage breakdown, not shared/normalized across lessons.
+  stages                   Json?
+  questionsToAsk           String[] @default([])
+  differentiationSupport   String?
+  differentiationExtension String?
+  differentiationHomework  String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  class            Class    @relation(fields: [classId], references: [id])
+  createdByTeacher Teacher  @relation("LessonPlanAuthor", fields: [createdByTeacherId], references: [id])
+  meeting          Meeting?
 
   @@unique([classId, meetingNumber])
   @@index([classId, scheduledDate])
@@ -287,6 +316,7 @@ model Attendance {
 }
 
 /// One report per meeting — enforced via the unique meetingId (context.md Section 5.4).
+/// Field set mirrors the current Daily Teaching Report form (see reference-data/).
 model TeachingReport {
   id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   meetingId           String   @unique @db.Uuid
@@ -294,10 +324,19 @@ model TeachingReport {
   substituteTeacherId String?  @db.Uuid
   replacementReason   String?
   actualTeachingDate  DateTime @db.Date
-  summary             String
-  homeworkAssigned    String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+
+  skills               String[]            @default([]) // Listening, Speaking, Writing, Reading
+  objectivesAchieved   ObjectivesAchieved?
+  whatWentWell         String?
+  whatNeedsImprovement String?
+  nextLessonNotes      String?
+  homeworkAssigned     String?
+  photoDriveFileId     String?
+  photoFileName        String?
+  summary              String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   meeting           Meeting           @relation(fields: [meetingId], references: [id])
   originalTeacher   Teacher           @relation("ReportOriginalTeacher", fields: [originalTeacherId], references: [id])

@@ -8,6 +8,11 @@ export const roleLandingPath: Record<AppRole, string> = {
 
 const ROUTE_PREFIX_ROLES: Array<{ prefix: string; roles: AppRole[] }> = [
   { prefix: "/dashboard", roles: ["ADMIN"] },
+  { prefix: "/schools", roles: ["ADMIN"] },
+  { prefix: "/teachers", roles: ["ADMIN"] },
+  { prefix: "/students", roles: ["ADMIN"] },
+  { prefix: "/classes", roles: ["ADMIN"] },
+  { prefix: "/curriculum", roles: ["ADMIN"] },
   { prefix: "/monitoring", roles: ["COORDINATOR"] },
   { prefix: "/today", roles: ["TEACHER"] },
 ];

@@ -1,0 +1,58 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { DataTable } from "@/components/shared/data-table";
+import { useClasses } from "@/features/classes/use-classes";
+import { createClassColumns } from "@/features/classes/columns";
+import { ClassFormDialog } from "@/features/classes/class-form-dialog";
+import type { Class } from "@/features/classes/schema";
+
+export default function ClassesPage() {
+  const { data: classes, isLoading } = useClasses();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<Class | undefined>();
+
+  const columns = useMemo(
+    () =>
+      createClassColumns((classItem) => {
+        setEditing(classItem);
+        setDialogOpen(true);
+      }),
+    [],
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Kelas</h1>
+          <p className="text-muted-foreground text-sm">
+            Kelola kelas, jadwal, dan penugasan teacher.
+          </p>
+        </div>
+        <Button
+          onClick={() => {
+            setEditing(undefined);
+            setDialogOpen(true);
+          }}
+        >
+          Tambah Kelas
+        </Button>
+      </div>
+
+      <DataTable
+        columns={columns}
+        data={classes ?? []}
+        isLoading={isLoading}
+        searchPlaceholder="Cari kelas..."
+      />
+
+      <ClassFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        classItem={editing}
+      />
+    </div>
+  );
+}
