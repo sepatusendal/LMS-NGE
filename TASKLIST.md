@@ -43,28 +43,36 @@ Referensi utama: [context.md](context.md). Setiap task di bawah harus konsisten 
 
 ## Phase 2 — Master Data (Admin)
 
-- [ ] CRUD Schools (nama, alamat, PIC sekolah, status aktif)
-- [ ] CRUD Teachers (data diri, status aktif, sekolah yang di-assign)
-- [ ] CRUD Students (data diri, sekolah, kelas)
-- [ ] CRUD Classes (nama kelas, sekolah, jadwal, teacher yang di-assign)
-- [ ] CRUD Curriculum (level/grade, daftar topik/skill)
-- [ ] Semua list pakai TanStack Table: search, filter, pagination
-- [ ] Semua form pakai React Hook Form + Zod validation
-- [ ] Halaman detail Class: nampilin roster siswa, teacher assigned, jadwal
+- [x] CRUD Schools (nama, alamat, PIC sekolah, status aktif)
+- [x] CRUD Teachers (data diri, status aktif — provisioning akun Supabase Auth otomatis via server action)
+- [x] CRUD Students (data diri, NIS, sekolah)
+- [x] CRUD Classes (nama kelas, sekolah, teacher, kurikulum, ruang, jadwal multi-hari)
+- [x] CRUD Curriculum (nama, grade level, deskripsi)
+- [x] Semua list pakai TanStack Table: search, pagination
+- [x] Semua form pakai React Hook Form + Zod validation
+- [x] Halaman detail Class: nampilin roster siswa (enroll/unenroll), teacher assigned, jadwal, ruang, kurikulum
+
+**Gap ketemu dari review reference data (`reference-data/`) yang bikin schema Phase 2 di-adjust:**
+- Class butuh field `room` + jadwal multi-hari (`scheduleDaysOfWeek`, bukan 1 hari doang — kelas ketemu 2x/minggu)
+- Student butuh field `nis`
+- Lesson Plan didesain ulang total di Phase 3 (lihat catatan di situ) berdasarkan template asli
 
 **Exit criteria:** Admin bisa setup 1 sekolah lengkap dari nol — sekolah, teacher, kelas, siswa — tanpa nyentuh database manual.
 
 ---
 
-## Phase 3 — Lesson Plan & Curriculum Scheduling
+## Phase 3 — Lesson Plan
 
-- [ ] CRUD Lesson Plan **per Class** (bukan per Teacher — lihat Section 5.5)
-- [ ] Setiap lesson plan terikat ke `meeting_number` + `week` + `topic` + curriculum reference
-- [ ] Validasi/warning: kalau sebuah Class punya lesson plan kurang dari 2 minggu ke depan → flag di dashboard admin ("Classes needing lesson plans")
-- [ ] View "Upcoming Lessons" (read-only) — ini yang nanti dipakai teacher preview
-- [ ] Pastikan TIDAK ADA endpoint/UI yang izinin teacher edit lesson plan (cek ulang RLS + UI guard)
+**Koreksi dari plan awal (dikonfirmasi user):** Lesson Plan diisi **Teacher end-to-end** (jadwal + konten pedagogis), bukan di-scheduling Admin. Admin/Coordinator cuma monitor kepatuhan. Field lengkap & rasional udah didokumentasikan di context.md Section 5.5, schema-nya (`lesson_plans` table + RLS Teacher insert/update) udah dibuat di Phase 2 lanjutan. Sisa kerjaan di sini murni UI.
 
-**Exit criteria:** Admin bisa jadwalin 4+ meeting ke depan per kelas; ada alert otomatis kalau ada kelas yang plan-nya mepet.
+- [ ] Halaman Teacher: form Lesson Plan lengkap (level, topic, objectives, skills, method, procedure, materials, vocabulary focus, stage-by-stage table, questions to ask, differentiation) — scoped ke kelas yang di-assign ke teacher itu
+- [ ] List/kalender Lesson Plan per kelas milik teacher, sorted by `week`/`meetingNumber`
+- [ ] Validasi/warning: kalau sebuah Class punya lesson plan kurang dari 2 minggu ke depan → flag di dashboard Admin/Coordinator ("Classes needing lesson plans")
+- [ ] View "Upcoming Lessons" read-only buat teacher lain (misal calon substitute) yang bukan pemilik kelas itu
+- [ ] Pastikan RLS + UI guard: teacher cuma bisa insert/edit lesson plan buat kelas yang dia pegang (assigned atau lagi jadi substitute), gak bisa edit punya kelas lain
+- [ ] (Opsional, setelah struktur ini stabil) Import data lesson plan dari `reference-data/contoh lesson plan.xlsx` sebagai referensi/starting data
+
+**Exit criteria:** Teacher bisa isi lesson plan lengkap buat kelasnya sendiri 2+ minggu ke depan; Admin/Coordinator liat alert otomatis kalau ada kelas yang plan-nya mepet.
 
 ---
 
