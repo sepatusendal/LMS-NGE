@@ -45,3 +45,6 @@ next-env.d.ts
 
 # reference data — real operational data, not for source control
 /reference-data
+
+# local testing notes — contains test account credentials, repo is public
+/TESTING.md
