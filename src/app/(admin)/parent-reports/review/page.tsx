@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ExternalLink, FileDown } from "lucide-react";
@@ -35,6 +35,14 @@ const OBJECTIVES_BADGE: Record<string, "default" | "secondary" | "destructive"> 
 };
 
 export default function ParentReportReviewPage() {
+  return (
+    <Suspense fallback={<p className="text-muted-foreground text-sm">Memuat data...</p>}>
+      <ParentReportReviewInner />
+    </Suspense>
+  );
+}
+
+function ParentReportReviewInner() {
   const params = useSearchParams();
   const studentId = params.get("studentId") ?? "";
   const month = Number(params.get("month") ?? 0);

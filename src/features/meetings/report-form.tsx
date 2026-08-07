@@ -130,7 +130,7 @@ export function ReportForm({ meetingId, classId }: Props) {
           render={({ field }) => (
             <Select
               items={OBJECTIVES_OPTIONS.map((o) => ({ value: o, label: OBJECTIVES_LABEL[o] }))}
-              value={field.value}
+              value={field.value ?? ""}
               onValueChange={(v) => v && field.onChange(v)}
             >
               <SelectTrigger className="w-full">
