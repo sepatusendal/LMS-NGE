@@ -11,6 +11,7 @@ import {
   CalendarDays,
   FileText,
   FileHeart,
+  ShieldUser,
 } from "lucide-react";
 import { AppSidebar, type NavItem } from "@/components/shared/app-sidebar";
 import { MobileTopbar } from "@/components/shared/mobile-topbar";
@@ -32,6 +33,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     ],
   },
   { href: "/teachers", label: "Teacher", icon: GraduationCap },
+  { href: "/users", label: "Admin & Coordinator", icon: ShieldUser },
   { href: "/curriculum", label: "Kurikulum", icon: ListChecks },
   { href: "/settings", label: "Pengaturan", icon: Settings },
 ];
@@ -53,7 +55,7 @@ export default function AdminLayout({
     <div className="flex min-h-dvh w-full flex-col md:flex-row">
       <MobileTopbar roleLabel="Admin" />
       <AppSidebar roleLabel="Admin" navItems={ADMIN_NAV_ITEMS} />
-      <main className="flex-1 overflow-x-auto p-4 pb-20 md:p-8 md:pb-8">
+      <main className="flex-1 overflow-x-auto bg-[#f5f6fb] p-4 pb-20 md:p-8 md:pb-8">
         {children}
       </main>
       <BottomNav items={MOBILE_NAV} />

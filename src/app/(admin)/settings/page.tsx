@@ -8,6 +8,7 @@ import {
   BookOpen,
   ListChecks,
   CalendarDays,
+  ShieldUser,
 } from "lucide-react";
 
 function GithubIcon({ className }: { className?: string }) {
@@ -36,6 +37,12 @@ const QUICK_LINKS = [
     label: "Kelola Teacher",
     description: "Buat akun teacher, atur data, dan status aktif.",
     icon: GraduationCap,
+  },
+  {
+    href: "/users",
+    label: "Admin & Coordinator",
+    description: "Buat akun Admin/Coordinator, reset password, dan status aktif.",
+    icon: ShieldUser,
   },
   {
     href: "/students",
@@ -69,7 +76,7 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-xl font-semibold">Pengaturan</h1>
         <p className="text-muted-foreground text-sm">
-          Pusat kontrol untuk mengelola seluruh data ECMS.
+          Pusat kontrol untuk mengelola seluruh data Portal NUFA.
         </p>
       </div>
 

@@ -38,17 +38,19 @@ function StatBlock({
   color: string;
 }) {
   return (
-    <div className="bg-card flex items-center gap-3 p-4">
-      <div
-        className="flex size-9 shrink-0 items-center justify-center rounded-lg"
-        style={{ backgroundColor: `color-mix(in oklab, ${color} 14%, transparent)` }}
-      >
-        <Icon className="size-4.5" style={{ color }} />
+    <div className="bg-card flex min-h-[5.75rem] flex-col justify-between gap-2 p-4">
+      <div className="flex items-center gap-2.5">
+        <div
+          className="flex size-9 shrink-0 items-center justify-center rounded-lg"
+          style={{ backgroundColor: `color-mix(in oklab, ${color} 14%, transparent)` }}
+        >
+          <Icon className="size-4.5" style={{ color }} />
+        </div>
+        <p className="text-xl font-semibold leading-tight">{value}</p>
       </div>
       <div className="min-w-0">
-        <p className="text-xl font-semibold leading-tight">{value}</p>
-        <p className="text-muted-foreground truncate text-[11px]">{label}</p>
-        {sub && <p className="text-muted-foreground/70 text-[10px]">{sub}</p>}
+        <p className="text-muted-foreground line-clamp-2 text-[11px] leading-tight">{label}</p>
+        {sub && <p className="text-muted-foreground/70 mt-0.5 text-[10px] leading-tight">{sub}</p>}
       </div>
     </div>
   );
@@ -103,7 +105,7 @@ export function OverviewStats() {
 
   return (
     <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
-      <div className="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-xl border sm:grid-cols-3 lg:grid-cols-6">
+      <div className="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-xl border sm:grid-cols-3 xl:grid-cols-6">
         <StatBlock icon={Building2} label="Sekolah Aktif" value={String(activeSchools)} color="var(--chart-1)" />
         <StatBlock icon={Users} label="Siswa Aktif" value={String(activeStudents)} color="var(--chart-3)" />
         <StatBlock icon={GraduationCap} label="Teacher Aktif" value={String(activeTeachers)} color="var(--chart-5)" />

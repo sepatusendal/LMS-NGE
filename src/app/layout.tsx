@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ECMS — NUFA Global Education",
-  description: "English Course Management System",
+  title: "Portal NUFA — NUFA Global Education",
+  description: "Portal kelas, lesson plan, dan laporan mengajar NUFA Global Education.",
 };
 
 export default function RootLayout({

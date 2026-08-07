@@ -22,8 +22,8 @@ export default function TeacherLayout({
         <TeacherTopbar navItems={TEACHER_NAV_ITEMS} />
       </div>
       <AppSidebar roleLabel="Teacher" navItems={TEACHER_NAV_ITEMS} />
-      <main className="flex-1 overflow-x-auto">
-        <div className="bg-background mx-auto w-full max-w-md px-4 pt-4 pb-24 md:max-w-none md:px-8 md:pb-8 md:pt-8">
+      <main className="flex-1 overflow-x-auto bg-[#f5f6fb]">
+        <div className="mx-auto w-full max-w-md px-4 pt-4 pb-24 md:max-w-none md:px-8 md:pb-8 md:pt-8">
           {children}
         </div>
       </main>
