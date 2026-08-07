@@ -26,8 +26,8 @@ export function useCreateTeacher() {
 export function useUpdateTeacher() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: TeacherEditInput }) =>
-      updateTeacher(id, input),
+    mutationFn: ({ id, userId, input }: { id: string; userId: string; input: TeacherEditInput }) =>
+      updateTeacher(id, userId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TEACHERS_KEY });
       toast.success("Data teacher berhasil diperbarui");

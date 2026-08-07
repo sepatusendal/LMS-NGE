@@ -30,11 +30,18 @@ export async function fetchTeachers(): Promise<Teacher[]> {
   }));
 }
 
-export async function updateTeacher(id: string, input: TeacherEditInput) {
+export async function updateTeacher(id: string, userId: string, input: TeacherEditInput) {
   const supabase = createClient();
-  const { error } = await supabase
+
+  const { error: teacherError } = await supabase
     .from("teachers")
     .update({ phone: input.phone || null })
     .eq("id", id);
-  if (error) throw error;
+  if (teacherError) throw teacherError;
+
+  const { error: userError } = await supabase
+    .from("users")
+    .update({ fullName: input.fullName })
+    .eq("id", userId);
+  if (userError) throw userError;
 }

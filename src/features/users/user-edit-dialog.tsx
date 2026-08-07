@@ -11,15 +11,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordField, generateRandomPassword } from "@/components/shared/password-field";
 import {
   ROLE_LABEL,
+  userEditSchema,
   userResetPasswordSchema,
   type AppUser,
+  type UserEditInput,
   type UserResetPasswordInput,
 } from "./schema";
-import { useResetAppUserPassword } from "./use-users";
+import { useResetAppUserPassword, useUpdateAppUser } from "./use-users";
 
 export function UserEditDialog({
   open,
@@ -31,6 +34,7 @@ export function UserEditDialog({
   user?: AppUser;
 }) {
   const resetPassword = useResetAppUserPassword();
+  const updateUser = useUpdateAppUser();
 
   const {
     control,
@@ -41,14 +45,31 @@ export function UserEditDialog({
     resolver: zodResolver(userResetPasswordSchema),
   });
 
+  const {
+    register: registerName,
+    handleSubmit: handleNameSubmit,
+    reset: resetName,
+    formState: { errors: nameErrors },
+  } = useForm<UserEditInput>({
+    resolver: zodResolver(userEditSchema),
+  });
+
   useEffect(() => {
-    if (open) reset({ password: generateRandomPassword() });
-  }, [open, reset]);
+    if (open) {
+      reset({ password: generateRandomPassword() });
+      resetName({ fullName: user?.fullName ?? "" });
+    }
+  }, [open, user, reset, resetName]);
 
   async function onResetPassword(values: UserResetPasswordInput) {
     if (!user) return;
     await resetPassword.mutateAsync({ userId: user.id, password: values.password });
     reset({ password: generateRandomPassword() });
+  }
+
+  async function onSaveName(values: UserEditInput) {
+    if (!user) return;
+    await updateUser.mutateAsync({ id: user.id, input: values });
   }
 
   return (
@@ -58,8 +79,27 @@ export function UserEditDialog({
           <DialogTitle>Edit Akun</DialogTitle>
         </DialogHeader>
         <div className="text-muted-foreground -mt-2 text-sm">
-          {user?.fullName} · {user?.email} · {user ? ROLE_LABEL[user.role] : ""}
+          {user?.email} · {user ? ROLE_LABEL[user.role] : ""}
         </div>
+
+        <form onSubmit={handleNameSubmit(onSaveName)} className="space-y-2">
+          <Label htmlFor="fullName">Nama</Label>
+          <div className="flex items-start gap-2">
+            <div className="flex-1">
+              <Input
+                id="fullName"
+                aria-invalid={!!nameErrors.fullName}
+                {...registerName("fullName")}
+              />
+              {nameErrors.fullName && (
+                <p className="text-destructive mt-1 text-sm">{nameErrors.fullName.message}</p>
+              )}
+            </div>
+            <Button type="submit" variant="outline" disabled={updateUser.isPending}>
+              {updateUser.isPending ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </div>
+        </form>
 
         <div className="space-y-2 rounded-lg border p-3">
           <Label htmlFor="reset-password" className="text-muted-foreground text-xs">

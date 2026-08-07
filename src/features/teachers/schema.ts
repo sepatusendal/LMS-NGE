@@ -9,6 +9,7 @@ export const teacherCreateSchema = z.object({
 export type TeacherCreateInput = z.infer<typeof teacherCreateSchema>;
 
 export const teacherEditSchema = z.object({
+  fullName: z.string().min(1, "Nama wajib diisi"),
   phone: z.string().optional(),
 });
 export type TeacherEditInput = z.infer<typeof teacherEditSchema>;

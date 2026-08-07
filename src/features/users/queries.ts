@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import type { AppUser } from "./schema";
+import type { AppUser, UserEditInput } from "./schema";
 
 export async function fetchAppUsers(): Promise<AppUser[]> {
   const supabase = createClient();
@@ -12,4 +12,13 @@ export async function fetchAppUsers(): Promise<AppUser[]> {
   if (error) throw error;
 
   return data as unknown as AppUser[];
+}
+
+export async function updateAppUser(id: string, input: UserEditInput) {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("users")
+    .update({ fullName: input.fullName })
+    .eq("id", id);
+  if (error) throw error;
 }

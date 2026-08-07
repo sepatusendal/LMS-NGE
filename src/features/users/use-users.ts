@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { fetchAppUsers } from "./queries";
+import { fetchAppUsers, updateAppUser } from "./queries";
 import { createAppUser, resetAppUserPassword, setAppUserActiveAction } from "./actions";
-import type { UserCreateInput } from "./schema";
+import type { UserCreateInput, UserEditInput } from "./schema";
 
 const USERS_KEY = ["app-users"];
 
@@ -19,6 +19,19 @@ export function useCreateAppUser() {
       toast.success("Akun berhasil dibuat");
     },
     onError: (error) => toast.error("Gagal membuat akun", { description: error.message }),
+  });
+}
+
+export function useUpdateAppUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UserEditInput }) =>
+      updateAppUser(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: USERS_KEY });
+      toast.success("Nama akun berhasil diperbarui");
+    },
+    onError: (error) => toast.error("Gagal memperbarui nama", { description: error.message }),
   });
 }
 

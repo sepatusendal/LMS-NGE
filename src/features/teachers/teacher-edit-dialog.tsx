@@ -36,7 +36,12 @@ export function TeacherEditDialog({
   const updateTeacher = useUpdateTeacher();
   const resetPassword = useResetTeacherPassword();
 
-  const { register, handleSubmit, reset } = useForm<TeacherEditInput>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<TeacherEditInput>({
     resolver: zodResolver(teacherEditSchema),
   });
 
@@ -51,14 +56,14 @@ export function TeacherEditDialog({
 
   useEffect(() => {
     if (open) {
-      reset({ phone: teacher?.phone ?? "" });
+      reset({ fullName: teacher?.fullName ?? "", phone: teacher?.phone ?? "" });
       resetPw({ password: generateRandomPassword() });
     }
   }, [open, teacher, reset, resetPw]);
 
   async function onSubmit(values: TeacherEditInput) {
     if (!teacher) return;
-    await updateTeacher.mutateAsync({ id: teacher.id, input: values });
+    await updateTeacher.mutateAsync({ id: teacher.id, userId: teacher.userId, input: values });
     onOpenChange(false);
   }
 
@@ -74,9 +79,7 @@ export function TeacherEditDialog({
         <DialogHeader>
           <DialogTitle>Edit Teacher</DialogTitle>
         </DialogHeader>
-        <div className="text-muted-foreground -mt-2 text-sm">
-          {teacher?.fullName} · {teacher?.email}
-        </div>
+        <div className="text-muted-foreground -mt-2 text-sm">{teacher?.email}</div>
 
         <div className="space-y-2 rounded-lg border p-3">
           <Label htmlFor="reset-password" className="text-muted-foreground text-xs">
@@ -108,6 +111,13 @@ export function TeacherEditDialog({
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Nama</Label>
+            <Input id="fullName" aria-invalid={!!errors.fullName} {...register("fullName")} />
+            {errors.fullName && (
+              <p className="text-destructive text-sm">{errors.fullName.message}</p>
+            )}
+          </div>
           <div className="space-y-2">
             <Label htmlFor="phone">No. HP</Label>
             <Input id="phone" {...register("phone")} />
