@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,7 @@ export function ClassFormDialog({
   } = useForm<ClassInput>({ resolver: zodResolver(classSchema) });
 
   const selectedDays = useWatch({ control, name: "scheduleDaysOfWeek" }) ?? [];
+  const scheduleTimesValue = useWatch({ control, name: "scheduleTimes" }) ?? {};
 
   useEffect(() => {
     if (open) {
@@ -81,6 +83,12 @@ export function ClassFormDialog({
     onOpenChange(false);
   }
 
+  function onInvalid() {
+    toast.error("Ada field yang belum lengkap", {
+      description: "Cek bagian yang ditandai merah di form.",
+    });
+  }
+
   const isSubmitting = createClass.isPending || updateClass.isPending;
 
   // Keep DAY_OPTIONS order for the per-day time rows, not selection order.
@@ -92,10 +100,15 @@ export function ClassFormDialog({
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Kelas" : "Tambah Kelas"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Nama Kelas</Label>
-            <Input id="name" placeholder="mis. Grade 5A" {...register("name")} />
+            <Input
+              id="name"
+              placeholder="mis. Grade 5A"
+              aria-invalid={!!errors.name}
+              {...register("name")}
+            />
             {errors.name && (
               <p className="text-destructive text-sm">{errors.name.message}</p>
             )}
@@ -112,7 +125,7 @@ export function ClassFormDialog({
                   value={field.value}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full" aria-invalid={!!errors.schoolId}>
                     <SelectValue placeholder="Pilih sekolah" />
                   </SelectTrigger>
                   <SelectContent>
@@ -143,7 +156,7 @@ export function ClassFormDialog({
                   value={field.value}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full" aria-invalid={!!errors.teacherId}>
                     <SelectValue placeholder="Pilih teacher" />
                   </SelectTrigger>
                   <SelectContent>
@@ -230,11 +243,19 @@ export function ClassFormDialog({
                     </span>
                     <Input
                       type="time"
+                      aria-invalid={
+                        !!errors.scheduleTimes?.[d.value]?.startTime ||
+                        (!!errors.scheduleTimes && !scheduleTimesValue[d.value]?.startTime)
+                      }
                       {...register(`scheduleTimes.${d.value}.startTime`)}
                     />
                     <span className="text-muted-foreground text-sm">–</span>
                     <Input
                       type="time"
+                      aria-invalid={
+                        !!errors.scheduleTimes?.[d.value]?.endTime ||
+                        (!!errors.scheduleTimes && !scheduleTimesValue[d.value]?.endTime)
+                      }
                       {...register(`scheduleTimes.${d.value}.endTime`)}
                     />
                   </div>

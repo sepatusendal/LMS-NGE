@@ -42,7 +42,10 @@ export const classSchema = z
   })
   .refine(
     (data) => data.scheduleDaysOfWeek.every((d) => data.scheduleTimes[d]?.startTime && data.scheduleTimes[d]?.endTime),
-    { message: "Isi jam mulai & selesai untuk setiap hari yang dipilih", path: ["scheduleTimes"] },
+    {
+      message: "Isi jam mulai & selesai untuk setiap hari yang dipilih di atas",
+      path: ["scheduleTimes"],
+    },
   );
 
 export type ClassInput = z.infer<typeof classSchema>;
