@@ -53,15 +53,21 @@ export async function startClass(
 ): Promise<string> {
   const supabase = createClient();
 
+  const today = getTodayDayOfWeek();
+
   const { data: lpRow } = await supabase
     .from("lesson_plans")
-    .select("classId, classes(scheduleStartTime)")
+    .select("classId, classes(class_schedule_slots(dayOfWeek, startTime))")
     .eq("id", lessonPlanId)
     .single();
-  const lp = lpRow as { classId: string; classes: { scheduleStartTime: string } | { scheduleStartTime: string }[] | null } | null;
+  type SlotRow = { dayOfWeek: number; startTime: string };
+  const lp = lpRow as {
+    classId: string;
+    classes: { class_schedule_slots: SlotRow[] } | { class_schedule_slots: SlotRow[] }[] | null;
+  } | null;
   const cls = toOne(lp?.classes);
+  const todaySlot = cls?.class_schedule_slots.find((s) => s.dayOfWeek === today);
 
-  const today = getTodayDayOfWeek();
   const { data: override } = lp?.classId
     ? await supabase
         .from("class_schedule_overrides")
@@ -71,7 +77,7 @@ export async function startClass(
         .maybeSingle()
     : { data: null };
 
-  const effectiveStartTime = (override as { startTime: string } | null)?.startTime ?? cls?.scheduleStartTime;
+  const effectiveStartTime = (override as { startTime: string } | null)?.startTime ?? todaySlot?.startTime;
   const isLate = effectiveStartTime ? computeIsLate(effectiveStartTime) : false;
 
   const { data: existing } = await supabase
@@ -137,9 +143,12 @@ interface ClassRow {
   name: string;
   room: string | null;
   scheduleDaysOfWeek: number[];
+  class_schedule_slots: { dayOfWeek: number; startTime: string; endTime: string }[];
+  schools: { name: string } | null;
+  // Resolved for `today` after fetch — the class's own slot for today, before
+  // any override is layered on top.
   scheduleStartTime: string;
   scheduleEndTime: string;
-  schools: { name: string } | null;
 }
 
 interface LessonPlanRow {
@@ -185,9 +194,25 @@ function toOne<T>(rel: T | T[] | null | undefined): T | null {
 }
 
 const CLASS_SELECT = `
-  id, name, room, scheduleDaysOfWeek, scheduleStartTime, scheduleEndTime,
+  id, name, room, scheduleDaysOfWeek,
+  class_schedule_slots(dayOfWeek, startTime, endTime),
   schools(name)
 `;
+
+/** Resolves each class's own scheduleStartTime/EndTime to its slot for
+ * `today` (a class can meet at different times on different days — see
+ * ClassScheduleSlot). Classes with no slot for today (shouldn't normally
+ * happen if scheduleDaysOfWeek includes today, but defends against drift)
+ * fall back to "00:00" so downstream sort/late-calculation doesn't crash. */
+function resolveTodaySlot<T extends { class_schedule_slots: { dayOfWeek: number; startTime: string; endTime: string }[] }>(
+  classes: T[],
+  today: number,
+): (T & { scheduleStartTime: string; scheduleEndTime: string })[] {
+  return classes.map((c) => {
+    const slot = c.class_schedule_slots.find((s) => s.dayOfWeek === today);
+    return { ...c, scheduleStartTime: slot?.startTime ?? "00:00", scheduleEndTime: slot?.endTime ?? "00:00" };
+  });
+}
 
 export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]> {
   const supabase = createClient();
@@ -229,7 +254,8 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
       .filter((id): id is string => Boolean(id)),
   );
 
-  const ownClassIds = new Set((ownClasses as unknown as ClassRow[]).map((c) => c.id));
+  const resolvedOwnClasses = resolveTodaySlot(ownClasses as unknown as Omit<ClassRow, "scheduleStartTime" | "scheduleEndTime">[], today);
+  const ownClassIds = new Set(resolvedOwnClasses.map((c) => c.id));
   const extraClassIds = [
     ...(myTodayOverrides as unknown as { classId: string }[]).map((o) => o.classId),
     ...substituteClassIds,
@@ -244,10 +270,10 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
       .eq("isActive", true)
       .is("deletedAt", null);
     if (error) throw error;
-    extraClasses = data as unknown as ClassRow[];
+    extraClasses = resolveTodaySlot(data as unknown as Omit<ClassRow, "scheduleStartTime" | "scheduleEndTime">[], today);
   }
 
-  const candidates = [...(ownClasses as unknown as ClassRow[]), ...extraClasses];
+  const candidates = [...resolvedOwnClasses, ...extraClasses];
   const overridesByClass = await fetchTodayOverrides(candidates.map((c) => c.id), today);
 
   const todayClasses = candidates

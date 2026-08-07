@@ -26,7 +26,7 @@ import {
   useEnrollStudent,
   useUnenrollStudent,
 } from "@/features/classes/use-roster";
-import { DAY_LABEL } from "@/features/classes/schema";
+import { formatScheduleSlots } from "@/features/classes/schema";
 import { ScheduleOverridesPanel } from "@/features/classes/schedule-overrides-panel";
 import { SubstitutePanel } from "@/features/substitutes/substitute-panel";
 import { ClassTimeline } from "@/features/meetings/class-timeline";
@@ -77,10 +77,7 @@ export default function ClassDetailPage() {
         <p className="text-muted-foreground text-sm">
           {classItem.schoolName} · {classItem.teacherName}
           {classItem.room ? ` · Ruang ${classItem.room}` : ""} ·{" "}
-          {classItem.scheduleDaysOfWeek
-            .map((d) => DAY_LABEL[String(d)])
-            .join(" & ")}{" "}
-          {classItem.scheduleStartTime}-{classItem.scheduleEndTime}
+          {formatScheduleSlots(classItem.scheduleSlots)}
           {classItem.curriculumName ? ` · ${classItem.curriculumName}` : ""}
         </p>
       </div>

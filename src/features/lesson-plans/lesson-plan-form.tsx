@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMyClasses } from "@/features/classes/use-my-classes";
+import { formatScheduleSlots } from "@/features/classes/schema";
 import {
   LEVEL_OPTIONS,
   MATERIAL_OPTIONS,
@@ -152,7 +153,7 @@ export function LessonPlanForm({
               <Select
                 items={classes?.map((c) => ({
                   value: c.id,
-                  label: `${c.name} — ${c.schoolName} · ${c.scheduleStartTime}-${c.scheduleEndTime}`,
+                  label: `${c.name} — ${c.schoolName} · ${formatScheduleSlots(c.scheduleSlots)}`,
                 }))}
                 value={field.value}
                 onValueChange={field.onChange}

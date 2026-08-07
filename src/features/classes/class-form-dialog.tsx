@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
@@ -50,8 +50,14 @@ export function ClassFormDialog({
     formState: { errors },
   } = useForm<ClassInput>({ resolver: zodResolver(classSchema) });
 
+  const selectedDays = useWatch({ control, name: "scheduleDaysOfWeek" }) ?? [];
+
   useEffect(() => {
     if (open) {
+      const scheduleTimes: ClassInput["scheduleTimes"] = {};
+      classItem?.scheduleSlots.forEach((s) => {
+        scheduleTimes[String(s.dayOfWeek)] = { startTime: s.startTime, endTime: s.endTime };
+      });
       reset({
         name: classItem?.name ?? "",
         schoolId: classItem?.schoolId ?? "",
@@ -61,8 +67,7 @@ export function ClassFormDialog({
         scheduleDaysOfWeek: classItem
           ? classItem.scheduleDaysOfWeek.map(String)
           : [],
-        scheduleStartTime: classItem?.scheduleStartTime ?? "",
-        scheduleEndTime: classItem?.scheduleEndTime ?? "",
+        scheduleTimes,
       });
     }
   }, [open, classItem, reset]);
@@ -77,6 +82,9 @@ export function ClassFormDialog({
   }
 
   const isSubmitting = createClass.isPending || updateClass.isPending;
+
+  // Keep DAY_OPTIONS order for the per-day time rows, not selection order.
+  const orderedSelectedDays = DAY_OPTIONS.filter((d) => selectedDays.includes(d.value));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -211,34 +219,34 @@ export function ClassFormDialog({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {orderedSelectedDays.length > 0 && (
             <div className="space-y-2">
-              <Label htmlFor="scheduleStartTime">Jam Mulai</Label>
-              <Input
-                id="scheduleStartTime"
-                type="time"
-                {...register("scheduleStartTime")}
-              />
-              {errors.scheduleStartTime && (
+              <Label>Jam per hari</Label>
+              <div className="space-y-2">
+                {orderedSelectedDays.map((d) => (
+                  <div key={d.value} className="flex items-center gap-2">
+                    <span className="text-muted-foreground w-14 shrink-0 text-sm">
+                      {d.label}
+                    </span>
+                    <Input
+                      type="time"
+                      {...register(`scheduleTimes.${d.value}.startTime`)}
+                    />
+                    <span className="text-muted-foreground text-sm">–</span>
+                    <Input
+                      type="time"
+                      {...register(`scheduleTimes.${d.value}.endTime`)}
+                    />
+                  </div>
+                ))}
+              </div>
+              {errors.scheduleTimes && (
                 <p className="text-destructive text-sm">
-                  {errors.scheduleStartTime.message}
+                  {errors.scheduleTimes.message as string}
                 </p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="scheduleEndTime">Jam Selesai</Label>
-              <Input
-                id="scheduleEndTime"
-                type="time"
-                {...register("scheduleEndTime")}
-              />
-              {errors.scheduleEndTime && (
-                <p className="text-destructive text-sm">
-                  {errors.scheduleEndTime.message}
-                </p>
-              )}
-            </div>
-          </div>
+          )}
 
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>

@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useClasses } from "@/features/classes/use-classes";
+import { getSlotForDay } from "@/features/classes/schema";
 
 const DAY_LABELS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
@@ -35,7 +36,8 @@ export function ScheduleChart() {
   const classesByDay = useMemo(() => {
     return (classes ?? [])
       .filter((c) => c.isActive && c.scheduleDaysOfWeek.includes(selectedDay))
-      .sort((a, b) => a.scheduleStartTime.localeCompare(b.scheduleStartTime));
+      .map((c) => ({ ...c, slot: getSlotForDay(c.scheduleSlots, selectedDay) }))
+      .sort((a, b) => (a.slot?.startTime ?? "").localeCompare(b.slot?.startTime ?? ""));
   }, [classes, selectedDay]);
 
   return (
@@ -126,7 +128,7 @@ export function ScheduleChart() {
                     <div className="flex shrink-0 flex-col items-end gap-0.5">
                       <Badge variant="secondary" className="gap-1 text-[10px]">
                         <Clock className="size-3" />
-                        {c.scheduleStartTime}-{c.scheduleEndTime}
+                        {c.slot ? `${c.slot.startTime}-${c.slot.endTime}` : "-"}
                       </Badge>
                       {c.room && (
                         <span className="text-muted-foreground flex items-center gap-0.5 text-[10px]">

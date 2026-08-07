@@ -28,8 +28,7 @@ interface ClassRow {
   name: string;
   room: string | null;
   scheduleDaysOfWeek: number[];
-  scheduleStartTime: string;
-  scheduleEndTime: string;
+  class_schedule_slots: { dayOfWeek: number; startTime: string; endTime: string }[];
   teacherId: string;
   schoolId: string;
   schools: { id: string; name: string } | null;
@@ -73,7 +72,7 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
   const { data: allClasses, error: clsErr } = await supabase
     .from("classes")
     .select(
-      "id, name, room, scheduleDaysOfWeek, scheduleStartTime, scheduleEndTime, teacherId, schoolId, schools(id, name), teachers(users(fullName))",
+      "id, name, room, scheduleDaysOfWeek, class_schedule_slots(dayOfWeek, startTime, endTime), teacherId, schoolId, schools(id, name), teachers(users(fullName))",
     )
     .eq("isActive", true)
     .is("deletedAt", null);
@@ -128,8 +127,9 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
     .map((cls): ClassStatusRow => {
       const override = overrideByClass.get(cls.id);
       const overrideTeacher = toOne(override?.teachers ?? null);
-      const scheduleStartTime = override?.startTime ?? cls.scheduleStartTime;
-      const scheduleEndTime = override?.endTime ?? cls.scheduleEndTime;
+      const todaySlot = cls.class_schedule_slots.find((s) => s.dayOfWeek === today);
+      const scheduleStartTime = override?.startTime ?? todaySlot?.startTime ?? "00:00";
+      const scheduleEndTime = override?.endTime ?? todaySlot?.endTime ?? "00:00";
       const teacherName = overrideTeacher?.users?.fullName ?? cls.teachers?.users?.fullName ?? "-";
       const teacherId = overrideTeacher?.id ?? cls.teacherId;
 

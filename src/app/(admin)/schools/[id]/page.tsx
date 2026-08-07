@@ -14,7 +14,7 @@ import { createStudentColumns } from "@/features/students/columns";
 import { StudentFormDialog } from "@/features/students/student-form-dialog";
 import { useClasses } from "@/features/classes/use-classes";
 import { ClassFormDialog } from "@/features/classes/class-form-dialog";
-import { DAY_LABEL } from "@/features/classes/schema";
+import { formatScheduleSlots } from "@/features/classes/schema";
 import type { Student } from "@/features/students/schema";
 import type { Class } from "@/features/classes/schema";
 
@@ -164,9 +164,6 @@ export default function SchoolDetailPage() {
           ) : (
             <div className="space-y-2">
               {schoolClasses.map((cls) => {
-                const days = cls.scheduleDaysOfWeek
-                  .map((d) => DAY_LABEL[String(d)])
-                  .join(", ");
                 return (
                   <Link key={cls.id} href={`/classes/${cls.id}`}>
                     <Card className="hover:bg-muted/50 transition-colors">
@@ -178,7 +175,7 @@ export default function SchoolDetailPage() {
                             {cls.curriculumName ? ` · ${cls.curriculumName}` : ""}
                           </p>
                           <p className="text-muted-foreground text-xs">
-                            {cls.scheduleStartTime} - {cls.scheduleEndTime} · {days}
+                            {formatScheduleSlots(cls.scheduleSlots)}
                             {cls.room ? ` · R.${cls.room}` : ""}
                           </p>
                         </div>

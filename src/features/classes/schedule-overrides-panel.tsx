@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DAY_LABEL } from "./schema";
+import { DAY_LABEL, getSlotForDay } from "./schema";
 import { useTeachers } from "@/features/teachers/use-teachers";
 import {
   useDeleteScheduleOverride,
@@ -38,9 +38,10 @@ export function ScheduleOverridesPanel({ classItem }: Props) {
 
   function startEdit(day: number) {
     const existing = overrideByDay.get(day);
+    const daySlot = getSlotForDay(classItem.scheduleSlots, day);
     setEditingDay(day);
-    setStartTime(existing?.startTime ?? classItem.scheduleStartTime);
-    setEndTime(existing?.endTime ?? classItem.scheduleEndTime);
+    setStartTime(existing?.startTime ?? daySlot?.startTime ?? "");
+    setEndTime(existing?.endTime ?? daySlot?.endTime ?? "");
     setTeacherId(existing?.teacherId ?? classItem.teacherId);
   }
 
@@ -63,8 +64,8 @@ export function ScheduleOverridesPanel({ classItem }: Props) {
       <div>
         <h2 className="font-medium">Jadwal per Hari</h2>
         <p className="text-muted-foreground text-sm">
-          Default: {classItem.teacherName}, {classItem.scheduleStartTime}-{classItem.scheduleEndTime}.
-          Set override kalau tutor atau jam beda di hari tertentu (kelas ketemu 2x/minggu).
+          Default tutor: {classItem.teacherName}. Set override kalau tutor atau jam beda
+          di hari tertentu (kelas ketemu 2x/minggu).
         </p>
       </div>
 
@@ -72,6 +73,7 @@ export function ScheduleOverridesPanel({ classItem }: Props) {
         {classItem.scheduleDaysOfWeek.map((day) => {
           const override = overrideByDay.get(day);
           const isEditing = editingDay === day;
+          const daySlot = getSlotForDay(classItem.scheduleSlots, day);
 
           if (isEditing) {
             return (
@@ -127,7 +129,8 @@ export function ScheduleOverridesPanel({ classItem }: Props) {
                   </p>
                 ) : (
                   <p className="text-muted-foreground text-xs">
-                    {classItem.teacherName} · {classItem.scheduleStartTime}-{classItem.scheduleEndTime} (default)
+                    {classItem.teacherName}
+                    {daySlot ? ` · ${daySlot.startTime}-${daySlot.endTime}` : ""} (default)
                   </p>
                 )}
               </div>

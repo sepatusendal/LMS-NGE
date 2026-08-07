@@ -5,10 +5,8 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { DAY_OPTIONS, type Class } from "./schema";
+import { formatScheduleSlots, type Class } from "./schema";
 import { useSetClassActive } from "./use-classes";
-
-const DAY_LABEL = Object.fromEntries(DAY_OPTIONS.map((d) => [d.value, d.label]));
 
 function ActiveToggleCell({ classItem }: { classItem: Class }) {
   const setActive = useSetClassActive();
@@ -53,12 +51,7 @@ export function createClassColumns(
     {
       id: "schedule",
       header: "Jadwal",
-      cell: ({ row }) => {
-        const days = row.original.scheduleDaysOfWeek
-          .map((d) => DAY_LABEL[String(d)])
-          .join(" & ");
-        return `${days}, ${row.original.scheduleStartTime}-${row.original.scheduleEndTime}`;
-      },
+      cell: ({ row }) => formatScheduleSlots(row.original.scheduleSlots),
     },
     {
       accessorKey: "isActive",

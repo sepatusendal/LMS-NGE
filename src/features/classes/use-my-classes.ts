@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
+import type { ScheduleSlot } from "./schema";
 
 export interface MyClass {
   id: string;
   name: string;
   schoolName: string;
   scheduleDaysOfWeek: number[];
-  scheduleStartTime: string;
-  scheduleEndTime: string;
+  scheduleSlots: ScheduleSlot[];
   room: string | null;
 }
 
@@ -16,17 +16,16 @@ interface MyClassRow {
   id: string;
   name: string;
   scheduleDaysOfWeek: number[];
-  scheduleStartTime: string;
-  scheduleEndTime: string;
   room: string | null;
   schools: { name: string } | null;
+  class_schedule_slots: ScheduleSlot[];
 }
 
 async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("classes")
-    .select("id, name, scheduleDaysOfWeek, scheduleStartTime, scheduleEndTime, room, schools(name)")
+    .select("id, name, scheduleDaysOfWeek, room, schools(name), class_schedule_slots(dayOfWeek, startTime, endTime)")
     .eq("teacherId", teacherId)
     .eq("isActive", true)
     .is("deletedAt", null)
@@ -38,8 +37,7 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
     name: row.name,
     schoolName: row.schools?.name ?? "-",
     scheduleDaysOfWeek: row.scheduleDaysOfWeek,
-    scheduleStartTime: row.scheduleStartTime,
-    scheduleEndTime: row.scheduleEndTime,
+    scheduleSlots: row.class_schedule_slots ?? [],
     room: row.room,
   }));
 }

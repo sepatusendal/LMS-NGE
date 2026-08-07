@@ -15,7 +15,7 @@ import {
 import { useSchools } from "@/features/schools/use-schools";
 import { useClasses } from "@/features/classes/use-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
-import { DAY_LABEL } from "@/features/classes/schema";
+import { formatScheduleSlots } from "@/features/classes/schema";
 
 export default function AdminLessonPlansPage() {
   const { data: schools } = useSchools();
@@ -85,9 +85,6 @@ export default function AdminLessonPlansPage() {
                   a.meetingNumber - b.meetingNumber,
               );
             const isExpanded = expandedClassId === cls.id;
-            const days = cls.scheduleDaysOfWeek
-              .map((d) => DAY_LABEL[String(d)])
-              .join(", ");
 
             return (
               <Card key={cls.id}>
@@ -104,9 +101,8 @@ export default function AdminLessonPlansPage() {
                         {cls.teacherName} ·{" "}
                         <span className="flex items-center gap-1">
                           <Clock className="size-3" />
-                          {cls.scheduleStartTime} - {cls.scheduleEndTime}
-                        </span>{" "}
-                        · {days}
+                          {formatScheduleSlots(cls.scheduleSlots)}
+                        </span>
                         {cls.room ? ` · R.${cls.room}` : ""}
                       </p>
                     </div>

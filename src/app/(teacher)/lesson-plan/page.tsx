@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { useMyClasses } from "@/features/classes/use-my-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
-import { DAY_LABEL } from "@/features/classes/schema";
+import { formatScheduleSlots } from "@/features/classes/schema";
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -39,10 +39,6 @@ export default function LessonPlanPage() {
         const isCompliant =
           latest && new Date(latest.scheduledDate).getTime() - now >= TWO_WEEKS_MS;
 
-        const days = classItem.scheduleDaysOfWeek
-          .map((d) => DAY_LABEL[String(d)])
-          .join(", ");
-
         return (
           <div key={classItem.id} className="space-y-2">
             <div className="flex items-center justify-between">
@@ -52,7 +48,7 @@ export default function LessonPlanPage() {
                   <span>{classItem.schoolName}</span>
                   <span className="flex items-center gap-1">
                     <Clock className="size-3" />
-                    {classItem.scheduleStartTime} - {classItem.scheduleEndTime}
+                    {formatScheduleSlots(classItem.scheduleSlots)}
                   </span>
                   {classItem.room && (
                     <span className="flex items-center gap-1">
@@ -60,7 +56,6 @@ export default function LessonPlanPage() {
                       {classItem.room}
                     </span>
                   )}
-                  <span>{days}</span>
                 </div>
               </div>
               <Badge variant={isCompliant ? "default" : "secondary"}>
