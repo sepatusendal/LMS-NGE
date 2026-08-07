@@ -38,12 +38,3 @@ export async function updateTeacher(id: string, input: TeacherEditInput) {
     .eq("id", id);
   if (error) throw error;
 }
-
-export async function setTeacherActive(id: string, isActive: boolean) {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("teachers")
-    .update({ isActive })
-    .eq("id", id);
-  if (error) throw error;
-}

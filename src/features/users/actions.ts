@@ -1,12 +1,13 @@
 "use server";
 
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assertIsAdmin } from "@/features/auth/assert-admin";
-import { teacherCreateSchema, type TeacherCreateInput } from "./schema";
+import { userCreateSchema, type UserCreateInput } from "./schema";
 
-export async function createTeacherAccount(rawInput: TeacherCreateInput) {
+export async function createAppUser(rawInput: UserCreateInput) {
   await assertIsAdmin();
-  const input = teacherCreateSchema.parse(rawInput);
+  const input = userCreateSchema.parse(rawInput);
 
   const admin = createAdminClient();
 
@@ -14,18 +15,10 @@ export async function createTeacherAccount(rawInput: TeacherCreateInput) {
     email: input.email,
     password: input.password,
     email_confirm: true,
-    user_metadata: { full_name: input.fullName, role: "TEACHER" },
+    user_metadata: { full_name: input.fullName, role: input.role },
   });
   if (authError || !authData.user) {
     throw new Error(authError?.message ?? "Gagal membuat akun");
-  }
-
-  const { error: teacherError } = await admin
-    .from("teachers")
-    .insert({ userId: authData.user.id, phone: input.phone || null });
-  if (teacherError) {
-    await admin.auth.admin.deleteUser(authData.user.id);
-    throw new Error(teacherError.message);
   }
 
   return { email: input.email };
@@ -36,18 +29,23 @@ export async function createTeacherAccount(rawInput: TeacherCreateInput) {
  * equivalent until re-activated. */
 const PERMANENT_BAN_DURATION = "876000h";
 
-export async function setTeacherActiveAction(
-  teacherId: string,
-  userId: string,
-  isActive: boolean,
-) {
+export async function setAppUserActiveAction(userId: string, isActive: boolean) {
   await assertIsAdmin();
+
+  const supabase = await createClient();
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
+  if (currentUser?.id === userId) {
+    throw new Error("Tidak bisa menonaktifkan akun sendiri");
+  }
+
   const admin = createAdminClient();
 
   const { error: updateError } = await admin
-    .from("teachers")
+    .from("users")
     .update({ isActive })
-    .eq("id", teacherId);
+    .eq("id", userId);
   if (updateError) throw new Error(updateError.message);
 
   const { error: banError } = await admin.auth.admin.updateUserById(userId, {
@@ -56,7 +54,7 @@ export async function setTeacherActiveAction(
   if (banError) throw new Error(banError.message);
 }
 
-export async function resetTeacherPassword(userId: string, password: string) {
+export async function resetAppUserPassword(userId: string, password: string) {
   await assertIsAdmin();
   const admin = createAdminClient();
 

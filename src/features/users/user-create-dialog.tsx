@@ -14,18 +14,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PasswordField, generateRandomPassword } from "@/components/shared/password-field";
-import { teacherCreateSchema, type TeacherCreateInput } from "./schema";
-import { useCreateTeacher } from "./use-teachers";
+import { userCreateSchema, MANAGEABLE_ROLES, ROLE_LABEL, type UserCreateInput } from "./schema";
+import { useCreateAppUser } from "./use-users";
 
-export function TeacherCreateDialog({
+export function UserCreateDialog({
   open,
   onOpenChange,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const createTeacher = useCreateTeacher();
+  const createUser = useCreateAppUser();
 
   const {
     register,
@@ -33,14 +40,16 @@ export function TeacherCreateDialog({
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<TeacherCreateInput>({ resolver: zodResolver(teacherCreateSchema) });
+  } = useForm<UserCreateInput>({ resolver: zodResolver(userCreateSchema) });
 
   useEffect(() => {
-    if (open) reset({ fullName: "", email: "", phone: "", password: generateRandomPassword() });
+    if (open) {
+      reset({ fullName: "", email: "", role: "COORDINATOR", password: generateRandomPassword() });
+    }
   }, [open, reset]);
 
-  async function onSubmit(values: TeacherCreateInput) {
-    await createTeacher.mutateAsync(values);
+  async function onSubmit(values: UserCreateInput) {
+    await createUser.mutateAsync(values);
     onOpenChange(false);
   }
 
@@ -48,7 +57,7 @@ export function TeacherCreateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Tambah Teacher</DialogTitle>
+          <DialogTitle>Tambah Akun Admin / Coordinator</DialogTitle>
           <DialogDescription>
             Tentukan password akunnya sendiri, atau klik ikon dadu untuk generate
             acak.
@@ -70,8 +79,29 @@ export function TeacherCreateDialog({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">No. HP (opsional)</Label>
-            <Input id="phone" {...register("phone")} />
+            <Label htmlFor="role">Role</Label>
+            <Controller
+              control={control}
+              name="role"
+              render={({ field }) => (
+                <Select
+                  items={MANAGEABLE_ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
+                  value={field.value}
+                  onValueChange={(v) => v && field.onChange(v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MANAGEABLE_ROLES.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {ROLE_LABEL[r]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
@@ -87,8 +117,8 @@ export function TeacherCreateDialog({
             )}
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={createTeacher.isPending}>
-              {createTeacher.isPending ? "Membuat akun..." : "Buat Akun Teacher"}
+            <Button type="submit" disabled={createUser.isPending}>
+              {createUser.isPending ? "Membuat akun..." : "Buat Akun"}
             </Button>
           </DialogFooter>
         </form>
