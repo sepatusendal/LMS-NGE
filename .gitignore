@@ -26,6 +26,7 @@
 
 # credentials — never commit
 CREDENTIALS.md
+CREDENTIALS.staging.md
 # Google service account key files (gcloud's default download naming:
 # <project-id>-<key-id>.json), e.g. nge-lms-504705-6861b4fcc342.json
 /*-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].json
@@ -41,6 +42,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example
+!.env.staging.example
 
 # vercel
 .vercel
