@@ -209,7 +209,7 @@ Diverifikasi end-to-end di browser: alert "belum check-in" muncul benar, badge "
 - [x] Setup Google Cloud project + Drive API credentials (service account atau OAuth, sesuaikan siapa yang punya akun Drive-nya)
 - [x] Service layer abstraksi (`src/lib/google-drive/drive-client.ts`: uploadFile/deleteFile/getFileUrl) — biar gampang extend ke Calendar/Gmail nanti (Section 12)
 - [x] Upload classroom photo dari **Daily Teaching Report** langsung ke Drive, simpan `drive_file_id` + metadata di DB (`FileUpload` component + `/api/drive/upload`) — foto check-in juga ada UI-nya, foto check-out belum
-- [ ] Upload generated Parent Report PDF ke folder terstruktur di Drive (per sekolah/per siswa)
+- [x] Upload generated Parent Report PDF ke folder terstruktur di Drive (per sekolah/per siswa) — `findOrCreateFolder()` di `drive-client.ts`, layout: root / {sekolah} / {siswa} / Laporan-....pdf
 - [x] Pastikan TIDAK ADA binary file yang nyasar ke kolom Postgres — audit semua upload path (cuma `photoDriveFileId`/`photoFileName` string yang kesimpen)
 
 **Security & bug ditemukan & di-fix pas review (2026-08-06):**

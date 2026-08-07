@@ -3,7 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { createClient } from "@/lib/supabase/server";
-import { uploadFile } from "@/lib/google-drive/drive-client";
+import { uploadFile, findOrCreateFolder, getRootFolderId } from "@/lib/google-drive/drive-client";
 import { getStudentPeriodData } from "@/features/parent-reports/period-data";
 import { ParentReportPdf } from "@/features/parent-reports/parent-report-pdf";
 import { MONTH_LABEL } from "@/features/parent-reports/schema";
@@ -64,10 +64,17 @@ export async function POST(
     try {
       const safeStudentName = periodData.studentName.replace(/[^a-zA-Z0-9]+/g, "-");
       pdfFileName = `Laporan-${safeStudentName}-${MONTH_LABEL[report.periodMonth]}-${report.periodYear}.pdf`;
+
+      // Lay out reports as root / {school} / {student} / file.pdf instead of
+      // dumping every PDF flat into one folder.
+      const schoolFolderId = await findOrCreateFolder(periodData.schoolName, getRootFolderId());
+      const studentFolderId = await findOrCreateFolder(periodData.studentName, schoolFolderId);
+
       const result = await uploadFile(
         Buffer.from(pdfBuffer),
         pdfFileName,
         "application/pdf",
+        studentFolderId,
       );
       driveFileId = result.driveFileId;
     } catch (e) {
