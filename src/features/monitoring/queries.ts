@@ -53,6 +53,8 @@ interface MeetingRow {
   status: string;
   assignedTeacherId: string;
   actualTeacherId: string | null;
+  substituteReason: string | null;
+  actualTeacher: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null;
   checkIn: { checkInTime: string; isLate: boolean } | { checkInTime: string; isLate: boolean }[] | null;
   checkOut: { checkOutTime: string } | { checkOutTime: string }[] | null;
   attendances: { status: string }[] | null;
@@ -118,7 +120,7 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
       ? await supabase
           .from("meetings")
           .select(
-            "id, lessonPlanId, status, assignedTeacherId, actualTeacherId, checkIn:check_ins(checkInTime, isLate), checkOut:check_outs(checkOutTime), attendances(status), teachingReport:teaching_reports(id)",
+            "id, lessonPlanId, status, assignedTeacherId, actualTeacherId, substituteReason, actualTeacher:teachers!meetings_actualTeacherId_fkey(users(fullName)), checkIn:check_ins(checkInTime, isLate), checkOut:check_outs(checkOutTime), attendances(status), teachingReport:teaching_reports(id)",
           )
           .in("lessonPlanId", lpIds)
       : { data: [], error: null };
@@ -189,6 +191,8 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
         isSubstitute: Boolean(
           meeting?.actualTeacherId && meeting.actualTeacherId !== meeting.assignedTeacherId,
         ),
+        substituteTeacherName: toOne(meeting?.actualTeacher ?? null)?.users?.fullName ?? null,
+        substituteReason: meeting?.substituteReason ?? null,
         attendanceTotal: attendances.length,
         attendancePresent: attendances.filter((a) => a.status === "PRESENT" || a.status === "LATE")
           .length,

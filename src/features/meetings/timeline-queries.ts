@@ -55,6 +55,11 @@ function toOne<T>(rel: ToOne<T>): T | null {
   return Array.isArray(rel) ? (rel[0] ?? null) : rel;
 }
 
+function dayOfWeek(dateStr: string): number {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).getDay();
+}
+
 export async function fetchClassTimeline(classId: string): Promise<{
   timeline: TimelineEntry[];
   totalEnrolled: number;
@@ -78,6 +83,45 @@ export async function fetchClassTimeline(classId: string): Promise<{
 
   const lps = lessonPlans as unknown as LpRow[];
   if (lps.length === 0) return { timeline: [], totalEnrolled: totalEnrolled ?? 0 };
+
+  // Fallback for lesson plans that don't have a Meeting yet (nothing has
+  // happened for that date yet — no check-in, no substitute assignment):
+  // resolve who *would* teach it from the class's own schedule, the same
+  // way substitutes/queries.ts resolveEffectiveTeacherForDate does, so the
+  // timeline doesn't show a blank "Teacher: -" for upcoming meetings.
+  const { data: classRow, error: classErr } = await supabase
+    .from("classes")
+    .select("teacherId, teachers(users(fullName))")
+    .eq("id", classId)
+    .single();
+  if (classErr) throw classErr;
+  const cls = classRow as unknown as {
+    teacherId: string;
+    teachers: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null;
+  };
+  const defaultTeacherId = cls.teacherId;
+  const defaultTeacherName = toOne(cls.teachers)?.users?.fullName ?? "-";
+
+  const { data: overrides, error: ovErr } = await supabase
+    .from("class_schedule_overrides")
+    .select("dayOfWeek, teacherId, teachers(users(fullName))")
+    .eq("classId", classId);
+  if (ovErr) throw ovErr;
+  const overrideByDay = new Map<
+    number,
+    { teacherId: string; teachers: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null }
+  >();
+  (overrides as unknown as { dayOfWeek: number; teacherId: string; teachers: unknown }[]).forEach((o) => {
+    overrideByDay.set(o.dayOfWeek, o as never);
+  });
+
+  function resolveScheduledTeacher(scheduledDate: string): { id: string; name: string } {
+    const override = overrideByDay.get(dayOfWeek(scheduledDate));
+    if (override) {
+      return { id: override.teacherId, name: toOne(override.teachers)?.users?.fullName ?? "-" };
+    }
+    return { id: defaultTeacherId, name: defaultTeacherName };
+  }
 
   const lpIds = lps.map((lp) => lp.id);
 
@@ -109,6 +153,7 @@ export async function fetchClassTimeline(classId: string): Promise<{
     const checkOut = toOne(meeting?.checkOut ?? null);
     const assignedTeacher = toOne(meeting?.assignedTeacher ?? null);
     const actualTeacher = toOne(meeting?.actualTeacher ?? null);
+    const scheduled = resolveScheduledTeacher(lp.scheduledDate);
 
     return {
       meetingNumber: lp.meetingNumber,
@@ -117,8 +162,8 @@ export async function fetchClassTimeline(classId: string): Promise<{
       topic: lp.topic,
       meetingId: meeting?.id ?? null,
       meetingStatus: meeting?.status ?? "SCHEDULED",
-      assignedTeacherId: meeting?.assignedTeacherId ?? null,
-      assignedTeacherName: assignedTeacher?.users?.fullName ?? "-",
+      assignedTeacherId: meeting?.assignedTeacherId ?? scheduled.id,
+      assignedTeacherName: assignedTeacher?.users?.fullName ?? scheduled.name,
       actualTeacherName: actualTeacher?.users?.fullName ?? null,
       isSubstitute: Boolean(
         meeting?.actualTeacherId && meeting.actualTeacherId !== meeting.assignedTeacherId,

@@ -1,24 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, CheckCircle, Clock, UserCheck } from "lucide-react";
+import { Loader2, CheckCircle, Clock, UserCheck, UserRoundCog } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useClassTimeline } from "@/features/meetings/use-timeline";
 import type { TimelineEntry } from "@/features/meetings/timeline-queries";
-import { useTeachers } from "@/features/teachers/use-teachers";
 import {
-  useAssignSubstituteForLessonPlan,
-  useCancelSubstitute,
-} from "@/features/substitutes/use-substitutes";
-import { ABSENCE_REASONS, ABSENCE_REASON_LABEL } from "@/features/substitutes/schema";
+  ReassignTutorDialog,
+  type ReassignTutorTarget,
+} from "@/features/substitutes/reassign-tutor-dialog";
 
 const STATUS_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   COMPLETED: { label: "Selesai", variant: "default" },
@@ -32,135 +23,23 @@ const OBJECTIVES_BADGE: Record<string, { label: string; variant: "default" | "se
   NO: { label: "Belum", variant: "destructive" },
 };
 
-function ReassignTutorControl({ classId, entry }: { classId: string; entry: TimelineEntry }) {
-  const [editing, setEditing] = useState(false);
-  const [substituteTeacherId, setSubstituteTeacherId] = useState("");
-  const [reason, setReason] = useState("");
-  const { data: teachers } = useTeachers();
-  const assign = useAssignSubstituteForLessonPlan(classId);
-  const cancel = useCancelSubstitute(classId);
-
-  async function handleAssign() {
-    if (!substituteTeacherId || !reason) return;
-    await assign.mutateAsync({
-      lessonPlanId: entry.lessonPlanId,
-      scheduledDate: entry.scheduledDate,
-      substituteTeacherId,
-      reason,
-    });
-    setEditing(false);
-    setSubstituteTeacherId("");
-    setReason("");
-  }
-
-  if (entry.isSubstitute) {
-    return (
-      <div className="mt-1 flex items-center gap-2">
-        <p className="text-muted-foreground text-[11px]">
-          Digantikan <span className="font-medium text-foreground">{entry.actualTeacherName}</span>
-        </p>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-5 px-1.5 text-[11px]"
-          disabled={cancel.isPending || !entry.meetingId}
-          onClick={() => entry.meetingId && cancel.mutate(entry.meetingId)}
-        >
-          Batalkan
-        </Button>
-      </div>
-    );
-  }
-
-  if (editing) {
-    const teacherOptions = (teachers ?? []).filter((t) => t.id !== entry.assignedTeacherId);
-    return (
-      <div className="mt-1.5 space-y-1.5">
-        <Select
-          items={teacherOptions.map((t) => ({ value: t.id, label: t.fullName }))}
-          value={substituteTeacherId}
-          onValueChange={(v) => v && setSubstituteTeacherId(v)}
-        >
-          <SelectTrigger className="h-7 w-full text-xs">
-            <SelectValue placeholder="Pilih tutor pengganti" />
-          </SelectTrigger>
-          <SelectContent>
-            {teacherOptions.map((t) => (
-              <SelectItem key={t.id} value={t.id}>
-                {t.fullName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          items={ABSENCE_REASONS.map((r) => ({ value: r, label: ABSENCE_REASON_LABEL[r] }))}
-          value={reason}
-          onValueChange={(v) => v && setReason(v)}
-        >
-          <SelectTrigger className="h-7 w-full text-xs">
-            <SelectValue placeholder="Alasan" />
-          </SelectTrigger>
-          <SelectContent>
-            {ABSENCE_REASONS.map((r) => (
-              <SelectItem key={r} value={r}>
-                {ABSENCE_REASON_LABEL[r]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex gap-1.5">
-          <Button
-            size="sm"
-            className="h-6 px-2 text-[11px]"
-            disabled={!substituteTeacherId || !reason || assign.isPending}
-            onClick={handleAssign}
-          >
-            {assign.isPending ? "Menyimpan..." : "Simpan"}
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-2 text-[11px]"
-            onClick={() => setEditing(false)}
-          >
-            Batal
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <Button
-      size="sm"
-      variant="outline"
-      className="mt-1 h-6 px-2 text-[11px]"
-      onClick={() => setEditing(true)}
-    >
-      Ganti Tutor
-    </Button>
-  );
-}
-
 function TimelineItem({
-  classId,
   entry,
   isLast,
   totalEnrolled,
+  canReassign,
+  onReassign,
 }: {
-  classId: string;
   entry: TimelineEntry;
   isLast: boolean;
   totalEnrolled: number;
+  canReassign: boolean;
+  onReassign: (entry: TimelineEntry) => void;
 }) {
   const hasMeeting = Boolean(entry.meetingId);
   const isCompleted = entry.meetingStatus === "COMPLETED";
   const isScheduled = entry.meetingStatus === "SCHEDULED";
   const status = STATUS_BADGE[entry.meetingStatus] || STATUS_BADGE.SCHEDULED;
-  // Reassignment is only sensible before the meeting has actually started —
-  // matches the "already checked in, can't change tutor" guard enforced
-  // server-side in assignSubstituteForLessonPlan/cancelSubstitute.
-  const canReassign = !entry.checkInTime && !isCompleted;
 
   return (
     <div className="flex gap-3">
@@ -210,17 +89,30 @@ function TimelineItem({
         </p>
 
         <div className="mt-1 space-y-0.5">
-          <p className="text-muted-foreground text-xs">
-            Teacher:{" "}
-            <span className="font-medium text-foreground">
-              {entry.actualTeacherName || entry.assignedTeacherName}
-            </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <p className="text-muted-foreground text-xs">
+              Teacher:{" "}
+              <span className="font-medium text-foreground">
+                {entry.actualTeacherName || entry.assignedTeacherName}
+              </span>
+            </p>
             {entry.isSubstitute && (
-              <Badge variant="outline" className="ml-1 text-[10px]">
+              <Badge variant="outline" className="text-[10px]">
                 Substitute
               </Badge>
             )}
-          </p>
+            {canReassign && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-muted-foreground hover:text-foreground h-5 gap-1 px-1.5 text-[11px]"
+                onClick={() => onReassign(entry)}
+              >
+                <UserRoundCog className="size-3" />
+                {entry.isSubstitute ? "Kelola" : "Ganti Tutor"}
+              </Button>
+            )}
+          </div>
 
           {hasMeeting && (
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
@@ -293,16 +185,39 @@ function TimelineItem({
               Alasan: {entry.substituteReason}
             </p>
           )}
-
-          {canReassign && <ReassignTutorControl classId={classId} entry={entry} />}
         </div>
       </div>
     </div>
   );
 }
 
-export function ClassTimeline({ classId }: { classId: string }) {
+export function ClassTimeline({
+  classId,
+  classDisplayName,
+}: {
+  classId: string;
+  classDisplayName?: string;
+}) {
   const { data, isLoading } = useClassTimeline(classId);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [target, setTarget] = useState<ReassignTutorTarget | null>(null);
+
+  function openReassignDialog(entry: TimelineEntry) {
+    setTarget({
+      classId,
+      lessonPlanId: entry.lessonPlanId,
+      scheduledDate: entry.scheduledDate,
+      meetingId: entry.meetingId,
+      className: classDisplayName ?? "Kelas ini",
+      contextLabel: entry.topic,
+      currentTeacherId: entry.assignedTeacherId,
+      currentTeacherName: entry.assignedTeacherName,
+      isSubstitute: entry.isSubstitute,
+      substituteTeacherName: entry.actualTeacherName,
+      substituteReason: entry.substituteReason,
+    });
+    setDialogOpen(true);
+  }
 
   if (isLoading) {
     return (
@@ -331,15 +246,25 @@ export function ClassTimeline({ classId }: { classId: string }) {
       <p className="text-muted-foreground mb-3 text-xs">
         Total {data.totalEnrolled} siswa terdaftar · {data.timeline.length} lesson plan
       </p>
-      {data.timeline.map((entry, i) => (
-        <TimelineItem
-          key={entry.lessonPlanId}
-          classId={classId}
-          entry={entry}
-          isLast={i === data.timeline.length - 1}
-          totalEnrolled={data.totalEnrolled}
-        />
-      ))}
+      {data.timeline.map((entry, i) => {
+        // Reassignment is only sensible before the meeting has actually
+        // started — matches the "already checked in, can't change tutor"
+        // guard enforced server-side in
+        // assignSubstituteForLessonPlan/cancelSubstitute.
+        const canReassign = !entry.checkInTime && entry.meetingStatus !== "COMPLETED";
+        return (
+          <TimelineItem
+            key={entry.lessonPlanId}
+            entry={entry}
+            isLast={i === data.timeline.length - 1}
+            totalEnrolled={data.totalEnrolled}
+            canReassign={canReassign}
+            onReassign={openReassignDialog}
+          />
+        );
+      })}
+
+      <ReassignTutorDialog open={dialogOpen} onOpenChange={setDialogOpen} target={target} />
     </div>
   );
 }

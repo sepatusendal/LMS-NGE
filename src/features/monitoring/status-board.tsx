@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle, Clock, FileWarning } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, FileWarning, UserRoundCog } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -22,6 +23,10 @@ import {
 } from "@/components/ui/select";
 import { useSchools } from "@/features/schools/use-schools";
 import { useTeachers } from "@/features/teachers/use-teachers";
+import {
+  ReassignTutorDialog,
+  type ReassignTutorTarget,
+} from "@/features/substitutes/reassign-tutor-dialog";
 import { useStatusBoard } from "./use-monitoring";
 import type { ClassStatusRow } from "./schema";
 
@@ -41,10 +46,29 @@ export function StatusBoard() {
   const [date, setDate] = useState(todayStr());
   const [schoolId, setSchoolId] = useState("");
   const [teacherId, setTeacherId] = useState("");
+  const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
+  const [reassignTarget, setReassignTarget] = useState<ReassignTutorTarget | null>(null);
 
   const { data: schools } = useSchools();
   const { data: teachers } = useTeachers();
   const { data: rows, isLoading } = useStatusBoard(date);
+
+  function openReassignDialog(r: ClassStatusRow) {
+    setReassignTarget({
+      classId: r.classId,
+      lessonPlanId: r.lessonPlanId!,
+      scheduledDate: date,
+      meetingId: r.meetingId,
+      className: r.className,
+      contextLabel: r.schoolName,
+      currentTeacherId: r.teacherId,
+      currentTeacherName: r.teacherName,
+      isSubstitute: r.isSubstitute,
+      substituteTeacherName: r.substituteTeacherName,
+      substituteReason: r.substituteReason,
+    });
+    setReassignDialogOpen(true);
+  }
 
   const filtered = useMemo(() => {
     if (!rows) return [];
@@ -175,11 +199,14 @@ export function StatusBoard() {
                     <TableHead>Jadwal</TableHead>
                     <TableHead>Hadir</TableHead>
                     <TableHead className="text-right">Status</TableHead>
+                    <TableHead className="w-10" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map((r) => {
                     const status = STATUS_LABEL[r.meetingStatus];
+                    const canReassign =
+                      !r.isHoliday && r.lessonPlanId && r.meetingStatus === "not_started";
                     return (
                       <TableRow key={r.lessonPlanId ?? `${r.classId}-no-lp`}>
                         <TableCell className="font-medium whitespace-nowrap">
@@ -237,6 +264,18 @@ export function StatusBoard() {
                             )}
                           </div>
                         </TableCell>
+                        <TableCell className="text-right">
+                          {canReassign && (
+                            <Button
+                              size="icon-sm"
+                              variant="ghost"
+                              title="Ganti tutor untuk tanggal ini"
+                              onClick={() => openReassignDialog(r)}
+                            >
+                              <UserRoundCog className="size-4" />
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -252,6 +291,12 @@ export function StatusBoard() {
           )}
         </CardContent>
       </Card>
+
+      <ReassignTutorDialog
+        open={reassignDialogOpen}
+        onOpenChange={setReassignDialogOpen}
+        target={reassignTarget}
+      />
     </div>
   );
 }

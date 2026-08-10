@@ -165,7 +165,7 @@ export default function ClassDetailPage() {
 
       <div className="space-y-3">
         <h2 className="font-medium">Timeline Kelas</h2>
-        <ClassTimeline classId={classItem.id} />
+        <ClassTimeline classId={classItem.id} classDisplayName={classItem.name} />
       </div>
     </div>
   );

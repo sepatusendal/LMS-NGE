@@ -18,6 +18,8 @@ export interface ClassStatusRow {
   checkOutTime: string | null;
   isLate: boolean | null;
   isSubstitute: boolean;
+  substituteTeacherName: string | null;
+  substituteReason: string | null;
   attendanceTotal: number;
   attendancePresent: number;
   isOverdueCheckIn: boolean;
