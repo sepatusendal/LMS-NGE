@@ -33,6 +33,60 @@ function ineligibleReason(r: ClassStatusRow): string | null {
   return null;
 }
 
+function ClassRow({
+  row,
+  checked,
+  onCheckedChange,
+}: {
+  row: ClassStatusRow;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  // Scoped per-row so cancelling invalidates *this* class's own caches —
+  // a single hook call shared across all rows would only ever target
+  // whichever class happened to be first in the list.
+  const cancel = useCancelSubstitute(row.classId);
+  const reasonBlocked = ineligibleReason(row);
+
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm">
+      <label className="flex min-w-0 flex-1 items-center gap-2">
+        <Checkbox
+          checked={checked}
+          disabled={Boolean(reasonBlocked)}
+          onCheckedChange={(v) => onCheckedChange(Boolean(v))}
+        />
+        <span className="min-w-0">
+          <span className="font-medium">{row.className}</span>{" "}
+          <span className="text-muted-foreground">
+            · {row.schoolName} · {row.scheduleStartTime}-{row.scheduleEndTime}
+          </span>
+        </span>
+      </label>
+      {row.isSubstitute ? (
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Badge variant="outline" className="text-[10px]">
+            Sub: {row.substituteTeacherName}
+          </Badge>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-5 px-1.5 text-[10px]"
+            disabled={cancel.isPending || !row.meetingId}
+            onClick={() => row.meetingId && cancel.mutate(row.meetingId)}
+          >
+            Batalkan
+          </Button>
+        </div>
+      ) : reasonBlocked ? (
+        <Badge variant="secondary" className="shrink-0 text-[10px]">
+          {reasonBlocked}
+        </Badge>
+      ) : null}
+    </div>
+  );
+}
+
 export function TeacherAbsenceDialog({
   open,
   onOpenChange,
@@ -50,7 +104,6 @@ export function TeacherAbsenceDialog({
 }) {
   const { data: teachers } = useTeachers();
   const markAbsent = useMarkTeacherAbsent();
-  const cancel = useCancelSubstitute(classes[0]?.classId ?? "");
 
   const [substituteTeacherId, setSubstituteTeacherId] = useState("");
   const [reason, setReason] = useState("");
@@ -103,51 +156,16 @@ export function TeacherAbsenceDialog({
 
         <div className="space-y-4">
           <div className="max-h-56 space-y-1.5 overflow-y-auto rounded-lg border p-2">
-            {classes.map((r) => {
-              const reasonBlocked = ineligibleReason(r);
-              return (
-                <div
-                  key={r.classId}
-                  className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm"
-                >
-                  <label className="flex min-w-0 flex-1 items-center gap-2">
-                    <Checkbox
-                      checked={Boolean(selected[r.classId])}
-                      disabled={Boolean(reasonBlocked)}
-                      onCheckedChange={(checked) =>
-                        setSelected((prev) => ({ ...prev, [r.classId]: Boolean(checked) }))
-                      }
-                    />
-                    <span className="min-w-0">
-                      <span className="font-medium">{r.className}</span>{" "}
-                      <span className="text-muted-foreground">
-                        · {r.schoolName} · {r.scheduleStartTime}-{r.scheduleEndTime}
-                      </span>
-                    </span>
-                  </label>
-                  {r.isSubstitute ? (
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <Badge variant="outline" className="text-[10px]">
-                        Sub: {r.substituteTeacherName}
-                      </Badge>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-5 px-1.5 text-[10px]"
-                        disabled={cancel.isPending || !r.meetingId}
-                        onClick={() => r.meetingId && cancel.mutate(r.meetingId)}
-                      >
-                        Batalkan
-                      </Button>
-                    </div>
-                  ) : reasonBlocked ? (
-                    <Badge variant="secondary" className="shrink-0 text-[10px]">
-                      {reasonBlocked}
-                    </Badge>
-                  ) : null}
-                </div>
-              );
-            })}
+            {classes.map((r) => (
+              <ClassRow
+                key={r.classId}
+                row={r}
+                checked={Boolean(selected[r.classId])}
+                onCheckedChange={(checked) =>
+                  setSelected((prev) => ({ ...prev, [r.classId]: checked }))
+                }
+              />
+            ))}
           </div>
 
           <div className="space-y-2">

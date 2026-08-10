@@ -47,10 +47,18 @@ export function TeacherDayList({
   /** Cap the number of teachers shown (e.g. for a compact dashboard panel). */
   limit?: number;
 }) {
-  const [activeTeacher, setActiveTeacher] = useState<TeacherGroup | null>(null);
+  // Track just the id, not the whole group object — deriving the group
+  // fresh from `groups` on every render (instead of freezing a snapshot at
+  // click time) means the open dialog picks up live data after a mutation
+  // (e.g. cancelling one class's substitute) invalidates and refetches the
+  // status board, rather than showing stale state until it's reopened.
+  const [activeTeacherId, setActiveTeacherId] = useState<string | null>(null);
 
   const groups = useMemo(() => groupByTeacher(rows), [rows]);
   const visibleGroups = limit ? groups.slice(0, limit) : groups;
+  const activeTeacher = activeTeacherId
+    ? (groups.find((g) => g.teacherId === activeTeacherId) ?? null)
+    : null;
 
   if (isLoading) {
     return <p className="text-muted-foreground text-sm">Memuat data...</p>;
@@ -91,7 +99,7 @@ export function TeacherDayList({
               className="shrink-0 gap-1.5"
               disabled={g.allHoliday}
               title={g.allHoliday ? "Semua kelas guru ini libur di tanggal ini" : undefined}
-              onClick={() => setActiveTeacher(g)}
+              onClick={() => setActiveTeacherId(g.teacherId)}
             >
               <UserRoundX className="size-3.5" />
               Tandai Absen
@@ -108,7 +116,7 @@ export function TeacherDayList({
       {activeTeacher && (
         <TeacherAbsenceDialog
           open={Boolean(activeTeacher)}
-          onOpenChange={(open) => !open && setActiveTeacher(null)}
+          onOpenChange={(open) => !open && setActiveTeacherId(null)}
           date={date}
           teacherId={activeTeacher.teacherId}
           teacherName={activeTeacher.teacherName}
