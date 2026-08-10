@@ -44,7 +44,7 @@ export function HolidayFormDialog({
 
   useEffect(() => {
     if (open) {
-      reset({ date: "", name: "", schoolId: null });
+      reset({ dateFrom: "", dateTo: "", name: "", schoolId: null });
     }
   }, [open, reset]);
 
@@ -65,13 +65,25 @@ export function HolidayFormDialog({
           <DialogTitle>Tambah Hari Libur</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="date">Tanggal</Label>
-            <Input id="date" type="date" {...register("date")} />
-            {errors.date && (
-              <p className="text-destructive text-sm">{errors.date.message}</p>
-            )}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="dateFrom">Tanggal Mulai</Label>
+              <Input id="dateFrom" type="date" {...register("dateFrom")} />
+              {errors.dateFrom && (
+                <p className="text-destructive text-sm">{errors.dateFrom.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dateTo">Tanggal Selesai</Label>
+              <Input id="dateTo" type="date" {...register("dateTo")} />
+              {errors.dateTo && (
+                <p className="text-destructive text-sm">{errors.dateTo.message}</p>
+              )}
+            </div>
           </div>
+          <p className="text-muted-foreground -mt-2 text-xs">
+            Untuk libur satu hari, isi tanggal mulai dan selesai sama.
+          </p>
           <div className="space-y-2">
             <Label htmlFor="name">Nama Hari Libur</Label>
             <Input

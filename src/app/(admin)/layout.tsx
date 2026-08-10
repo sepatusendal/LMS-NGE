@@ -22,7 +22,7 @@ import type { BottomNavItem } from "@/components/shared/bottom-nav";
 const ADMIN_NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   {
-    label: "Sekolah",
+    label: "Management",
     icon: Building2,
     children: [
       { href: "/schools", label: "Daftar Sekolah", icon: Building2 },
@@ -42,7 +42,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
 
 const MOBILE_NAV: BottomNavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/schools", label: "Sekolah", icon: Building2 },
+  { href: "/schools", label: "Management", icon: Building2 },
   { href: "/teachers", label: "Teacher", icon: GraduationCap },
   { href: "/curriculum", label: "Kurikulum", icon: ListChecks },
   { href: "/settings", label: "Atur", icon: Settings },

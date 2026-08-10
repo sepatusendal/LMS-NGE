@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { dateRange } from "./schema";
 import type { Holiday, HolidayInput } from "./schema";
 
 interface HolidayRow {
@@ -36,16 +37,24 @@ export async function fetchHolidays(): Promise<Holiday[]> {
   return (data as unknown as HolidayRow[]).map(mapRow);
 }
 
+/** Creates one holiday row per date in [dateFrom, dateTo] — school holidays
+ * are usually a contiguous stretch (cuti bersama, libur semester), and the
+ * rest of the app (isHoliday/fetchHolidaySchoolsForDate) checks a single
+ * date at a time, so a range is just N single-date rows sharing a name. */
 export async function createHoliday(input: HolidayInput): Promise<void> {
   const supabase = createClient();
-  const { error } = await supabase.from("holidays").insert({
-    date: input.date,
+  const dates = dateRange(input.dateFrom, input.dateTo);
+  const rows = dates.map((date) => ({
+    date,
     name: input.name,
     schoolId: input.schoolId,
-  });
+  }));
+  const { error } = await supabase.from("holidays").insert(rows);
   if (error) {
     if (error.code === "23505") {
-      throw new Error("Sudah ada hari libur untuk tanggal dan sekolah ini");
+      throw new Error(
+        "Sudah ada hari libur untuk salah satu tanggal di rentang ini dan sekolah ini",
+      );
     }
     throw error;
   }

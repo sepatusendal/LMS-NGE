@@ -146,32 +146,43 @@ export function LessonPlanForm({
         <Section title="Info Dasar">
         <div className="space-y-2">
           <Label>Kelas</Label>
-          <Controller
-            control={control}
-            name="classId"
-            render={({ field }) => (
-              <Select
-                items={classes?.map((c) => ({
-                  value: c.id,
-                  label: `${c.name} — ${c.schoolName} · ${formatScheduleSlots(c.scheduleSlots)}`,
-                }))}
-                value={field.value}
-                onValueChange={field.onChange}
-                disabled={isEdit}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih kelas" />
-                </SelectTrigger>
-                <SelectContent>
-                  {classes?.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name} — {c.schoolName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
+          {isEdit ? (
+            // Editing/viewing an existing plan: classId is immutable, and
+            // the viewer (another teacher, or an admin with no "my classes"
+            // at all) may not have this class in their own list — render
+            // the plan's own className instead of relying on a Select whose
+            // items may not include this class, which used to fall back to
+            // showing the raw classId UUID in the trigger.
+            <p className="border-input bg-muted/40 rounded-lg border px-2.5 py-2 text-sm">
+              {lessonPlan?.className ?? "-"}
+            </p>
+          ) : (
+            <Controller
+              control={control}
+              name="classId"
+              render={({ field }) => (
+                <Select
+                  items={classes?.map((c) => ({
+                    value: c.id,
+                    label: `${c.name} — ${c.schoolName} · ${formatScheduleSlots(c.scheduleSlots)}`,
+                  }))}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih kelas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classes?.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} — {c.schoolName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          )}
           {errors.classId && (
             <p className="text-destructive text-sm">{errors.classId.message}</p>
           )}
