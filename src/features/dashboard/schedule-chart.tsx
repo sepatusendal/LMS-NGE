@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Clock, MapPin } from "lucide-react";
+import { Clock, MapPin, CalendarRange } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -41,9 +41,12 @@ export function ScheduleChart() {
   }, [classes, selectedDay]);
 
   return (
-    <Card className="border-l-4" style={{ borderLeftColor: "var(--chart-2)" }}>
+    <Card>
       <CardHeader className="flex-row items-center justify-between pb-3">
-        <CardTitle className="text-sm">Distribusi Jadwal Mingguan</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <CalendarRange className="size-4" style={{ color: "var(--chart-2)" }} />
+          Distribusi Jadwal Mingguan
+        </CardTitle>
         <span className="text-muted-foreground flex items-center gap-1 text-[11px]">
           <span className="bg-primary size-2 rounded-full" />
           hari ini

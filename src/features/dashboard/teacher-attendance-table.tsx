@@ -17,7 +17,7 @@ export function TeacherAttendanceTable({ days = 30 }: { days?: number }) {
   const { data, isLoading } = useTeacherAttendance(days);
 
   return (
-    <Card className="border-l-4" style={{ borderLeftColor: "var(--chart-5)" }}>
+    <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <UserCheck className="size-4" style={{ color: "var(--chart-5)" }} />

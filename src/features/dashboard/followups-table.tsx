@@ -16,7 +16,7 @@ export function FollowUpsTable() {
   const { data, isLoading } = useOpenFollowUps();
 
   return (
-    <Card className="border-l-4" style={{ borderLeftColor: "var(--status-warning)" }}>
+    <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <UserRoundSearch className="size-4" style={{ color: "var(--status-warning)" }} />

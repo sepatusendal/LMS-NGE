@@ -20,7 +20,7 @@ export function ReportNotesTable() {
   const { data, isLoading } = useReportNotes();
 
   return (
-    <Card className="border-l-4" style={{ borderLeftColor: "var(--chart-1)" }}>
+    <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <NotebookPen className="size-4" style={{ color: "var(--chart-1)" }} />

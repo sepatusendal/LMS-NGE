@@ -82,7 +82,7 @@ export function ComplianceAlert() {
   const isLoading = classesLoading || plansLoading;
 
   return (
-    <Card className="border-l-4" style={{ borderLeftColor: "var(--status-critical)" }}>
+    <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <AlertTriangle className="text-destructive size-4" />

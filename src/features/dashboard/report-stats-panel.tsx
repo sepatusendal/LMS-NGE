@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { TrendingDown, TrendingUp, Minus, NotebookText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useReportStats } from "./use-dashboard";
 
@@ -41,9 +41,12 @@ export function ReportStatsPanel({ days = 14 }: { days?: number }) {
   const { data, isLoading } = useReportStats(days);
 
   return (
-    <Card className="border-l-4" style={{ borderLeftColor: "var(--status-good)" }}>
+    <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm">Daily Teaching Report ({days} hari terakhir)</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <NotebookText className="size-4" style={{ color: "var(--status-good)" }} />
+          Daily Teaching Report ({days} hari terakhir)
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading || !data ? (

@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle, Clock, FileWarning, UserRoundCog } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, CheckCircle, Clock, FileWarning, UserRoundCog, UserRoundX } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -167,7 +168,7 @@ export function StatusBoard() {
       )}
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="flex-row items-center justify-between pb-3">
           <CardTitle className="text-sm">
             Status Kelas —{" "}
             {new Date(date).toLocaleDateString("id-ID", {
@@ -177,6 +178,13 @@ export function StatusBoard() {
               year: "numeric",
             })}
           </CardTitle>
+          <Link
+            href="/substitutes"
+            className="text-muted-foreground hover:text-foreground flex shrink-0 items-center gap-1 text-xs"
+          >
+            <UserRoundX className="size-3.5" />
+            Kelola Guru Pengganti
+          </Link>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -199,7 +207,7 @@ export function StatusBoard() {
                     <TableHead>Jadwal</TableHead>
                     <TableHead>Hadir</TableHead>
                     <TableHead className="text-right">Status</TableHead>
-                    <TableHead className="w-10" />
+                    <TableHead className="w-12 pl-3" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -264,7 +272,7 @@ export function StatusBoard() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="pl-3 text-right">
                           {canReassign && (
                             <Button
                               size="icon-sm"
