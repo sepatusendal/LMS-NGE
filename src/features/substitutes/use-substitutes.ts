@@ -16,12 +16,24 @@ function timelineKey(classId: string) {
   return ["class-timeline", classId];
 }
 
+function statusBoardKey(date: string) {
+  return ["monitoring-status-board", date];
+}
+
 export function useCurrentMeetingInfo(classId: string) {
   return useQuery({
     queryKey: meetingInfoKey(classId),
     queryFn: () => fetchCurrentMeetingInfo(classId),
     enabled: Boolean(classId),
   });
+}
+
+// Status board data is keyed by date (["monitoring-status-board", date]) —
+// mutations here don't always know which date's board is currently open on
+// screen, so invalidate every status-board query rather than one specific
+// date; it's a cheap refetch and guarantees the board never goes stale.
+function invalidateStatusBoards(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ["monitoring-status-board"] });
 }
 
 export function useAssignSubstitute(classId: string) {
@@ -32,6 +44,7 @@ export function useAssignSubstitute(classId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: meetingInfoKey(classId) });
       queryClient.invalidateQueries({ queryKey: timelineKey(classId) });
+      invalidateStatusBoards(queryClient);
       toast.success("Substitute teacher berhasil ditugaskan");
     },
     onError: (error) =>
@@ -41,7 +54,7 @@ export function useAssignSubstitute(classId: string) {
 
 /** Assigns a one-off substitute for an arbitrary meeting/date (not just
  * "today's" meeting) — used by the admin-facing "Ganti Tutor" control on
- * each Class Timeline row. */
+ * each Class Timeline row and the Status Board's per-class action. */
 export function useAssignSubstituteForLessonPlan(classId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -54,6 +67,7 @@ export function useAssignSubstituteForLessonPlan(classId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: meetingInfoKey(classId) });
       queryClient.invalidateQueries({ queryKey: timelineKey(classId) });
+      invalidateStatusBoards(queryClient);
       toast.success("Tutor pengganti berhasil ditugaskan");
     },
     onError: (error) =>
@@ -68,10 +82,54 @@ export function useCancelSubstitute(classId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: meetingInfoKey(classId) });
       queryClient.invalidateQueries({ queryKey: timelineKey(classId) });
+      invalidateStatusBoards(queryClient);
       toast.success("Substitute dibatalkan");
     },
     onError: (error) =>
       toast.error("Gagal membatalkan substitute", { description: error.message }),
+  });
+}
+
+export interface TeacherAbsenceAssignment {
+  classId: string;
+  lessonPlanId: string;
+  scheduledDate: string;
+}
+
+/** Marks a teacher absent for a date by assigning the same substitute +
+ * reason to every one of their classes that day in one action — the
+ * teacher-centric counterpart to the single-class useAssignSubstituteForLessonPlan
+ * above ("Latifa is out Monday" should be one action, not one per class). */
+export function useMarkTeacherAbsent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      assignments: TeacherAbsenceAssignment[];
+      substituteTeacherId: string;
+      reason: string;
+    }) => {
+      await Promise.all(
+        input.assignments.map((a) =>
+          assignSubstituteForLessonPlan({
+            classId: a.classId,
+            lessonPlanId: a.lessonPlanId,
+            scheduledDate: a.scheduledDate,
+            substituteTeacherId: input.substituteTeacherId,
+            reason: input.reason,
+          }),
+        ),
+      );
+    },
+    onSuccess: (_, variables) => {
+      variables.assignments.forEach((a) => {
+        queryClient.invalidateQueries({ queryKey: meetingInfoKey(a.classId) });
+        queryClient.invalidateQueries({ queryKey: timelineKey(a.classId) });
+      });
+      invalidateStatusBoards(queryClient);
+      toast.success("Guru pengganti berhasil ditugaskan ke semua kelas");
+    },
+    onError: (error) =>
+      toast.error("Gagal menandai guru absen", { description: error.message }),
   });
 }
 

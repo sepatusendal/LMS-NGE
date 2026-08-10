@@ -13,6 +13,7 @@ import {
   FileText,
   FileHeart,
   ShieldUser,
+  UserRoundX,
 } from "lucide-react";
 import { AppSidebar, type NavItem } from "@/components/shared/app-sidebar";
 import { MobileTopbar } from "@/components/shared/mobile-topbar";
@@ -21,6 +22,7 @@ import type { BottomNavItem } from "@/components/shared/bottom-nav";
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/substitutes", label: "Guru Pengganti", icon: UserRoundX },
   {
     label: "Management",
     icon: Building2,
@@ -42,9 +44,9 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
 
 const MOBILE_NAV: BottomNavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/substitutes", label: "Pengganti", icon: UserRoundX },
   { href: "/schools", label: "Management", icon: Building2 },
   { href: "/teachers", label: "Teacher", icon: GraduationCap },
-  { href: "/curriculum", label: "Kurikulum", icon: ListChecks },
   { href: "/settings", label: "Atur", icon: Settings },
 ];
 

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { ComplianceAlert } from "@/features/lesson-plans/compliance-alert";
+import { TodayTeachersPanel } from "@/features/substitutes/today-teachers-panel";
 import { StatusBoard } from "@/features/monitoring/status-board";
 import { AnalyticsCharts } from "@/features/monitoring/analytics-charts";
 import { OverviewStats } from "@/features/dashboard/overview-stats";
@@ -42,6 +43,8 @@ export default function AdminDashboardPage() {
       />
 
       <OverviewStats />
+
+      <TodayTeachersPanel />
 
       <StatusBoard />
 
