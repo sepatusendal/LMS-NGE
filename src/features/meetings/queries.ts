@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { isHoliday, fetchHolidaySchoolsForDate } from "@/features/holidays/queries";
 import type { TodayClass, CheckInInput, CheckOutInput } from "./schema";
 
 function getTodayDayOfWeek(): number {
@@ -57,16 +58,26 @@ export async function startClass(
 
   const { data: lpRow } = await supabase
     .from("lesson_plans")
-    .select("classId, classes(class_schedule_slots(dayOfWeek, startTime))")
+    .select("classId, classes(schoolId, class_schedule_slots(dayOfWeek, startTime))")
     .eq("id", lessonPlanId)
     .single();
   type SlotRow = { dayOfWeek: number; startTime: string };
   const lp = lpRow as {
     classId: string;
-    classes: { class_schedule_slots: SlotRow[] } | { class_schedule_slots: SlotRow[] }[] | null;
+    classes:
+      | { schoolId: string; class_schedule_slots: SlotRow[] }
+      | { schoolId: string; class_schedule_slots: SlotRow[] }[]
+      | null;
   } | null;
   const cls = toOne(lp?.classes);
   const todaySlot = cls?.class_schedule_slots.find((s) => s.dayOfWeek === today);
+
+  if (cls?.schoolId) {
+    const todayDateStr = new Date().toISOString().slice(0, 10);
+    if (await isHoliday(todayDateStr, cls.schoolId)) {
+      throw new Error("Hari ini hari libur, tidak bisa mulai kelas");
+    }
+  }
 
   const { data: override } = lp?.classId
     ? await supabase
@@ -144,6 +155,7 @@ interface ClassRow {
   room: string | null;
   scheduleDaysOfWeek: number[];
   class_schedule_slots: { dayOfWeek: number; startTime: string; endTime: string }[];
+  schoolId: string;
   schools: { name: string } | null;
   // Resolved for `today` after fetch — the class's own slot for today, before
   // any override is layered on top.
@@ -194,7 +206,7 @@ function toOne<T>(rel: T | T[] | null | undefined): T | null {
 }
 
 const CLASS_SELECT = `
-  id, name, room, scheduleDaysOfWeek,
+  id, name, room, scheduleDaysOfWeek, schoolId,
   class_schedule_slots(dayOfWeek, startTime, endTime),
   schools(name)
 `;
@@ -293,7 +305,17 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
 
   if (todayClasses.length === 0) return [];
 
-  const classIds = todayClasses.map((c) => c.id);
+  // Drop classes whose school is on holiday today (school-specific or
+  // global — see Holiday.schoolId) so a teacher doesn't see a class to
+  // teach on a non-teaching day.
+  const holidaySchoolIds = await fetchHolidaySchoolsForDate(
+    todayDateStr,
+    todayClasses.map((c) => c.schoolId),
+  );
+  const nonHolidayClasses = todayClasses.filter((c) => !holidaySchoolIds.has(c.schoolId));
+  if (nonHolidayClasses.length === 0) return [];
+
+  const classIds = nonHolidayClasses.map((c) => c.id);
 
   const { data: lessonPlans, error: lpErr } = await supabase
     .from("lesson_plans")
@@ -350,7 +372,7 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
     enrolledCountByClass.set(e.classId, (enrolledCountByClass.get(e.classId) ?? 0) + 1);
   });
 
-  return todayClasses.map((cls): TodayClass => {
+  return nonHolidayClasses.map((cls): TodayClass => {
     const plans = lpByClass.get(cls.id) || [];
     const sorted = [...plans].sort((a, b) => a.meetingNumber - b.meetingNumber);
 

@@ -22,6 +22,7 @@ export interface ClassStatusRow {
   attendancePresent: number;
   isOverdueCheckIn: boolean;
   isReportMissing: boolean;
+  isHoliday: boolean;
 }
 
 export interface AnalyticsPoint {

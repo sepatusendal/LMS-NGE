@@ -57,7 +57,7 @@ export function StatusBoard() {
 
   const overdueCount = filtered.filter((r) => r.isOverdueCheckIn).length;
   const missingReportCount = filtered.filter((r) => r.isReportMissing).length;
-  const missingLpCount = filtered.filter((r) => !r.hasLessonPlan).length;
+  const missingLpCount = filtered.filter((r) => !r.isHoliday && !r.hasLessonPlan).length;
 
   return (
     <div className="space-y-4">
@@ -204,28 +204,36 @@ export function StatusBoard() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex flex-wrap justify-end gap-1">
-                            {!r.hasLessonPlan && (
-                              <Badge variant="destructive" className="text-[10px]">
-                                Belum ada lesson plan
-                              </Badge>
-                            )}
-                            <Badge variant={status.variant} className="text-[10px]">
-                              {status.label}
-                            </Badge>
-                            {r.isOverdueCheckIn && (
-                              <Badge variant="destructive" className="text-[10px]">
-                                Belum check-in
-                              </Badge>
-                            )}
-                            {r.isReportMissing && (
+                            {r.isHoliday ? (
                               <Badge variant="secondary" className="text-[10px]">
-                                Report kosong
+                                Libur
                               </Badge>
-                            )}
-                            {r.isLate && (
-                              <Badge variant="destructive" className="text-[10px]">
-                                Terlambat
-                              </Badge>
+                            ) : (
+                              <>
+                                {!r.hasLessonPlan && (
+                                  <Badge variant="destructive" className="text-[10px]">
+                                    Belum ada lesson plan
+                                  </Badge>
+                                )}
+                                <Badge variant={status.variant} className="text-[10px]">
+                                  {status.label}
+                                </Badge>
+                                {r.isOverdueCheckIn && (
+                                  <Badge variant="destructive" className="text-[10px]">
+                                    Belum check-in
+                                  </Badge>
+                                )}
+                                {r.isReportMissing && (
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    Report kosong
+                                  </Badge>
+                                )}
+                                {r.isLate && (
+                                  <Badge variant="destructive" className="text-[10px]">
+                                    Terlambat
+                                  </Badge>
+                                )}
+                              </>
                             )}
                           </div>
                         </TableCell>

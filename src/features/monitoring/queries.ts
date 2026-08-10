@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { fetchHolidaySchoolsForDate } from "@/features/holidays/queries";
 import type { AnalyticsPoint, ClassStatusRow } from "./schema";
 
 const LATE_GRACE_MINUTES = 10;
@@ -92,6 +93,11 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
   );
   if (classesToday.length === 0) return [];
 
+  const holidaySchoolIds = await fetchHolidaySchoolsForDate(
+    date,
+    classesToday.map((c) => c.schoolId),
+  );
+
   const classIds = classesToday.map((c) => c.id);
 
   const { data: lessonPlans, error: lpErr } = await supabase
@@ -154,9 +160,12 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
       const [hour, minute] = scheduleStartTime.split(":").map(Number);
       const [y, m, d] = date.split("-").map(Number);
       const scheduledStart = new Date(y, m - 1, d, hour, minute).getTime();
+      const isHoliday = holidaySchoolIds.has(cls.schoolId);
       const isOverdueCheckIn =
-        meetingStatus === "not_started" && now > scheduledStart + LATE_GRACE_MINUTES * 60_000;
-      const isReportMissing = meetingStatus === "checked_out";
+        !isHoliday &&
+        meetingStatus === "not_started" &&
+        now > scheduledStart + LATE_GRACE_MINUTES * 60_000;
+      const isReportMissing = !isHoliday && meetingStatus === "checked_out";
 
       return {
         classId: cls.id,
@@ -171,7 +180,7 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
         lessonPlanId: lp?.id ?? null,
         meetingNumber: lp?.meetingNumber ?? 0,
         topic: lp?.topic ?? "",
-        hasLessonPlan: Boolean(lp),
+        hasLessonPlan: isHoliday ? true : Boolean(lp),
         meetingId: meeting?.id ?? null,
         meetingStatus,
         checkInTime: checkIn?.checkInTime ?? null,
@@ -185,6 +194,7 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
           .length,
         isOverdueCheckIn,
         isReportMissing,
+        isHoliday,
       };
     })
     .sort((a, b) => a.scheduleStartTime.localeCompare(b.scheduleStartTime));

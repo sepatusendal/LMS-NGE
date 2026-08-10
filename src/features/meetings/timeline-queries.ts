@@ -7,6 +7,7 @@ export interface TimelineEntry {
   topic: string;
   meetingId: string | null;
   meetingStatus: string;
+  assignedTeacherId: string | null;
   assignedTeacherName: string;
   actualTeacherName: string | null;
   isSubstitute: boolean;
@@ -116,6 +117,7 @@ export async function fetchClassTimeline(classId: string): Promise<{
       topic: lp.topic,
       meetingId: meeting?.id ?? null,
       meetingStatus: meeting?.status ?? "SCHEDULED",
+      assignedTeacherId: meeting?.assignedTeacherId ?? null,
       assignedTeacherName: assignedTeacher?.users?.fullName ?? "-",
       actualTeacherName: actualTeacher?.users?.fullName ?? null,
       isSubstitute: Boolean(

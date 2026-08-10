@@ -6,6 +6,17 @@ function toOne<T>(rel: T | T[] | null | undefined): T | null {
   return Array.isArray(rel) ? (rel[0] ?? null) : rel;
 }
 
+function dayOfWeek(dateStr: string): number {
+  // Parse as a local calendar date (no time component) rather than UTC
+  // midnight, which can roll to the wrong weekday depending on timezone.
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).getDay();
+}
+
+function todayDateStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 interface LessonPlanRow {
   id: string;
   meetingNumber: number;
@@ -40,17 +51,24 @@ async function resolveCurrentLessonPlan(classId: string): Promise<LessonPlanRow 
   return sorted.find((p) => !completedIds.has(p.id)) ?? sorted[sorted.length - 1];
 }
 
-async function resolveEffectiveTeacherForToday(
+/** Resolves the class's normally-scheduled teacher for a given date — the
+ * class's own teacherId, unless a recurring per-weekday
+ * ClassScheduleOverride hands that weekday to someone else. Used as the
+ * "assignedTeacherId" baseline before layering a one-off substitute on top
+ * (assignSubstituteForLessonPlan below), so cancelling the substitute always
+ * reverts to this. */
+async function resolveEffectiveTeacherForDate(
   classId: string,
+  dateStr: string,
 ): Promise<{ teacherId: string; teacherName: string }> {
   const supabase = createClient();
-  const today = new Date().getDay();
+  const day = dayOfWeek(dateStr);
 
   const { data: override } = await supabase
     .from("class_schedule_overrides")
     .select("teachers(id, users(fullName))")
     .eq("classId", classId)
-    .eq("dayOfWeek", today)
+    .eq("dayOfWeek", day)
     .maybeSingle();
 
   const ov = override as { teachers: { id: string; users: { fullName: string } | null } | { id: string; users: { fullName: string } | null }[] | null } | null;
@@ -75,7 +93,7 @@ export async function fetchCurrentMeetingInfo(classId: string): Promise<CurrentM
   if (!plan) return null;
 
   const supabase = createClient();
-  const effective = await resolveEffectiveTeacherForToday(classId);
+  const effective = await resolveEffectiveTeacherForDate(classId, todayDateStr());
 
   const { data: meeting, error } = await supabase
     .from("meetings")
@@ -128,21 +146,26 @@ export async function fetchCurrentMeetingInfo(classId: string): Promise<CurrentM
   };
 }
 
-export async function assignSubstitute(input: {
+/** Core one-off substitute assignment, scoped to an explicit lessonPlanId —
+ * reusable for "today's meeting" (assignSubstitute below) as well as any
+ * other date's meeting (e.g. an admin picking a future meeting off the
+ * class timeline). Since it's keyed to a single Meeting/LessonPlan, the
+ * *next* meeting automatically falls back to the class's normal
+ * teacher/override — no separate "revert" step needed. */
+export async function assignSubstituteForLessonPlan(input: {
+  lessonPlanId: string;
   classId: string;
+  scheduledDate: string;
   substituteTeacherId: string;
   reason: string;
 }): Promise<void> {
-  const plan = await resolveCurrentLessonPlan(input.classId);
-  if (!plan) throw new Error("Kelas ini belum punya lesson plan");
-
   const supabase = createClient();
-  const effective = await resolveEffectiveTeacherForToday(input.classId);
+  const effective = await resolveEffectiveTeacherForDate(input.classId, input.scheduledDate);
 
   const { data: existing, error: findErr } = await supabase
     .from("meetings")
     .select("id, check_ins(id)")
-    .eq("lessonPlanId", plan.id)
+    .eq("lessonPlanId", input.lessonPlanId)
     .maybeSingle();
   if (findErr) throw findErr;
 
@@ -163,7 +186,7 @@ export async function assignSubstitute(input: {
   }
 
   const { error } = await supabase.from("meetings").insert({
-    lessonPlanId: plan.id,
+    lessonPlanId: input.lessonPlanId,
     assignedTeacherId: effective.teacherId,
     actualTeacherId: input.substituteTeacherId,
     substituteReason: input.reason,
@@ -181,6 +204,23 @@ export async function assignSubstitute(input: {
     }
     throw error;
   }
+}
+
+export async function assignSubstitute(input: {
+  classId: string;
+  substituteTeacherId: string;
+  reason: string;
+}): Promise<void> {
+  const plan = await resolveCurrentLessonPlan(input.classId);
+  if (!plan) throw new Error("Kelas ini belum punya lesson plan");
+
+  await assignSubstituteForLessonPlan({
+    lessonPlanId: plan.id,
+    classId: input.classId,
+    scheduledDate: plan.scheduledDate,
+    substituteTeacherId: input.substituteTeacherId,
+    reason: input.reason,
+  });
 }
 
 export async function cancelSubstitute(meetingId: string): Promise<void> {

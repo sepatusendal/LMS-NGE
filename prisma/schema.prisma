@@ -105,8 +105,31 @@ model School {
 
   students Student[]
   classes  Class[]
+  holidays Holiday[]
 
   @@map("schools")
+}
+
+/// Admin-managed non-teaching day. `schoolId = null` applies to every
+/// school (national holidays / cuti bersama); a set schoolId scopes it to
+/// just that school. Classes whose scheduleDaysOfWeek/override would
+/// otherwise meet on this date are treated as not meeting (see the
+/// holiday-aware resolution in meetings/queries.ts, monitoring/queries.ts,
+/// and lesson-plans/queries.ts, which all mirror the same "which classes
+/// meet on date X" logic independently).
+model Holiday {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  date      DateTime @db.Date
+  name      String
+  schoolId  String?  @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  school School? @relation(fields: [schoolId], references: [id])
+
+  @@unique([date, schoolId])
+  @@index([date])
+  @@map("holidays")
 }
 
 model Student {

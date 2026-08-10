@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { isHoliday } from "@/features/holidays/queries";
 import type { LessonPlan, LessonPlanInput, StageEntry } from "./schema";
 
 interface LessonPlanRow {
@@ -104,10 +105,27 @@ function toPayload(input: LessonPlanInput) {
   };
 }
 
+async function assertNotHoliday(classId: string, scheduledDate: string) {
+  const supabase = createClient();
+  const { data: cls, error } = await supabase
+    .from("classes")
+    .select("schoolId")
+    .eq("id", classId)
+    .single();
+  if (error) throw error;
+
+  const schoolId = (cls as { schoolId: string }).schoolId;
+  if (await isHoliday(scheduledDate, schoolId)) {
+    throw new Error("Tanggal ini adalah hari libur, tidak bisa membuat lesson plan");
+  }
+}
+
 export async function createLessonPlan(
   input: LessonPlanInput,
   createdByTeacherId: string,
 ) {
+  await assertNotHoliday(input.classId, input.scheduledDate);
+
   const supabase = createClient();
   const { error } = await supabase
     .from("lesson_plans")
@@ -116,6 +134,8 @@ export async function createLessonPlan(
 }
 
 export async function updateLessonPlan(id: string, input: LessonPlanInput) {
+  await assertNotHoliday(input.classId, input.scheduledDate);
+
   const supabase = createClient();
   const { error } = await supabase
     .from("lesson_plans")
