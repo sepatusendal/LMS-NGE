@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, NotebookPen } from "lucide-react";
 import { LessonPlanForm } from "@/features/lesson-plans/lesson-plan-form";
 import { useLessonPlan } from "@/features/lesson-plans/use-lesson-plans";
 import { useMyClasses } from "@/features/classes/use-my-classes";
@@ -29,9 +29,14 @@ export default function EditLessonPlanPage() {
       >
         ← Kembali ke Lesson Plan
       </Link>
-      <h1 className="text-xl font-semibold">
-        {isOwner ? "Edit Lesson Plan" : "Lihat Lesson Plan"}
-      </h1>
+      <div className="flex items-center gap-3">
+        <div className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-xl">
+          <NotebookPen className="size-5" />
+        </div>
+        <h1 className="text-xl font-semibold">
+          {isOwner ? "Edit Lesson Plan" : "Lihat Lesson Plan"}
+        </h1>
+      </div>
 
       {isError ? (
         <div className="flex flex-col items-center justify-center py-12">

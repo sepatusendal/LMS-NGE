@@ -4,7 +4,17 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, X, FileText } from "lucide-react";
+import {
+  Plus,
+  X,
+  FileText,
+  ClipboardList,
+  Target,
+  Wrench,
+  ListOrdered,
+  MessageCircleQuestion,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,19 +47,69 @@ import {
   useUpdateLessonPlan,
 } from "./use-lesson-plans";
 
+const SECTION_ACCENTS = {
+  blue: {
+    bar: "bg-chart-1",
+    iconBg: "bg-chart-1/10",
+    iconText: "text-chart-1",
+  },
+  green: {
+    bar: "bg-chart-3",
+    iconBg: "bg-chart-3/10",
+    iconText: "text-chart-3",
+  },
+  gold: {
+    bar: "bg-chart-4",
+    iconBg: "bg-chart-4/10",
+    iconText: "text-chart-4",
+  },
+  orange: {
+    bar: "bg-chart-2",
+    iconBg: "bg-chart-2/10",
+    iconText: "text-chart-2",
+  },
+  pink: {
+    bar: "bg-chart-5",
+    iconBg: "bg-chart-5/10",
+    iconText: "text-chart-5",
+  },
+} as const;
+
 function Section({
   title,
+  description,
+  icon: Icon,
+  accent,
   children,
 }: {
   title: string;
+  description?: string;
+  icon: LucideIcon;
+  accent: keyof typeof SECTION_ACCENTS;
   children: React.ReactNode;
 }) {
+  const colors = SECTION_ACCENTS[accent];
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm">{title}</CardTitle>
+    <Card className="gap-0 overflow-hidden py-0">
+      <div className={`h-1.5 w-full ${colors.bar}`} />
+      <CardHeader className="gap-0 border-b py-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${colors.iconBg}`}
+          >
+            <Icon className={`size-4.5 ${colors.iconText}`} />
+          </div>
+          <div>
+            <CardTitle className="text-sm">{title}</CardTitle>
+            {description && (
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {description}
+              </p>
+            )}
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">{children}</CardContent>
+      <CardContent className="space-y-4 py-4">{children}</CardContent>
     </Card>
   );
 }
@@ -164,14 +224,24 @@ export function LessonPlanForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pb-6">
       {readOnly && (
-        <div className="bg-muted text-muted-foreground rounded-lg px-4 py-3 text-sm">
-          Kamu hanya bisa melihat lesson plan ini. Hanya teacher yang
-          ditugaskan di kelas ini yang dapat mengedit.
+        <div className="bg-chart-4/10 text-foreground flex items-start gap-2.5 rounded-lg border border-chart-4/20 px-4 py-3 text-sm">
+          <span className="bg-chart-4/20 text-chart-4 mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
+            !
+          </span>
+          <span>
+            Kamu hanya bisa melihat lesson plan ini. Hanya teacher yang
+            ditugaskan di kelas ini yang dapat mengedit.
+          </span>
         </div>
       )}
 
       <fieldset disabled={readOnly} className="space-y-4 border-0 p-0">
-        <Section title="Info Dasar">
+        <Section
+          title="Info Dasar"
+          description="Kelas, jadwal, dan level pembelajaran"
+          icon={ClipboardList}
+          accent="blue"
+        >
         <div className="space-y-2">
           <Label>Kelas</Label>
           {isEdit ? (
@@ -281,7 +351,12 @@ export function LessonPlanForm({
         </div>
       </Section>
 
-      <Section title="Learning Objectives & Skills">
+      <Section
+        title="Learning Objectives & Skills"
+        description="Apa yang siswa capai di akhir pertemuan"
+        icon={Target}
+        accent="green"
+      >
         <div className="space-y-2">
           <Label>Learning Objectives</Label>
           <div className="space-y-2">
@@ -331,7 +406,12 @@ export function LessonPlanForm({
         </div>
       </Section>
 
-      <Section title="Method, Procedure & Materials">
+      <Section
+        title="Method, Procedure & Materials"
+        description="Pendekatan mengajar dan alat bantu yang dipakai"
+        icon={Wrench}
+        accent="gold"
+      >
         <div className="space-y-2">
           <Label htmlFor="method">Method</Label>
           <Input
@@ -394,11 +474,24 @@ export function LessonPlanForm({
         </div>
       </Section>
 
-      <Section title="Stage-by-Stage">
-        <div className="space-y-4">
+      <Section
+        title="Stage-by-Stage"
+        description="Rangkaian aktivitas dari awal sampai akhir kelas"
+        icon={ListOrdered}
+        accent="orange"
+      >
+        <div className="space-y-3">
           {emptyStages().map((stage, index) => (
-            <div key={stage.stage} className="space-y-2 border-b pb-4 last:border-b-0 last:pb-0">
-              <p className="text-sm font-medium">{stage.stage}</p>
+            <div
+              key={stage.stage}
+              className="bg-muted/30 space-y-2 rounded-lg border p-3"
+            >
+              <div className="flex items-center gap-2">
+                <span className="bg-chart-2/15 text-chart-2 flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold">
+                  {index + 1}
+                </span>
+                <p className="text-sm font-medium">{stage.stage}</p>
+              </div>
               <input
                 type="hidden"
                 value={stage.stage}
@@ -407,15 +500,18 @@ export function LessonPlanForm({
               <Textarea
                 rows={2}
                 placeholder="Aktivitas tutor & siswa di tahap ini"
+                className="bg-card"
                 {...register(`stages.${index}.activity` as const)}
               />
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Input
                   placeholder="Media (opsional)"
+                  className="bg-card"
                   {...register(`stages.${index}.media` as const)}
                 />
                 <Input
                   placeholder="Assessment (opsional)"
+                  className="bg-card"
                   {...register(`stages.${index}.assessment` as const)}
                 />
               </div>
@@ -424,7 +520,12 @@ export function LessonPlanForm({
         </div>
       </Section>
 
-      <Section title="Questions & Differentiation">
+      <Section
+        title="Questions & Differentiation"
+        description="Pertanyaan pemantik dan penyesuaian untuk tiap siswa"
+        icon={MessageCircleQuestion}
+        accent="pink"
+      >
         <div className="space-y-2">
           <Label htmlFor="questionsToAsk">
             Questions to Ask Students (1 baris = 1 pertanyaan)
@@ -463,7 +564,12 @@ export function LessonPlanForm({
         </div>
         </Section>
 
-        <Section title="Modul Pembelajaran">
+        <Section
+          title="Modul Pembelajaran"
+          description="Lampirkan materi PDF untuk pertemuan ini"
+          icon={FileText}
+          accent="blue"
+        >
           <div className="space-y-2">
             <Label>Modul (PDF)</Label>
             {readOnly ? (
@@ -498,9 +604,16 @@ export function LessonPlanForm({
       </fieldset>
 
       {!readOnly && (
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Menyimpan..." : "Simpan Lesson Plan"}
-        </Button>
+        <div className="bg-background/95 sticky bottom-16 -mx-4 border-t px-4 pt-3 pb-1 backdrop-blur-sm md:bottom-0 md:-mx-8 md:px-8">
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full shadow-sm"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Menyimpan..." : "Simpan Lesson Plan"}
+          </Button>
+        </div>
       )}
     </form>
   );

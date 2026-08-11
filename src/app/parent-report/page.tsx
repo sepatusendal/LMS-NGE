@@ -82,7 +82,7 @@ export default function ParentReportPage() {
           />
         </svg>
         <svg
-          className="absolute bottom-0 left-1/3 size-80 opacity-60 sm:size-[28rem]"
+          className="absolute bottom-0 left-1/3 size-80 opacity-60 sm:size-112"
           viewBox="0 0 200 200"
           xmlns="http://www.w3.org/2000/svg"
         >
@@ -119,7 +119,7 @@ export default function ParentReportPage() {
                 Laporan Perkembangan{" "}
                 <span className="relative inline-block">
                   <span className="relative z-10">Ananda</span>
-                  <span className="absolute inset-x-0 bottom-1 -z-0 h-3 -rotate-1 rounded-full bg-[#f15c5d]/25" />
+                  <span className="absolute inset-x-0 bottom-1 z-0 h-3 -rotate-1 rounded-full bg-[#f15c5d]/25" />
                 </span>
               </h1>
               <p className="text-muted-foreground mx-auto mt-2 max-w-xs text-sm leading-relaxed sm:text-base">

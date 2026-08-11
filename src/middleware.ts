@@ -16,10 +16,38 @@ function redirectTo(request: NextRequest, response: NextResponse, path: string) 
   return redirectResponse;
 }
 
+const PARENT_HOSTS = ["raport.", "laporan.", "parent.", "ortu."];
+
+const PARENT_ALLOWED_PREFIXES = [
+  "/parent-report",
+  "/api/parent-report",
+  "/api/parent-reports/",
+];
+
+function isParentHost(host: string): boolean {
+  return PARENT_HOSTS.some((h) => host.startsWith(h));
+}
+
+function isParentAllowedPath(pathname: string): boolean {
+  return PARENT_ALLOWED_PREFIXES.some((p) => pathname.startsWith(p));
+}
+
 export async function middleware(request: NextRequest) {
   const { response, user, supabase } = await updateSession(request);
   const { pathname } = request.nextUrl;
+  const host = request.headers.get("host") || "";
 
+  // ── Parent Portal (raport.* / laporan.* / parent.* / ortu.*) ──
+  if (isParentHost(host)) {
+    if (isParentAllowedPath(pathname)) {
+      return response;
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = "/parent-report";
+    return NextResponse.redirect(url);
+  }
+
+  // ── Normal App (admin / teacher / coordinator) ──
   if (!user) {
     if (pathname === "/login") return response;
     if (pathname.startsWith("/parent-report")) return response;

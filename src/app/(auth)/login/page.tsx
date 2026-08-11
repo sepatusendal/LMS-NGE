@@ -66,7 +66,7 @@ export default function LoginPage() {
     <div className="relative flex min-h-dvh overflow-hidden bg-[#fbf7ef]">
       {/* Decorative blobs — visual only */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <svg className="absolute -top-28 -left-28 size-80 opacity-70 sm:size-[26rem]" viewBox="0 0 200 200">
+        <svg className="absolute -top-28 -left-28 size-80 opacity-70 sm:size-104" viewBox="0 0 200 200">
           <path
             fill="#4b60ac"
             fillOpacity="0.10"
@@ -74,7 +74,7 @@ export default function LoginPage() {
             transform="translate(100 100)"
           />
         </svg>
-        <svg className="absolute right-[-8rem] bottom-[-6rem] size-96 opacity-70 sm:size-[30rem]" viewBox="0 0 200 200">
+        <svg className="absolute -right-32 -bottom-24 size-96 opacity-70 sm:size-120" viewBox="0 0 200 200">
           <path
             fill="#f15c5d"
             fillOpacity="0.10"
@@ -94,7 +94,7 @@ export default function LoginPage() {
               transform="translate(100 100)"
             />
           </svg>
-          <svg className="absolute bottom-[-4rem] left-[-3rem] size-64 opacity-20" viewBox="0 0 200 200">
+          <svg className="absolute -bottom-16 -left-12 size-64 opacity-20" viewBox="0 0 200 200">
             <path
               fill="#f15c5d"
               d="M39.6,-51.2C52.6,-43.5,65.4,-33.4,70.8,-19.9C76.2,-6.5,74.2,10.3,66.9,24.2C59.6,38.1,47,49.1,32.7,57.2C18.4,65.3,2.4,70.5,-13.9,68.9C-30.2,67.3,-46.8,58.9,-58.4,45.6C-70,32.3,-76.6,14.1,-75.8,-3.7C-75,-21.5,-66.8,-38.9,-53.9,-46.9C-41,-54.9,-23.4,-53.5,-6.9,-45.7C9.6,-37.9,26.6,-58.9,39.6,-51.2Z"
