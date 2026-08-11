@@ -54,9 +54,17 @@ export async function middleware(request: NextRequest) {
     if (isParentAllowedPath(pathname)) {
       return response;
     }
+    // Rewrite, not redirect: serves /parent-report's content while keeping
+    // the address bar on the bare domain (e.g. ec-parent.vercel.app, not
+    // .../parent-report) — this is the whole domain's one page, so there's
+    // no reason to expose the path to the visitor.
     const url = request.nextUrl.clone();
     url.pathname = "/parent-report";
-    return NextResponse.redirect(url);
+    const rewriteResponse = NextResponse.rewrite(url);
+    response.cookies.getAll().forEach((cookie) => {
+      rewriteResponse.cookies.set(cookie);
+    });
+    return rewriteResponse;
   }
 
   // ── Normal App (admin / teacher / coordinator) ──
