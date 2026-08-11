@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Activity, LineChart, ListChecks } from "lucide-react";
 import { ComplianceAlert } from "@/features/lesson-plans/compliance-alert";
 import { StatusBoard } from "@/features/monitoring/status-board";
@@ -19,18 +19,26 @@ import { cn } from "@/lib/utils";
 
 export default function AdminDashboardPage() {
   const { data: user } = useCurrentUser();
-  const now = useMemo(() => new Date(), []);
-  const greeting = useMemo(() => getTimeGreeting(now.getHours()), [now]);
+  // `new Date()` depends on the reader's local clock (WIB for our users),
+  // but this page is server-rendered first — computing it directly during
+  // render reads a different moment (and often a different timezone, e.g.
+  // Vercel's UTC edge) on the server than on the client, which React flags
+  // as a hydration mismatch. Deferring to client-only state after mount
+  // keeps the first paint identical on both sides.
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => setNow(new Date()), []);
+
+  const greeting = useMemo(() => getTimeGreeting(now?.getHours() ?? 9), [now]);
   const firstName = user?.fullName?.split(" ")[0] ?? "";
 
   const dateLabel = useMemo(
     () =>
-      now.toLocaleDateString("id-ID", {
+      now?.toLocaleDateString("id-ID", {
         weekday: "long",
         day: "numeric",
         month: "long",
         year: "numeric",
-      }),
+      }) ?? "",
     [now],
   );
 
@@ -40,7 +48,7 @@ export default function AdminDashboardPage() {
         greeting={greeting}
         firstName={firstName}
         dateLabel={dateLabel}
-        hour={now.getHours()}
+        hour={now?.getHours() ?? 9}
       />
 
       <OverviewStats />

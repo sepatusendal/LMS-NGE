@@ -29,12 +29,14 @@ function StatBlock({
   label,
   value,
   sub,
+  subSuppressHydrationWarning,
   color,
 }: {
   icon: React.ElementType;
   label: string;
   value: string;
   sub?: string;
+  subSuppressHydrationWarning?: boolean;
   color: string;
 }) {
   return (
@@ -50,7 +52,14 @@ function StatBlock({
       </div>
       <div className="min-w-0">
         <p className="text-muted-foreground line-clamp-2 text-[11px] leading-tight">{label}</p>
-        {sub && <p className="text-muted-foreground/70 mt-0.5 text-[10px] leading-tight">{sub}</p>}
+        {sub && (
+          <p
+            className="text-muted-foreground/70 mt-0.5 text-[10px] leading-tight"
+            suppressHydrationWarning={subSuppressHydrationWarning}
+          >
+            {sub}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -115,6 +124,12 @@ export function OverviewStats() {
           label="Kelas Hari Ini"
           value={String(todayClasses)}
           sub={new Date().toLocaleDateString("id-ID", { weekday: "long" })}
+          // Reads the viewer's local clock, which can legitimately differ
+          // from the server's at render time (e.g. near the UTC-midnight/
+          // WIB-7am boundary) — suppress the one-time hydration warning for
+          // this text node rather than deferring the whole component to a
+          // client-only render pass.
+          subSuppressHydrationWarning
           color="var(--chart-4)"
         />
         <StatBlock

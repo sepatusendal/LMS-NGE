@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -22,8 +22,18 @@ const DAY_LABELS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabt
 
 export function ScheduleChart() {
   const { data: classes, isLoading } = useClasses();
-  const today = new Date().getDay();
-  const [selectedDay, setSelectedDay] = useState(today);
+  // Deferred to client-only: `new Date().getDay()` reads the viewer's local
+  // clock, which can differ from the server's at render time (e.g. near the
+  // UTC-midnight/WIB-7am boundary) — computing it during the initial render
+  // would make the "today" highlight/dot mismatch between SSR and
+  // hydration. `null` until mount renders identically on both sides.
+  const [today, setToday] = useState<number | null>(null);
+  useEffect(() => setToday(new Date().getDay()), []);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  useEffect(() => {
+    if (today !== null) setSelectedDay((prev) => prev ?? today);
+  }, [today]);
+  const effectiveSelectedDay = selectedDay ?? 1;
 
   const chartData = useMemo(() => {
     const counts = new Array(7).fill(0);
@@ -35,10 +45,10 @@ export function ScheduleChart() {
 
   const classesByDay = useMemo(() => {
     return (classes ?? [])
-      .filter((c) => c.isActive && c.scheduleDaysOfWeek.includes(selectedDay))
-      .map((c) => ({ ...c, slot: getSlotForDay(c.scheduleSlots, selectedDay) }))
+      .filter((c) => c.isActive && c.scheduleDaysOfWeek.includes(effectiveSelectedDay))
+      .map((c) => ({ ...c, slot: getSlotForDay(c.scheduleSlots, effectiveSelectedDay) }))
       .sort((a, b) => (a.slot?.startTime ?? "").localeCompare(b.slot?.startTime ?? ""));
-  }, [classes, selectedDay]);
+  }, [classes, effectiveSelectedDay]);
 
   return (
     <Card>
@@ -75,8 +85,8 @@ export function ScheduleChart() {
                   {chartData.map((d) => (
                     <Cell
                       key={d.dayIndex}
-                      fill={d.dayIndex === selectedDay ? "var(--primary)" : "var(--chart-2)"}
-                      fillOpacity={d.dayIndex === selectedDay ? 1 : 0.55}
+                      fill={d.dayIndex === effectiveSelectedDay ? "var(--primary)" : "var(--chart-2)"}
+                      fillOpacity={d.dayIndex === effectiveSelectedDay ? 1 : 0.55}
                     />
                   ))}
                 </Bar>
@@ -95,7 +105,7 @@ export function ScheduleChart() {
                   onClick={() => setSelectedDay(i)}
                   className={cn(
                     "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
-                    i === selectedDay
+                    i === effectiveSelectedDay
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:bg-muted/70",
                   )}
@@ -107,13 +117,13 @@ export function ScheduleChart() {
             </div>
 
             <p className="text-muted-foreground mb-2 text-xs font-medium">
-              {classesByDay.length} kelas pada hari {DAY_LABELS[selectedDay]}
-              {selectedDay === today && " (hari ini)"}
+              {classesByDay.length} kelas pada hari {DAY_LABELS[effectiveSelectedDay]}
+              {effectiveSelectedDay === today && " (hari ini)"}
             </p>
 
             {classesByDay.length === 0 ? (
               <p className="text-muted-foreground py-4 text-center text-sm">
-                Tidak ada kelas terjadwal pada hari {DAY_LABELS[selectedDay]}.
+                Tidak ada kelas terjadwal pada hari {DAY_LABELS[effectiveSelectedDay]}.
               </p>
             ) : (
               <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
