@@ -37,6 +37,7 @@ const ROUTE_PREFIX_ROLES: Array<{ prefix: string; roles: AppRole[] }> = [
   { prefix: "/api/drive", roles: ALL_ROLES },
   { prefix: "/api/parent-report", roles: ALL_ROLES },
   { prefix: "/parent-report", roles: ALL_ROLES },
+  { prefix: "/privacy-policy", roles: ALL_ROLES },
 ];
 
 export function allowedRolesForPath(pathname: string): AppRole[] {

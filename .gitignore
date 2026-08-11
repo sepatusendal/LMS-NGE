@@ -33,6 +33,7 @@ CREDENTIALS.staging.md
 *.pem
 service-account*.json
 google-oauth-result.json
+client_secret_*.json
 
 # debug
 npm-debug.log*

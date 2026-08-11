@@ -70,6 +70,7 @@ export async function middleware(request: NextRequest) {
   // ── Normal App (admin / teacher / coordinator) ──
   if (!user) {
     if (pathname === "/login") return response;
+    if (pathname === "/privacy-policy") return response;
     if (pathname.startsWith("/parent-report")) return response;
     if (pathname.startsWith("/api/parent-report")) return response;
     if (pathname.startsWith("/api/parent-reports") && pathname.endsWith("/download")) return response;
