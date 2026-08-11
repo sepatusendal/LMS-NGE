@@ -16,10 +16,6 @@ function timelineKey(classId: string) {
   return ["class-timeline", classId];
 }
 
-function statusBoardKey(date: string) {
-  return ["monitoring-status-board", date];
-}
-
 export function useCurrentMeetingInfo(classId: string) {
   return useQuery({
     queryKey: meetingInfoKey(classId),

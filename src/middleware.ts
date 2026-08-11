@@ -73,7 +73,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const allowedRoles = allowedRolesForPath(pathname);
-  if (allowedRoles && !allowedRoles.includes(role)) {
+  if (!allowedRoles.includes(role)) {
     return redirectTo(request, response, roleLandingPath[role]);
   }
 

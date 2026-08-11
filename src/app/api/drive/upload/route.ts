@@ -35,6 +35,19 @@ function sniffFileType(buffer: Buffer): string | null {
   ) {
     return "image/webp";
   }
+  // HEIC/HEIF — the default camera format on iPhone (unless "Most
+  // Compatible" is set), so this MUST be recognized or every iPhone check-in
+  // photo upload fails. ISO base media file format: bytes 4-8 are "ftyp",
+  // followed by a 4-byte major brand.
+  if (buffer.length >= 12 && buffer.subarray(4, 8).toString("ascii") === "ftyp") {
+    const brand = buffer.subarray(8, 12).toString("ascii");
+    if (["heic", "heix", "hevc", "hevx", "heim", "heis", "hevm", "hevs", "mif1", "msf1"].includes(brand)) {
+      return "image/heic";
+    }
+  }
+  if (buffer.length >= 2 && buffer[0] === 0x42 && buffer[1] === 0x4d) {
+    return "image/bmp";
+  }
   return null;
 }
 
