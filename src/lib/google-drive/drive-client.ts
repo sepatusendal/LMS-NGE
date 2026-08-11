@@ -1,14 +1,21 @@
 import { google } from "googleapis";
 
+// A standalone (non-Workspace) service account has zero Drive storage quota
+// of its own — uploads fail outright unless the target is a Shared Drive,
+// which requires paid Workspace. This app authenticates as a real Google
+// account instead (via a refresh token obtained once through
+// scripts/google-oauth-setup.ts), so files land in that account's own
+// storage and behave like a normal Drive upload.
 let cachedToken: string | null = null;
 let cachedExpiry = 0;
 
 function getAuth() {
-  return new google.auth.JWT({
-    email: process.env.GOOGLE_CLIENT_EMAIL,
-    key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    scopes: ["https://www.googleapis.com/auth/drive.file"],
-  });
+  const client = new google.auth.OAuth2(
+    process.env.GOOGLE_OAUTH_CLIENT_ID,
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+  );
+  client.setCredentials({ refresh_token: process.env.GOOGLE_OAUTH_REFRESH_TOKEN });
+  return client;
 }
 
 async function getAccessToken(): Promise<string> {

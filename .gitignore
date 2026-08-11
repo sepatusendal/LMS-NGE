@@ -32,6 +32,7 @@ CREDENTIALS.staging.md
 /*-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f].json
 *.pem
 service-account*.json
+google-oauth-result.json
 
 # debug
 npm-debug.log*
