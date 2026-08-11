@@ -104,7 +104,6 @@ export async function fetchLessonPlan(id: string): Promise<LessonPlan> {
 
 function toPayload(input: LessonPlanInput) {
   return {
-    classId: input.classId,
     meetingNumber: input.meetingNumber,
     week: input.week,
     scheduledDate: input.scheduledDate,
@@ -144,6 +143,17 @@ async function assertNotHoliday(classId: string, scheduledDate: string) {
   }
 }
 
+/** (classId, meetingNumber) is unique at the DB level — remap the raw
+ * constraint-violation error into something a teacher can act on. */
+function duplicateMeetingNumberError(error: { code?: string; message: string }): Error {
+  if (error.code === "23505") {
+    return new Error(
+      "Meeting number ini sudah dipakai lesson plan lain di kelas ini. Ubah nomor meeting-nya.",
+    );
+  }
+  return error instanceof Error ? error : new Error(error.message);
+}
+
 export async function createLessonPlan(
   input: LessonPlanInput,
   createdByTeacherId: string,
@@ -153,10 +163,15 @@ export async function createLessonPlan(
   const supabase = createClient();
   const { error } = await supabase
     .from("lesson_plans")
-    .insert({ ...toPayload(input), createdByTeacherId });
-  if (error) throw error;
+    .insert({ ...toPayload(input), classId: input.classId, createdByTeacherId });
+  if (error) throw duplicateMeetingNumberError(error);
 }
 
+// `classId` is intentionally excluded from the update payload — RLS's
+// update WITH CHECK only re-validates createdByTeacherId, not classId, so a
+// crafted update could otherwise reparent the plan to a class the teacher
+// doesn't own. classId is immutable after creation at the app layer (the
+// form also renders it read-only in edit mode).
 export async function updateLessonPlan(id: string, input: LessonPlanInput) {
   await assertNotHoliday(input.classId, input.scheduledDate);
 
@@ -165,5 +180,5 @@ export async function updateLessonPlan(id: string, input: LessonPlanInput) {
     .from("lesson_plans")
     .update(toPayload(input))
     .eq("id", id);
-  if (error) throw error;
+  if (error) throw duplicateMeetingNumberError(error);
 }

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { parseLocalDate } from "@/lib/date";
 import type { CurrentMeetingInfo, HandoverSummary } from "./schema";
 
 function toOne<T>(rel: T | T[] | null | undefined): T | null {
@@ -7,14 +8,21 @@ function toOne<T>(rel: T | T[] | null | undefined): T | null {
 }
 
 function dayOfWeek(dateStr: string): number {
-  // Parse as a local calendar date (no time component) rather than UTC
-  // midnight, which can roll to the wrong weekday depending on timezone.
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d).getDay();
+  return parseLocalDate(dateStr).getDay();
 }
 
 function todayDateStr(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+/** Remaps the DB trigger's raw exception (enforce_no_substitute_change_after_checkin,
+ * migration 20260811020000) into the same friendly message used by the
+ * app-layer pre-check — this is the TOCTOU backstop firing, not a bug. */
+function checkInGuardError(error: { message: string }): Error {
+  if (error.message.includes("cannot change the assigned/substitute teacher after check-in")) {
+    return new Error("Meeting ini sudah di-check-in, tidak bisa diganti tutor lagi");
+  }
+  return error instanceof Error ? error : new Error(error.message);
 }
 
 interface LessonPlanRow {
@@ -181,7 +189,7 @@ export async function assignSubstituteForLessonPlan(input: {
         substituteReason: input.reason,
       })
       .eq("id", ex.id);
-    if (error) throw error;
+    if (error) throw checkInGuardError(error);
     return;
   }
 
@@ -242,7 +250,7 @@ export async function cancelSubstitute(meetingId: string): Promise<void> {
     .from("meetings")
     .update({ actualTeacherId: m.assignedTeacherId, substituteReason: null })
     .eq("id", meetingId);
-  if (error) throw error;
+  if (error) throw checkInGuardError(error);
 }
 
 export async function fetchHandoverSummary(

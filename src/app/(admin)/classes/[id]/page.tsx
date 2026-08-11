@@ -144,7 +144,16 @@ export default function ClassDetailPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => unenrollStudent.mutate(r.enrollmentId)}
+                        disabled={unenrollStudent.isPending}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Keluarkan ${r.fullName} dari kelas ini?`,
+                            )
+                          ) {
+                            unenrollStudent.mutate(r.enrollmentId);
+                          }
+                        }}
                       >
                         Keluarkan
                       </Button>

@@ -16,7 +16,7 @@ export default function EditLessonPlanPage() {
   const isOwner = useMemo(
     () =>
       lessonPlan && myClasses
-        ? myClasses.some((c) => c.id === lessonPlan.classId)
+        ? myClasses.some((c) => c.isPrimary && c.id === lessonPlan.classId)
         : false,
     [lessonPlan, myClasses],
   );

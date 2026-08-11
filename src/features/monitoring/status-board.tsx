@@ -52,7 +52,7 @@ export function StatusBoard() {
 
   const { data: schools } = useSchools();
   const { data: teachers } = useTeachers();
-  const { data: rows, isLoading } = useStatusBoard(date);
+  const { data: rows, isLoading, isError, error } = useStatusBoard(date);
 
   function openReassignDialog(r: ClassStatusRow) {
     setReassignTarget({
@@ -189,6 +189,14 @@ export function StatusBoard() {
         <CardContent>
           {isLoading ? (
             <p className="text-muted-foreground text-sm">Memuat data...</p>
+          ) : isError ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <AlertTriangle className="text-destructive mb-2 size-6" />
+              <p className="text-sm font-medium">Gagal memuat status board</p>
+              <p className="text-muted-foreground mt-1 text-xs">
+                {error?.message || "Coba refresh halaman."}
+              </p>
+            </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8">
               <Clock className="text-muted-foreground mb-2 size-6" />

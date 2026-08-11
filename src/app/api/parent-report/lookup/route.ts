@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MONTH_LABEL } from "@/features/parent-reports/schema";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
+
+// NIS is a short, sequential, guessable identifier — without a limit, this
+// public endpoint lets anyone enumerate every student's name and school.
+const LOOKUP_LIMIT = { limit: 8, windowMs: 60_000 };
 
 export async function GET(request: NextRequest) {
   const nis = request.nextUrl.searchParams.get("nis");
   if (!nis) {
     return NextResponse.json({ error: "NIS diperlukan" }, { status: 400 });
+  }
+
+  const ip = getClientIp(request);
+  const { ok, retryAfterSeconds } = rateLimit(`parent-lookup:${ip}`, LOOKUP_LIMIT);
+  if (!ok) {
+    return NextResponse.json(
+      { error: "Terlalu banyak percobaan. Coba lagi sebentar lagi." },
+      { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } },
+    );
   }
 
   // Parents have no account (context.md Section 9) — this endpoint is

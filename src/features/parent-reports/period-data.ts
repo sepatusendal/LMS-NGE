@@ -260,10 +260,14 @@ export function draftTeacherComments(data: StudentPeriodData): string {
     `adalah kunci keberhasilan belajar siswa.`,
   );
 
-  // Attendance summary with tone based on rate
+  // Attendance summary with tone based on rate. Note: lessonsCompleted and
+  // attendance.total are both derived from held meetings for this student,
+  // so they're structurally always ~equal — this isn't "attended vs missed
+  // meetings", it's "meetings held this period" plus the actual attendance
+  // rate below (present+late / total), which is where the real signal is.
   lines.push(
     `\nKEHADIRAN\n` +
-    `Ananda mengikuti ${data.lessonsCompleted} pertemuan dari total ${total} jadwal yang tersedia ` +
+    `Ananda mengikuti ${data.lessonsCompleted} pertemuan pada periode ini ` +
     `(tingkat kehadiran ${rate}%). ` +
     (rate >= 90
       ? `Kehadiran ananda sangat baik! Konsistensi ini sangat membantu proses belajar. Pertahankan ya.`

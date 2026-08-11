@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useMyClasses } from "@/features/classes/use-my-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
 import { formatScheduleSlots } from "@/features/classes/schema";
+import { parseLocalDate } from "@/lib/date";
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -37,7 +38,7 @@ export default function LessonPlanPage() {
           .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
         const latest = classPlans[classPlans.length - 1];
         const isCompliant =
-          latest && new Date(latest.scheduledDate).getTime() - now >= TWO_WEEKS_MS;
+          latest && parseLocalDate(latest.scheduledDate).getTime() - now >= TWO_WEEKS_MS;
 
         return (
           <div key={classItem.id} className="space-y-2">

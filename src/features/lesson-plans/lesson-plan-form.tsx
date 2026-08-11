@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Plus,
@@ -35,6 +35,7 @@ import {
   MATERIAL_OPTIONS,
   PROCEDURE_OPTIONS,
   SKILL_OPTIONS,
+  STAGE_NAMES,
   emptyLearningObjectives,
   emptyStages,
   lessonPlanSchema,
@@ -123,7 +124,11 @@ export function LessonPlanForm({
 }) {
   const isEdit = Boolean(lessonPlan);
   const router = useRouter();
-  const { data: classes } = useMyClasses();
+  const { data: myClasses } = useMyClasses();
+  // Lesson-plan authorship is restricted to a class's primary teacher at the
+  // DB level (RLS) — a covering teacher reached only via a weekly schedule
+  // override can read plans but not create/own one, so exclude those here.
+  const classes = myClasses?.filter((c) => c.isPrimary);
   const { data: existingPlans } = useLessonPlans();
   const createLessonPlan = useCreateLessonPlan();
   const updateLessonPlan = useUpdateLessonPlan();
@@ -181,6 +186,12 @@ export function LessonPlanForm({
           stages: emptyStages(),
         },
   });
+
+  // Bound to the actual "stages" field array so each row's label/content
+  // reflects what's really loaded, instead of always rendering the fixed
+  // STAGE_NAMES constant — a mismatch there would silently reattribute a
+  // legacy plan's stage content to the wrong stage name on save.
+  const { fields: stageFields } = useFieldArray({ control, name: "stages" });
 
   const watchedClassId = watch("classId");
   const learningObjectives = watch("learningObjectives") ?? [];
@@ -481,20 +492,22 @@ export function LessonPlanForm({
         accent="orange"
       >
         <div className="space-y-3">
-          {emptyStages().map((stage, index) => (
+          {stageFields.map((field, index) => (
             <div
-              key={stage.stage}
+              key={field.id}
               className="bg-muted/30 space-y-2 rounded-lg border p-3"
             >
               <div className="flex items-center gap-2">
                 <span className="bg-chart-2/15 text-chart-2 flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold">
                   {index + 1}
                 </span>
-                <p className="text-sm font-medium">{stage.stage}</p>
+                <p className="text-sm font-medium">
+                  {field.stage || STAGE_NAMES[index] || `Tahap ${index + 1}`}
+                </p>
               </div>
               <input
                 type="hidden"
-                value={stage.stage}
+                defaultValue={field.stage || STAGE_NAMES[index] || ""}
                 {...register(`stages.${index}.stage` as const)}
               />
               <Textarea

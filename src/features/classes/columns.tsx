@@ -14,6 +14,7 @@ function ActiveToggleCell({ classItem }: { classItem: Class }) {
     <div className="flex items-center gap-2">
       <Switch
         checked={classItem.isActive}
+        disabled={setActive.isPending}
         onCheckedChange={(checked) =>
           setActive.mutate({ id: classItem.id, isActive: checked })
         }

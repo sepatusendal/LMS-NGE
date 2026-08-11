@@ -143,7 +143,15 @@ export function ScheduleOverridesPanel({ classItem }: Props) {
                     size="sm"
                     variant="ghost"
                     disabled={del.isPending}
-                    onClick={() => del.mutate(override.id)}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Hapus override ${DAY_LABEL[String(day)]} dan kembalikan ke jadwal default (${classItem.teacherName})?`,
+                        )
+                      ) {
+                        del.mutate(override.id);
+                      }
+                    }}
                   >
                     Hapus
                   </Button>

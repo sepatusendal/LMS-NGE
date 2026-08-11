@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useClasses } from "@/features/classes/use-classes";
+import { parseLocalDate } from "@/lib/date";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
@@ -42,8 +43,8 @@ export function ComplianceAlert() {
         .filter((p) => p.classId === c.id)
         .sort(
           (a, b) =>
-            new Date(b.scheduledDate).getTime() -
-            new Date(a.scheduledDate).getTime(),
+            parseLocalDate(b.scheduledDate).getTime() -
+            parseLocalDate(a.scheduledDate).getTime(),
         );
 
       const latest = classPlans[0];
@@ -60,7 +61,7 @@ export function ComplianceAlert() {
         return;
       }
 
-      const latestMs = new Date(latest.scheduledDate).getTime();
+      const latestMs = parseLocalDate(latest.scheduledDate).getTime();
       const daysLeft = Math.ceil((latestMs - now) / (24 * 60 * 60 * 1000));
 
       if (latestMs < threshold) {

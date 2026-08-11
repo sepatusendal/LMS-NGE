@@ -10,6 +10,7 @@ import type { LessonPlanInput } from "./schema";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
 
 const LESSON_PLANS_KEY = ["lesson-plans"];
+const TODAY_CLASSES_KEY = ["today-classes"];
 
 export function useLessonPlans() {
   return useQuery({ queryKey: LESSON_PLANS_KEY, queryFn: fetchLessonPlans });
@@ -33,6 +34,7 @@ export function useCreateLessonPlan() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: LESSON_PLANS_KEY });
+      queryClient.invalidateQueries({ queryKey: TODAY_CLASSES_KEY });
       toast.success("Lesson plan berhasil disimpan");
     },
     onError: (error) =>
@@ -47,6 +49,7 @@ export function useUpdateLessonPlan() {
       updateLessonPlan(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: LESSON_PLANS_KEY });
+      queryClient.invalidateQueries({ queryKey: TODAY_CLASSES_KEY });
       toast.success("Lesson plan berhasil diperbarui");
     },
     onError: (error) =>

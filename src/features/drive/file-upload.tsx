@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileText, Loader2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDriveUpload } from "@/features/drive/use-drive-upload";
@@ -21,6 +21,15 @@ export function FileUpload({
   const inputRef = useRef<HTMLInputElement>(null);
   const upload = useDriveUpload();
   const [preview, setPreview] = useState<{ url: string; isImage: boolean; name: string } | null>(null);
+
+  // Revoke the previous blob URL whenever it's replaced or the component
+  // unmounts — object URLs otherwise stay pinned in memory for the page's
+  // lifetime (only fires when preview.url actually changes, not per keystroke).
+  useEffect(() => {
+    return () => {
+      if (preview?.url) URL.revokeObjectURL(preview.url);
+    };
+  }, [preview?.url]);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

@@ -135,10 +135,18 @@ export function TeacherAbsenceDialog({
   async function handleSubmit() {
     const assignments = classes
       .filter((r) => selected[r.classId] && !ineligibleReason(r))
-      .map((r) => ({ classId: r.classId, lessonPlanId: r.lessonPlanId!, scheduledDate: date }));
+      .map((r) => ({
+        classId: r.classId,
+        className: r.className,
+        lessonPlanId: r.lessonPlanId!,
+        scheduledDate: date,
+      }));
     if (assignments.length === 0 || !substituteTeacherId || !reason) return;
-    await markAbsent.mutateAsync({ assignments, substituteTeacherId, reason });
-    onOpenChange(false);
+    const result = await markAbsent.mutateAsync({ assignments, substituteTeacherId, reason });
+    // Keep the dialog open on total failure so the admin can retry without
+    // re-picking classes/reason; partial success still closes since the
+    // toast already lists which classes need a manual follow-up.
+    if (result.succeeded.length > 0) onOpenChange(false);
   }
 
   return (

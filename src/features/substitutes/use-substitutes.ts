@@ -92,14 +92,27 @@ export function useCancelSubstitute(classId: string) {
 
 export interface TeacherAbsenceAssignment {
   classId: string;
+  className: string;
   lessonPlanId: string;
   scheduledDate: string;
+}
+
+interface MarkTeacherAbsentResult {
+  succeeded: TeacherAbsenceAssignment[];
+  failed: Array<{ assignment: TeacherAbsenceAssignment; message: string }>;
 }
 
 /** Marks a teacher absent for a date by assigning the same substitute +
  * reason to every one of their classes that day in one action — the
  * teacher-centric counterpart to the single-class useAssignSubstituteForLessonPlan
- * above ("Latifa is out Monday" should be one action, not one per class). */
+ * above ("Latifa is out Monday" should be one action, not one per class).
+ *
+ * Uses allSettled rather than Promise.all: one class failing (e.g. it was
+ * already substituted/checked-in, or a race with another admin) must not
+ * discard the other classes that already succeeded server-side. Every
+ * settled assignment gets its cache invalidated regardless of outcome, and
+ * the caller finds out exactly which classes failed instead of one opaque
+ * error toast masking partial success. */
 export function useMarkTeacherAbsent() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -107,8 +120,8 @@ export function useMarkTeacherAbsent() {
       assignments: TeacherAbsenceAssignment[];
       substituteTeacherId: string;
       reason: string;
-    }) => {
-      await Promise.all(
+    }): Promise<MarkTeacherAbsentResult> => {
+      const results = await Promise.allSettled(
         input.assignments.map((a) =>
           assignSubstituteForLessonPlan({
             classId: a.classId,
@@ -119,14 +132,44 @@ export function useMarkTeacherAbsent() {
           }),
         ),
       );
+
+      const succeeded: TeacherAbsenceAssignment[] = [];
+      const failed: MarkTeacherAbsentResult["failed"] = [];
+      results.forEach((result, i) => {
+        const assignment = input.assignments[i];
+        if (result.status === "fulfilled") {
+          succeeded.push(assignment);
+        } else {
+          failed.push({
+            assignment,
+            message:
+              result.reason instanceof Error ? result.reason.message : "Gagal menugaskan",
+          });
+        }
+      });
+      return { succeeded, failed };
     },
-    onSuccess: (_, variables) => {
-      variables.assignments.forEach((a) => {
+    onSuccess: ({ succeeded, failed }) => {
+      succeeded.forEach((a) => {
         queryClient.invalidateQueries({ queryKey: meetingInfoKey(a.classId) });
         queryClient.invalidateQueries({ queryKey: timelineKey(a.classId) });
       });
-      invalidateStatusBoards(queryClient);
-      toast.success("Guru pengganti berhasil ditugaskan ke semua kelas");
+      if (succeeded.length > 0) invalidateStatusBoards(queryClient);
+
+      if (failed.length === 0) {
+        toast.success("Guru pengganti berhasil ditugaskan ke semua kelas");
+      } else if (succeeded.length === 0) {
+        toast.error("Gagal menugaskan guru pengganti ke semua kelas", {
+          description: failed.map((f) => `${f.assignment.className}: ${f.message}`).join("; "),
+        });
+      } else {
+        toast.warning(
+          `Berhasil untuk ${succeeded.length} kelas, gagal untuk ${failed.length} kelas`,
+          {
+            description: failed.map((f) => `${f.assignment.className}: ${f.message}`).join("; "),
+          },
+        );
+      }
     },
     onError: (error) =>
       toast.error("Gagal menandai guru absen", { description: error.message }),
