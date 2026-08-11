@@ -16,7 +16,16 @@ function redirectTo(request: NextRequest, response: NextResponse, path: string) 
   return redirectResponse;
 }
 
+// Custom domains once attached (e.g. raport.nufaglobal.id) match by prefix.
 const PARENT_HOSTS = ["raport.", "laporan.", "parent.", "ortu."];
+
+// The dedicated "ec-parent" Vercel project (same codebase, scoped to the
+// parent portal by host) — its assigned domains are ec-parent.vercel.app in
+// production and ec-parent-<hash>-nge1.vercel.app for preview deployments,
+// so match on the project name prefix rather than one exact hostname. Keep
+// this until a custom domain is attached, at which point PARENT_HOSTS above
+// takes over and this can be removed.
+const PARENT_HOST_PROJECT_PREFIX = "ec-parent";
 
 const PARENT_ALLOWED_PREFIXES = [
   "/parent-report",
@@ -25,7 +34,10 @@ const PARENT_ALLOWED_PREFIXES = [
 ];
 
 function isParentHost(host: string): boolean {
-  return PARENT_HOSTS.some((h) => host.startsWith(h));
+  return (
+    PARENT_HOSTS.some((h) => host.startsWith(h)) ||
+    host.startsWith(PARENT_HOST_PROJECT_PREFIX)
+  );
 }
 
 function isParentAllowedPath(pathname: string): boolean {
