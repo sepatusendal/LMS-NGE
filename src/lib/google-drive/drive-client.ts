@@ -114,6 +114,17 @@ export async function uploadFile(
   }
 
   const data = (await res.json()) as { id: string; webViewLink?: string };
+
+  // Newly created files are private to the uploading account by default —
+  // nobody else (teachers, parents, admins) could open the link the app
+  // shows them without this. "reader" + type "anyone" mirrors a standard
+  // "Anyone with the link can view" share.
+  await fetch(`https://www.googleapis.com/drive/v3/files/${data.id}/permissions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ role: "reader", type: "anyone" }),
+  });
+
   return {
     driveFileId: data.id,
     webViewLink: data.webViewLink || `https://drive.google.com/file/d/${data.id}/view`,
