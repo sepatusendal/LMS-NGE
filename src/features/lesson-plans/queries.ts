@@ -10,7 +10,7 @@ interface LessonPlanRow {
   scheduledDate: string;
   level: string | null;
   topic: string;
-  learningObjectives: string | null;
+  learningObjectives: string[] | null;
   skills: string[];
   method: string | null;
   procedure: string | null;
@@ -21,6 +21,8 @@ interface LessonPlanRow {
   differentiationSupport: string | null;
   differentiationExtension: string | null;
   differentiationHomework: string | null;
+  moduleDriveFileId: string | null;
+  moduleFileName: string | null;
   createdAt: string;
   classes: { name: string } | null;
 }
@@ -29,9 +31,27 @@ const SELECT = `
   id, classId, meetingNumber, week, scheduledDate, level, topic,
   learningObjectives, skills, method, procedure, materialsRequired,
   vocabularyFocus, stages, questionsToAsk, differentiationSupport,
-  differentiationExtension, differentiationHomework, createdAt,
+  differentiationExtension, differentiationHomework, moduleDriveFileId,
+  moduleFileName, createdAt,
   classes(name)
 `;
+
+/** `stages` is freeform Json — older rows were saved with separate
+ * tutorActivity/studentActivity fields (pre-merge). Fold those into the
+ * current single `activity` field instead of silently dropping them when
+ * an old lesson plan is reopened. */
+function normalizeStage(raw: unknown): StageEntry {
+  const s = (raw ?? {}) as Record<string, unknown>;
+  const legacyTutor = typeof s.tutorActivity === "string" ? s.tutorActivity : "";
+  const legacyStudent = typeof s.studentActivity === "string" ? s.studentActivity : "";
+  const legacyMerged = [legacyTutor, legacyStudent].filter(Boolean).join(" / ");
+  return {
+    stage: typeof s.stage === "string" ? s.stage : "",
+    activity: typeof s.activity === "string" && s.activity ? s.activity : legacyMerged,
+    media: typeof s.media === "string" ? s.media : "",
+    assessment: typeof s.assessment === "string" ? s.assessment : "",
+  };
+}
 
 function mapRow(row: LessonPlanRow): LessonPlan {
   return {
@@ -43,17 +63,19 @@ function mapRow(row: LessonPlanRow): LessonPlan {
     scheduledDate: row.scheduledDate,
     level: row.level,
     topic: row.topic,
-    learningObjectives: row.learningObjectives,
+    learningObjectives: row.learningObjectives ?? [],
     skills: row.skills ?? [],
     method: row.method,
     procedure: row.procedure,
     materialsRequired: row.materialsRequired ?? [],
     vocabularyFocus: row.vocabularyFocus,
-    stages: row.stages ?? [],
+    stages: (row.stages ?? []).map(normalizeStage),
     questionsToAsk: row.questionsToAsk ?? [],
     differentiationSupport: row.differentiationSupport,
     differentiationExtension: row.differentiationExtension,
     differentiationHomework: row.differentiationHomework,
+    moduleDriveFileId: row.moduleDriveFileId,
+    moduleFileName: row.moduleFileName,
     createdAt: row.createdAt,
   };
 }
@@ -88,7 +110,7 @@ function toPayload(input: LessonPlanInput) {
     scheduledDate: input.scheduledDate,
     level: input.level || null,
     topic: input.topic,
-    learningObjectives: input.learningObjectives || null,
+    learningObjectives: input.learningObjectives.map((o) => o.trim()).filter(Boolean),
     skills: input.skills,
     method: input.method || null,
     procedure: input.procedure || null,
@@ -102,6 +124,8 @@ function toPayload(input: LessonPlanInput) {
     differentiationSupport: input.differentiationSupport || null,
     differentiationExtension: input.differentiationExtension || null,
     differentiationHomework: input.differentiationHomework || null,
+    moduleDriveFileId: input.moduleDriveFileId || null,
+    moduleFileName: input.moduleFileName || null,
   };
 }
 

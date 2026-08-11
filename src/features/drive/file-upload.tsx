@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Loader2, Upload, X } from "lucide-react";
+import { FileText, Loader2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDriveUpload } from "@/features/drive/use-drive-upload";
 
@@ -20,13 +20,13 @@ export function FileUpload({
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const upload = useDriveUpload();
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ url: string; isImage: boolean; name: string } | null>(null);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setPreview(URL.createObjectURL(file));
+    setPreview({ url: URL.createObjectURL(file), isImage: file.type.startsWith("image/"), name: file.name });
 
     try {
       const result = await upload.mutateAsync({ file });
@@ -40,12 +40,19 @@ export function FileUpload({
     <div className="space-y-2">
       {preview ? (
         <div className="relative">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={preview}
-            alt="Preview"
-            className="w-full rounded-lg object-cover max-h-48"
-          />
+          {preview.isImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={preview.url}
+              alt="Preview"
+              className="w-full rounded-lg object-cover max-h-48"
+            />
+          ) : (
+            <div className="bg-muted text-muted-foreground flex items-center gap-2 rounded-md px-3 py-2 text-xs">
+              <FileText className="size-4 shrink-0" />
+              <span className="truncate">{preview.name}</span>
+            </div>
+          )}
           <Button
             variant="destructive"
             size="icon-sm"

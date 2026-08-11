@@ -30,7 +30,9 @@ export interface TodayClass {
   topic: string | null;
   scheduledDate: string | null;
   skills: string[];
-  learningObjectives: string | null;
+  learningObjectives: string[];
+  moduleDriveFileId: string | null;
+  moduleFileName: string | null;
   meetingId: string | null;
   meetingStatus: string;
   checkInTime: string | null;

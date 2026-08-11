@@ -170,7 +170,9 @@ interface LessonPlanRow {
   scheduledDate: string;
   topic: string;
   skills: string[];
-  learningObjectives: string | null;
+  learningObjectives: string[] | null;
+  moduleDriveFileId: string | null;
+  moduleFileName: string | null;
 }
 
 interface MeetingRow {
@@ -319,7 +321,7 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
 
   const { data: lessonPlans, error: lpErr } = await supabase
     .from("lesson_plans")
-    .select("id, classId, meetingNumber, scheduledDate, topic, skills, learningObjectives")
+    .select("id, classId, meetingNumber, scheduledDate, topic, skills, learningObjectives, moduleDriveFileId, moduleFileName")
     .in("classId", classIds)
     .is("deletedAt", null)
     .order("meetingNumber");
@@ -396,7 +398,9 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
         topic: null,
         scheduledDate: null,
         skills: [],
-        learningObjectives: null,
+        learningObjectives: [],
+        moduleDriveFileId: null,
+        moduleFileName: null,
         meetingId: null,
         meetingStatus: "not_started",
         checkInTime: null,
@@ -451,7 +455,9 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
       topic: plan.topic,
       scheduledDate: plan.scheduledDate,
       skills: plan.skills || [],
-      learningObjectives: plan.learningObjectives,
+      learningObjectives: plan.learningObjectives || [],
+      moduleDriveFileId: plan.moduleDriveFileId,
+      moduleFileName: plan.moduleFileName,
       meetingId: meeting?.id || null,
       meetingStatus,
       checkInTime: checkIn?.checkInTime || null,

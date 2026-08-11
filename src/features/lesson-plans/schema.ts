@@ -30,8 +30,7 @@ export const STAGE_NAMES = [
 
 export const stageEntrySchema = z.object({
   stage: z.string(),
-  tutorActivity: z.string().optional(),
-  studentActivity: z.string().optional(),
+  activity: z.string().optional(),
   media: z.string().optional(),
   assessment: z.string().optional(),
 });
@@ -40,11 +39,16 @@ export type StageEntry = z.infer<typeof stageEntrySchema>;
 export function emptyStages(): StageEntry[] {
   return STAGE_NAMES.map((stage) => ({
     stage,
-    tutorActivity: "",
-    studentActivity: "",
+    activity: "",
     media: "",
     assessment: "",
   }));
+}
+
+export const DEFAULT_LEARNING_OBJECTIVES_COUNT = 3;
+
+export function emptyLearningObjectives(): string[] {
+  return Array(DEFAULT_LEARNING_OBJECTIVES_COUNT).fill("");
 }
 
 export const lessonPlanSchema = z.object({
@@ -54,7 +58,7 @@ export const lessonPlanSchema = z.object({
   scheduledDate: z.string().min(1, "Tanggal wajib diisi"),
   level: z.string().optional(),
   topic: z.string().min(1, "Topic wajib diisi"),
-  learningObjectives: z.string().optional(),
+  learningObjectives: z.array(z.string()),
   skills: z.array(z.string()),
   method: z.string().optional(),
   procedure: z.string().optional(),
@@ -65,6 +69,8 @@ export const lessonPlanSchema = z.object({
   differentiationSupport: z.string().optional(),
   differentiationExtension: z.string().optional(),
   differentiationHomework: z.string().optional(),
+  moduleDriveFileId: z.string().optional(),
+  moduleFileName: z.string().optional(),
 });
 
 export type LessonPlanInput = z.infer<typeof lessonPlanSchema>;
@@ -78,7 +84,7 @@ export interface LessonPlan {
   scheduledDate: string;
   level: string | null;
   topic: string;
-  learningObjectives: string | null;
+  learningObjectives: string[];
   skills: string[];
   method: string | null;
   procedure: string | null;
@@ -89,5 +95,7 @@ export interface LessonPlan {
   differentiationSupport: string | null;
   differentiationExtension: string | null;
   differentiationHomework: string | null;
+  moduleDriveFileId: string | null;
+  moduleFileName: string | null;
   createdAt: string;
 }

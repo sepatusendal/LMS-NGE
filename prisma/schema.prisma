@@ -276,19 +276,24 @@ model LessonPlan {
 
   level                    String? // SD / SMP / SMA
   topic                    String
-  learningObjectives       String?
+  /// Numbered list — teacher fills 3 by default and can add more.
+  learningObjectives       String[] @default([])
   skills                   String[] @default([]) // Listening, Speaking, Writing, Reading
   method                   String?
   procedure                String? // PPP / ESA
   materialsRequired        String[] @default([])
   vocabularyFocus          String?
-  /// Array of { stage, tutorActivity, studentActivity, media, assessment } —
-  /// per-lesson freeform stage breakdown, not shared/normalized across lessons.
+  /// Array of { stage, activity, media, assessment } — per-lesson freeform
+  /// stage breakdown, not shared/normalized across lessons.
   stages                   Json?
   questionsToAsk           String[] @default([])
   differentiationSupport   String?
   differentiationExtension String?
   differentiationHomework  String?
+  /// Learning module attached to this lesson plan (PDF, uploaded to Drive) —
+  /// same id/filename pattern as check-in/report photos.
+  moduleDriveFileId        String?
+  moduleFileName           String?
 
   createdAt DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt DateTime  @updatedAt @db.Timestamptz(3)

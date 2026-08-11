@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "File terlalu besar (max 10MB)" }, { status: 400 });
     }
 
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "File harus berupa gambar" }, { status: 400 });
+    if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+      return NextResponse.json({ error: "File harus berupa gambar atau PDF" }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());

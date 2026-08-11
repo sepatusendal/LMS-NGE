@@ -368,11 +368,15 @@ export default function TodayPage() {
                           <span className="text-muted-foreground">Topic:</span>{" "}
                           <span className="font-medium">{c.topic}</span>
                         </p>
-                        {c.learningObjectives && (
-                          <p>
-                            <span className="text-muted-foreground">Objectives:</span>{" "}
-                            {c.learningObjectives}
-                          </p>
+                        {c.learningObjectives.length > 0 && (
+                          <div>
+                            <span className="text-muted-foreground">Objectives:</span>
+                            <ul className="list-disc space-y-0.5 pl-5">
+                              {c.learningObjectives.map((o, i) => (
+                                <li key={i}>{o}</li>
+                              ))}
+                            </ul>
+                          </div>
                         )}
                         {c.skills.length > 0 && (
                           <div className="flex flex-wrap gap-1">
@@ -382,6 +386,17 @@ export default function TodayPage() {
                               </Badge>
                             ))}
                           </div>
+                        )}
+                        {c.moduleFileName && (
+                          <a
+                            href={`https://drive.google.com/file/d/${c.moduleDriveFileId}/view`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-primary flex items-center gap-1.5 text-xs hover:underline"
+                          >
+                            <FileText className="size-3.5" />
+                            {c.moduleFileName}
+                          </a>
                         )}
                         <Link
                           href={`/lesson-plan/${c.lessonPlanId}`}

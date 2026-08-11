@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Plus, X, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileUpload } from "@/features/drive/file-upload";
 import { useMyClasses } from "@/features/classes/use-my-classes";
 import { formatScheduleSlots } from "@/features/classes/schema";
 import {
@@ -23,6 +25,7 @@ import {
   MATERIAL_OPTIONS,
   PROCEDURE_OPTIONS,
   SKILL_OPTIONS,
+  emptyLearningObjectives,
   emptyStages,
   lessonPlanSchema,
   type LessonPlan,
@@ -65,6 +68,13 @@ export function LessonPlanForm({
   const createLessonPlan = useCreateLessonPlan();
   const updateLessonPlan = useUpdateLessonPlan();
 
+  const [moduleDriveFileId, setModuleDriveFileId] = useState(
+    lessonPlan?.moduleDriveFileId ?? "",
+  );
+  const [moduleFileName, setModuleFileName] = useState(
+    lessonPlan?.moduleFileName ?? "",
+  );
+
   const {
     register,
     control,
@@ -82,7 +92,9 @@ export function LessonPlanForm({
           scheduledDate: lessonPlan.scheduledDate.slice(0, 10),
           level: lessonPlan.level ?? "",
           topic: lessonPlan.topic,
-          learningObjectives: lessonPlan.learningObjectives ?? "",
+          learningObjectives: lessonPlan.learningObjectives.length
+            ? lessonPlan.learningObjectives
+            : emptyLearningObjectives(),
           skills: lessonPlan.skills,
           method: lessonPlan.method ?? "",
           procedure: lessonPlan.procedure ?? "",
@@ -95,12 +107,15 @@ export function LessonPlanForm({
           differentiationSupport: lessonPlan.differentiationSupport ?? "",
           differentiationExtension: lessonPlan.differentiationExtension ?? "",
           differentiationHomework: lessonPlan.differentiationHomework ?? "",
+          moduleDriveFileId: lessonPlan.moduleDriveFileId ?? "",
+          moduleFileName: lessonPlan.moduleFileName ?? "",
         }
       : {
           classId: "",
           meetingNumber: 1,
           week: 1,
           scheduledDate: "",
+          learningObjectives: emptyLearningObjectives(),
           skills: [],
           materialsRequired: [],
           stages: emptyStages(),
@@ -108,6 +123,7 @@ export function LessonPlanForm({
   });
 
   const watchedClassId = watch("classId");
+  const learningObjectives = watch("learningObjectives") ?? [];
 
   useEffect(() => {
     if (isEdit || !watchedClassId || !existingPlans) return;
@@ -122,11 +138,23 @@ export function LessonPlanForm({
     setValue("week", Math.ceil(nextMeetingNumber / 2));
   }, [watchedClassId, existingPlans, isEdit, setValue]);
 
+  function addObjective() {
+    setValue("learningObjectives", [...learningObjectives, ""]);
+  }
+
+  function removeObjective(index: number) {
+    setValue(
+      "learningObjectives",
+      learningObjectives.filter((_, i) => i !== index),
+    );
+  }
+
   async function onSubmit(values: LessonPlanInput) {
+    const payload = { ...values, moduleDriveFileId, moduleFileName };
     if (isEdit && lessonPlan) {
-      await updateLessonPlan.mutateAsync({ id: lessonPlan.id, input: values });
+      await updateLessonPlan.mutateAsync({ id: lessonPlan.id, input: payload });
     } else {
-      await createLessonPlan.mutateAsync(values);
+      await createLessonPlan.mutateAsync(payload);
     }
     router.push("/lesson-plan");
   }
@@ -255,13 +283,35 @@ export function LessonPlanForm({
 
       <Section title="Learning Objectives & Skills">
         <div className="space-y-2">
-          <Label htmlFor="learningObjectives">Learning Objectives</Label>
-          <Textarea
-            id="learningObjectives"
-            rows={3}
-            placeholder="By the end of this lesson, students will be able to..."
-            {...register("learningObjectives")}
-          />
+          <Label>Learning Objectives</Label>
+          <div className="space-y-2">
+            {learningObjectives.map((_, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <span className="text-muted-foreground w-5 shrink-0 text-sm">
+                  {index + 1}.
+                </span>
+                <Input
+                  placeholder="By the end of this lesson, students will be able to..."
+                  {...register(`learningObjectives.${index}` as const)}
+                />
+                {learningObjectives.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="shrink-0"
+                    onClick={() => removeObjective(index)}
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={addObjective}>
+            <Plus className="size-3.5" />
+            Tambah Poin
+          </Button>
         </div>
         <div className="space-y-2">
           <Label>Skill</Label>
@@ -354,16 +404,11 @@ export function LessonPlanForm({
                 value={stage.stage}
                 {...register(`stages.${index}.stage` as const)}
               />
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Input
-                  placeholder="Tutor Activity"
-                  {...register(`stages.${index}.tutorActivity` as const)}
-                />
-                <Input
-                  placeholder="Student Activity"
-                  {...register(`stages.${index}.studentActivity` as const)}
-                />
-              </div>
+              <Textarea
+                rows={2}
+                placeholder="Aktivitas tutor & siswa di tahap ini"
+                {...register(`stages.${index}.activity` as const)}
+              />
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Input
                   placeholder="Media (opsional)"
@@ -416,6 +461,39 @@ export function LessonPlanForm({
             {...register("differentiationHomework")}
           />
         </div>
+        </Section>
+
+        <Section title="Modul Pembelajaran">
+          <div className="space-y-2">
+            <Label>Modul (PDF)</Label>
+            {readOnly ? (
+              moduleFileName ? (
+                <a
+                  href={`https://drive.google.com/file/d/${moduleDriveFileId}/view`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary flex items-center gap-2 text-sm underline underline-offset-2"
+                >
+                  <FileText className="size-4 shrink-0" />
+                  {moduleFileName}
+                </a>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  Belum ada modul yang diupload.
+                </p>
+              )
+            ) : (
+              <FileUpload
+                label="Upload Modul (PDF)"
+                accept="application/pdf"
+                currentFile={moduleFileName || null}
+                onUploaded={(id, name) => {
+                  setModuleDriveFileId(id);
+                  setModuleFileName(name);
+                }}
+              />
+            )}
+          </div>
         </Section>
       </fieldset>
 
