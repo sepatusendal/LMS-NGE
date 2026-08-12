@@ -1,6 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ function ActiveToggleCell({ curriculum }: { curriculum: Curriculum }) {
 
 export function createCurriculumColumns(
   onEdit: (curriculum: Curriculum) => void,
+  onModule: (curriculum: Curriculum) => void,
 ): ColumnDef<Curriculum>[] {
   return [
     { accessorKey: "name", header: "Nama Kurikulum" },
@@ -39,6 +41,22 @@ export function createCurriculumColumns(
       accessorKey: "isActive",
       header: "Status",
       cell: ({ row }) => <ActiveToggleCell curriculum={row.original} />,
+    },
+    {
+      id: "module",
+      header: "Modul",
+      cell: ({ row }) => (
+        <Button
+          variant={row.original.moduleDriveFileId ? "secondary" : "outline"}
+          size="sm"
+          onClick={() => onModule(row.original)}
+        >
+          <FileText className="size-3.5" />
+          <span className="ml-1.5">
+            {row.original.moduleDriveFileId ? "Modul" : "Upload"}
+          </span>
+        </Button>
+      ),
     },
     {
       id: "actions",

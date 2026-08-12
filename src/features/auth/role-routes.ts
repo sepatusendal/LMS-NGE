@@ -28,6 +28,7 @@ const ROUTE_PREFIX_ROLES: Array<{ prefix: string; roles: AppRole[] }> = [
   { prefix: "/reports", roles: ["ADMIN"] },
   { prefix: "/parent-reports", roles: ["ADMIN"] },
   { prefix: "/api/parent-reports", roles: ["ADMIN"] },
+  { prefix: "/api/curriculum", roles: ["ADMIN"] },
   { prefix: "/settings", roles: ["ADMIN"] },
   { prefix: "/monitoring", roles: ["COORDINATOR"] },
   { prefix: "/today", roles: ["TEACHER"] },

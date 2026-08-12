@@ -77,6 +77,19 @@ export async function findOrCreateFolder(name: string, parentId: string): Promis
   return created.id;
 }
 
+/** Newly created files are private to the uploading account by default —
+ * nobody else (teachers, parents, admins) could open the link the app shows
+ * them without this. "reader" + type "anyone" mirrors a standard "Anyone
+ * with the link can view" share. */
+export async function setPublicReadable(driveFileId: string) {
+  const token = await getAccessToken();
+  await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}/permissions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ role: "reader", type: "anyone" }),
+  });
+}
+
 export async function uploadFile(
   fileBuffer: Buffer,
   fileName: string,
@@ -114,21 +127,48 @@ export async function uploadFile(
   }
 
   const data = (await res.json()) as { id: string; webViewLink?: string };
-
-  // Newly created files are private to the uploading account by default —
-  // nobody else (teachers, parents, admins) could open the link the app
-  // shows them without this. "reader" + type "anyone" mirrors a standard
-  // "Anyone with the link can view" share.
-  await fetch(`https://www.googleapis.com/drive/v3/files/${data.id}/permissions`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ role: "reader", type: "anyone" }),
-  });
+  await setPublicReadable(data.id);
 
   return {
     driveFileId: data.id,
     webViewLink: data.webViewLink || `https://drive.google.com/file/d/${data.id}/view`,
   };
+}
+
+/** Starts a resumable upload session and returns the pre-authenticated
+ * session URL the browser can PUT the file bytes to directly — bypassing
+ * our own server (and Vercel's serverless request-body limits) entirely.
+ * Needed for module PDFs that can run 70-130MB, far past what a normal
+ * multipart upload through a serverless function can handle. */
+export async function initResumableUpload(
+  fileName: string,
+  mimeType: string,
+  fileSize: number,
+  folderId: string,
+): Promise<string> {
+  const token = await getAccessToken();
+  const res = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,webViewLink",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json; charset=UTF-8",
+        "X-Upload-Content-Type": mimeType,
+        "X-Upload-Content-Length": String(fileSize),
+      },
+      body: JSON.stringify({ name: fileName, mimeType, parents: [folderId] }),
+    },
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: { message: res.statusText } }));
+    throw new Error(err.error?.message ?? `Gagal memulai upload Drive (${res.status})`);
+  }
+
+  const sessionUrl = res.headers.get("Location");
+  if (!sessionUrl) throw new Error("Drive tidak mengembalikan sesi upload");
+  return sessionUrl;
 }
 
 export async function deleteFile(driveFileId: string) {

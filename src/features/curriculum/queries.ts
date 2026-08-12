@@ -5,7 +5,9 @@ export async function fetchCurriculums(): Promise<Curriculum[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("curriculums")
-    .select("id, name, gradeLevel, description, isActive, createdAt")
+    .select(
+      "id, name, gradeLevel, description, isActive, createdAt, moduleDriveFileId, moduleFileName, moduleFileSize, moduleUpdatedAt",
+    )
     .is("deletedAt", null)
     .order("gradeLevel");
   if (error) throw error;

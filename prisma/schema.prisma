@@ -163,6 +163,14 @@ model Curriculum {
   updatedAt   DateTime  @updatedAt @db.Timestamptz(3)
   deletedAt   DateTime? @db.Timestamptz(3)
 
+  // Reference module (silabus/materi PDF) for this program, stored in Google
+  // Drive — not Supabase Storage — and shown to teachers as a read-only
+  // reference when they write a lesson plan for a class on this curriculum.
+  moduleDriveFileId String?
+  moduleFileName    String?
+  moduleFileSize    Int?
+  moduleUpdatedAt   DateTime? @db.Timestamptz(3)
+
   classes Class[]
 
   @@map("curriculums")

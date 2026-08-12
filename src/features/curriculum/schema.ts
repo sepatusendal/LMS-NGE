@@ -15,4 +15,8 @@ export interface Curriculum {
   description: string | null;
   isActive: boolean;
   createdAt: string;
+  moduleDriveFileId: string | null;
+  moduleFileName: string | null;
+  moduleFileSize: number | null;
+  moduleUpdatedAt: string | null;
 }

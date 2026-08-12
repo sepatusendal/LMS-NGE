@@ -195,6 +195,7 @@ export function LessonPlanForm({
 
   const watchedClassId = watch("classId");
   const learningObjectives = watch("learningObjectives") ?? [];
+  const selectedClassModule = myClasses?.find((c) => c.id === watchedClassId)?.module ?? null;
 
   useEffect(() => {
     if (isEdit || !watchedClassId || !existingPlans) return;
@@ -296,6 +297,26 @@ export function LessonPlanForm({
             <p className="text-destructive text-sm">{errors.classId.message}</p>
           )}
         </div>
+
+        {watchedClassId && (
+          <div className="bg-muted/40 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+            <FileText className="text-muted-foreground size-4 shrink-0" />
+            {selectedClassModule ? (
+              <a
+                href={`https://drive.google.com/file/d/${selectedClassModule.driveFileId}/view`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-w-0 truncate hover:underline"
+              >
+                Modul {selectedClassModule.curriculumName}: {selectedClassModule.fileName}
+              </a>
+            ) : (
+              <span className="text-muted-foreground">
+                Belum ada modul acuan untuk kelas ini.
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">

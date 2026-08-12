@@ -3,6 +3,12 @@ import { createClient } from "@/lib/supabase/client";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
 import type { ScheduleSlot } from "./schema";
 
+export interface ClassModule {
+  driveFileId: string;
+  fileName: string;
+  curriculumName: string;
+}
+
 export interface MyClass {
   id: string;
   name: string;
@@ -16,6 +22,10 @@ export interface MyClass {
    * lesson plans should filter to isPrimary classes only. Browsing/reading
    * is fine for either. */
   isPrimary: boolean;
+  /** The reference module for this class's program (curriculum), stored in
+   * Google Drive. Null if the class has no curriculum assigned yet, or the
+   * curriculum has no module uploaded. */
+  module: ClassModule | null;
 }
 
 interface MyClassRow {
@@ -25,10 +35,15 @@ interface MyClassRow {
   room: string | null;
   schools: { name: string } | null;
   class_schedule_slots: ScheduleSlot[];
+  curriculums: {
+    name: string;
+    moduleDriveFileId: string | null;
+    moduleFileName: string | null;
+  } | null;
 }
 
 const SELECT =
-  "id, name, scheduleDaysOfWeek, room, schools(name), class_schedule_slots(dayOfWeek, startTime, endTime)";
+  "id, name, scheduleDaysOfWeek, room, schools(name), class_schedule_slots(dayOfWeek, startTime, endTime), curriculums(name, moduleDriveFileId, moduleFileName)";
 
 async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
   const supabase = createClient();
@@ -81,6 +96,14 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
     scheduleSlots: row.class_schedule_slots ?? [],
     room: row.room,
     isPrimary,
+    module:
+      row.curriculums?.moduleDriveFileId && row.curriculums.moduleFileName
+        ? {
+            driveFileId: row.curriculums.moduleDriveFileId,
+            fileName: row.curriculums.moduleFileName,
+            curriculumName: row.curriculums.name,
+          }
+        : null,
   });
 
   return [

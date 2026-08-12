@@ -6,19 +6,32 @@ import { DataTable } from "@/components/shared/data-table";
 import { useCurriculums } from "@/features/curriculum/use-curriculum";
 import { createCurriculumColumns } from "@/features/curriculum/columns";
 import { CurriculumFormDialog } from "@/features/curriculum/curriculum-form-dialog";
+import { CurriculumModuleDialog } from "@/features/curriculum/curriculum-module-dialog";
 import type { Curriculum } from "@/features/curriculum/schema";
 
 export default function CurriculumPage() {
   const { data: curriculums, isLoading } = useCurriculums();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Curriculum | undefined>();
+  const [moduleDialogOpen, setModuleDialogOpen] = useState(false);
+  const [moduleCurriculumId, setModuleCurriculumId] = useState<string | undefined>();
+  // Look the curriculum up live from the list (rather than holding a
+  // snapshot) so the dialog reflects the module just uploaded/removed once
+  // the query invalidation refetches.
+  const moduleCurriculum = curriculums?.find((c) => c.id === moduleCurriculumId);
 
   const columns = useMemo(
     () =>
-      createCurriculumColumns((curriculum) => {
-        setEditing(curriculum);
-        setDialogOpen(true);
-      }),
+      createCurriculumColumns(
+        (curriculum) => {
+          setEditing(curriculum);
+          setDialogOpen(true);
+        },
+        (curriculum) => {
+          setModuleCurriculumId(curriculum.id);
+          setModuleDialogOpen(true);
+        },
+      ),
     [],
   );
 
@@ -52,6 +65,12 @@ export default function CurriculumPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         curriculum={editing}
+      />
+
+      <CurriculumModuleDialog
+        open={moduleDialogOpen}
+        onOpenChange={setModuleDialogOpen}
+        curriculum={moduleCurriculum}
       />
     </div>
   );

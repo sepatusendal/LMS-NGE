@@ -66,3 +66,8 @@ next-env.d.ts
 
 # local PDF preview output from scripts/render-parent-report-preview.ts
 /parent-report-preview.pdf
+
+# source module PDFs (70-130MB each, over GitHub's 100MB file limit) — these
+# get uploaded to Google Drive by scripts/seed-curriculum-modules.ts, not
+# committed to the repo
+/Modul Kelas Tutor
