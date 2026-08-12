@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Clock, MapPin } from "lucide-react";
+import { Plus, Clock, MapPin, FileText } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -58,6 +58,17 @@ export default function LessonPlanPage() {
                     </span>
                   )}
                 </div>
+                {classItem.module && (
+                  <a
+                    href={`https://drive.google.com/file/d/${classItem.module.driveFileId}/view`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary mt-1 inline-flex items-center gap-1 text-xs hover:underline"
+                  >
+                    <FileText className="size-3" />
+                    Modul {classItem.module.curriculumName}
+                  </a>
+                )}
               </div>
               <Badge variant={isCompliant ? "default" : "secondary"}>
                 {isCompliant ? "Aman" : "Perlu Lesson Plan"}
