@@ -32,6 +32,9 @@ const ROUTE_PREFIX_ROLES: Array<{ prefix: string; roles: AppRole[] }> = [
   { prefix: "/settings", roles: ["ADMIN"] },
   { prefix: "/monitoring", roles: ["COORDINATOR"] },
   { prefix: "/today", roles: ["TEACHER"] },
+  { prefix: "/absensi", roles: ["TEACHER"] },
+  { prefix: "/kelas", roles: ["TEACHER"] },
+  { prefix: "/jadwal", roles: ["TEACHER"] },
   { prefix: "/lesson-plan", roles: ["ADMIN", "TEACHER"] },
   { prefix: "/profile", roles: ["TEACHER"] },
   // Shared or public-ish routes, reachable by any logged-in role.

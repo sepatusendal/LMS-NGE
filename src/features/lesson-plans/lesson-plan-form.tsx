@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ModuleCoverBanner } from "@/components/shared/module-cover";
 import { FileUpload } from "@/features/drive/file-upload";
 import { useMyClasses } from "@/features/classes/use-my-classes";
 import { formatScheduleSlots } from "@/features/classes/schema";
@@ -247,7 +248,7 @@ export function LessonPlanForm({
         </div>
       )}
 
-      <fieldset disabled={readOnly} className="space-y-4 border-0 p-0">
+      <fieldset disabled={readOnly} className="space-y-5 border-0 p-0">
         <Section
           title="Info Dasar"
           description="Kelas, jadwal, dan level pembelajaran"
@@ -298,25 +299,7 @@ export function LessonPlanForm({
           )}
         </div>
 
-        {watchedClassId && (
-          <div className="bg-muted/40 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
-            <FileText className="text-muted-foreground size-4 shrink-0" />
-            {selectedClassModule ? (
-              <a
-                href={`https://drive.google.com/file/d/${selectedClassModule.driveFileId}/view`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="min-w-0 truncate hover:underline"
-              >
-                Modul {selectedClassModule.curriculumName}: {selectedClassModule.fileName}
-              </a>
-            ) : (
-              <span className="text-muted-foreground">
-                Belum ada modul acuan untuk kelas ini.
-              </span>
-            )}
-          </div>
-        )}
+        {watchedClassId && <ModuleCoverBanner module={selectedClassModule} />}
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">

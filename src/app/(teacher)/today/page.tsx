@@ -68,7 +68,7 @@ export default function TodayPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-7">
       <TodayHero
         greeting={greeting}
         firstName={firstName}
@@ -107,7 +107,7 @@ export default function TodayPage() {
           const noLp = !c.lessonPlanId;
 
           return (
-            <div key={c.classId} className="space-y-3">
+            <div key={c.classId} className="space-y-3.5">
               <Card
                 className={cn(
                   "overflow-hidden border-2 border-transparent py-0 shadow-sm transition-shadow",

@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Clock, MapPin, FileText } from "lucide-react";
+import { Plus, Clock, MapPin, ChevronRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
+import { ModuleBadge } from "@/components/shared/module-cover";
 import { useMyClasses } from "@/features/classes/use-my-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
 import { formatScheduleSlots } from "@/features/classes/schema";
 import { parseLocalDate } from "@/lib/date";
+import { getCurriculumTheme } from "@/lib/curriculum-theme";
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -20,12 +22,17 @@ export default function LessonPlanPage() {
   const now = Date.now();
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-7">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Lesson Plan</h1>
+        <div>
+          <h1 className="text-xl font-bold">Lesson Plan</h1>
+          <p className="text-muted-foreground text-sm">
+            Rencana pembelajaran untuk semua kelasmu
+          </p>
+        </div>
         <Link
           href="/lesson-plan/new"
-          className={cn(buttonVariants({ size: "sm" }))}
+          className={cn(buttonVariants({ size: "sm" }), "shadow-sm")}
         >
           <Plus className="size-4" aria-hidden="true" />
           Tambah
@@ -39,56 +46,57 @@ export default function LessonPlanPage() {
         const latest = classPlans[classPlans.length - 1];
         const isCompliant =
           latest && parseLocalDate(latest.scheduledDate).getTime() - now >= TWO_WEEKS_MS;
+        const theme = getCurriculumTheme(classItem.module?.curriculumName ?? classItem.name);
 
         return (
-          <div key={classItem.id} className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">{classItem.name}</p>
-                <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-                  <span>{classItem.schoolName}</span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="size-3" />
-                    {formatScheduleSlots(classItem.scheduleSlots)}
-                  </span>
-                  {classItem.room && (
+          <div key={classItem.id} className="space-y-3">
+            <div className={cn("overflow-hidden rounded-2xl border bg-white shadow-sm")}>
+              <div className={cn("h-1.5 w-full", theme.bar)} />
+              <div className="flex items-center justify-between gap-3 p-4">
+                <div className="min-w-0 space-y-1.5">
+                  <p className="text-base font-bold">{classItem.name}</p>
+                  <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                    <span>{classItem.schoolName}</span>
                     <span className="flex items-center gap-1">
-                      <MapPin className="size-3" />
-                      {classItem.room}
+                      <Clock className="size-3" />
+                      {formatScheduleSlots(classItem.scheduleSlots)}
                     </span>
+                    {classItem.room && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="size-3" />
+                        {classItem.room}
+                      </span>
+                    )}
+                  </div>
+                  {classItem.module && (
+                    <div className="pt-0.5">
+                      <ModuleBadge module={classItem.module} />
+                    </div>
                   )}
                 </div>
-                {classItem.module && (
-                  <a
-                    href={`https://drive.google.com/file/d/${classItem.module.driveFileId}/view`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary mt-1 inline-flex items-center gap-1 text-xs hover:underline"
-                  >
-                    <FileText className="size-3" />
-                    Modul {classItem.module.curriculumName}
-                  </a>
-                )}
+                <Badge
+                  variant={isCompliant ? "default" : "secondary"}
+                  className="shrink-0"
+                >
+                  {isCompliant ? "Aman" : "Perlu Lesson Plan"}
+                </Badge>
               </div>
-              <Badge variant={isCompliant ? "default" : "secondary"}>
-                {isCompliant ? "Aman" : "Perlu Lesson Plan"}
-              </Badge>
             </div>
 
             {classPlans.length === 0 ? (
-              <Card>
-                <CardContent className="text-muted-foreground py-4 text-center text-sm">
+              <Card className="border-dashed shadow-none">
+                <CardContent className="text-muted-foreground py-5 text-center text-sm">
                   Belum ada lesson plan.
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {classPlans.map((plan) => (
                   <Link key={plan.id} href={`/lesson-plan/${plan.id}`}>
-                    <Card className="hover:bg-muted/50">
-                      <CardContent className="flex items-center justify-between py-3">
-                        <div>
-                          <p className="text-sm font-medium">
+                    <Card className="border-border/70 rounded-xl shadow-sm transition-colors hover:bg-muted/40">
+                      <CardContent className="flex items-center justify-between gap-3 py-3.5">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold">
                             Meeting {plan.meetingNumber} — {plan.topic}
                           </p>
                           <p className="text-muted-foreground text-xs">
@@ -99,6 +107,7 @@ export default function LessonPlanPage() {
                             )}
                           </p>
                         </div>
+                        <ChevronRight className="text-muted-foreground size-4 shrink-0" />
                       </CardContent>
                     </Card>
                   </Link>
