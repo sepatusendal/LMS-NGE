@@ -1,8 +1,10 @@
 "use client";
 
-import { Loader2, AlertCircle, Clock, MapPin, CheckCircle2, Users } from "lucide-react";
+import { AlertCircle, Clock, MapPin, CheckCircle2, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ClassAvatar } from "@/components/shared/class-avatar";
+import { LoadingState } from "@/components/shared/loading-state";
 import { useTodayClasses } from "@/features/meetings/use-today";
 import { AttendanceForm } from "@/features/meetings/attendance-form";
 
@@ -24,12 +26,7 @@ export default function AbsensiPage() {
         </p>
       </div>
 
-      {isLoading && (
-        <div className="flex flex-col items-center justify-center py-16">
-          <Loader2 className="text-muted-foreground size-6 animate-spin" />
-          <p className="text-muted-foreground mt-3 text-sm">Memuat jadwal hari ini...</p>
-        </div>
-      )}
+      {isLoading && <LoadingState />}
 
       {isError && (
         <div className="flex flex-col items-center justify-center py-16">
@@ -52,19 +49,22 @@ export default function AbsensiPage() {
           <div className="h-1.5 w-full bg-[#eda100]" />
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="truncate text-base font-bold">{c.className}</p>
-                <div className="text-muted-foreground flex items-center gap-3 text-xs">
-                  <span className="flex items-center gap-1">
-                    <Clock className="size-3" />
-                    {c.scheduleStartTime} - {c.scheduleEndTime}
-                  </span>
-                  {c.room && (
+              <div className="flex min-w-0 items-center gap-3">
+                <ClassAvatar name={c.className} size="sm" />
+                <div className="min-w-0">
+                  <p className="truncate text-base font-bold">{c.className}</p>
+                  <div className="text-muted-foreground flex items-center gap-3 text-xs">
                     <span className="flex items-center gap-1">
-                      <MapPin className="size-3" />
-                      {c.room}
+                      <Clock className="size-3" />
+                      {c.scheduleStartTime} - {c.scheduleEndTime}
                     </span>
-                  )}
+                    {c.room && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="size-3" />
+                        {c.room}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <Badge variant="outline" className="shrink-0 border-[#eda100]/40 text-[#a3730a]">

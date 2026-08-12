@@ -7,6 +7,7 @@ import { AlertCircle, NotebookPen } from "lucide-react";
 import { LessonPlanForm } from "@/features/lesson-plans/lesson-plan-form";
 import { useLessonPlan } from "@/features/lesson-plans/use-lesson-plans";
 import { useMyClasses } from "@/features/classes/use-my-classes";
+import { LoadingState } from "@/components/shared/loading-state";
 
 export default function EditLessonPlanPage() {
   const params = useParams<{ id: string }>();
@@ -49,7 +50,7 @@ export default function EditLessonPlanPage() {
           </p>
         </div>
       ) : isLoading || !lessonPlan ? (
-        <p className="text-muted-foreground text-sm">Memuat data...</p>
+        <LoadingState />
       ) : (
         <LessonPlanForm lessonPlan={lessonPlan} readOnly={!isOwner} />
       )}

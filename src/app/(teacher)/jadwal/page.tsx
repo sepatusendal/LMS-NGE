@@ -3,6 +3,8 @@
 import { Clock, MapPin, CalendarDays } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { ClassAvatar } from "@/components/shared/class-avatar";
+import { LoadingState } from "@/components/shared/loading-state";
 import { useMyClasses, type MyClass } from "@/features/classes/use-my-classes";
 import { DAY_OPTIONS } from "@/features/classes/schema";
 import { getCurriculumTheme } from "@/lib/curriculum-theme";
@@ -33,7 +35,7 @@ export default function JadwalPage() {
         <p className="text-muted-foreground text-sm">Jadwal mingguan semua kelasmu</p>
       </div>
 
-      {isLoading && <p className="text-muted-foreground text-sm">Memuat jadwal...</p>}
+      {isLoading && <LoadingState />}
 
       {!isLoading && (!classes || classes.length === 0) && (
         <p className="text-muted-foreground text-sm">
@@ -70,8 +72,9 @@ export default function JadwalPage() {
                   <Card key={`${cls.id}-${i}`} className="overflow-hidden rounded-xl py-0 shadow-sm">
                     <div className="flex">
                       <div className={cn("w-1.5 shrink-0", theme.bar)} />
-                      <CardContent className="flex flex-1 items-center justify-between gap-3 py-3">
-                        <div className="min-w-0">
+                      <CardContent className="flex flex-1 items-center gap-3 py-3">
+                        <ClassAvatar name={cls.name} themeKey={cls.module?.curriculumName ?? cls.name} size="sm" />
+                        <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold">{cls.name}</p>
                           <p className="text-muted-foreground truncate text-xs">{cls.schoolName}</p>
                         </div>

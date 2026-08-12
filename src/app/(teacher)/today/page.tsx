@@ -13,6 +13,8 @@ import { updateCheckInPhoto } from "@/features/meetings/queries";
 import { AttendanceForm } from "@/features/meetings/attendance-form";
 import { ReportForm } from "@/features/meetings/report-form";
 import { FileUpload } from "@/features/drive/file-upload";
+import { ClassAvatar } from "@/components/shared/class-avatar";
+import { LoadingState } from "@/components/shared/loading-state";
 import { HandoverSummaryPanel } from "@/features/substitutes/handover-summary-panel";
 import { ABSENCE_REASON_LABEL } from "@/features/substitutes/schema";
 import { getTimeGreeting } from "@/lib/greeting";
@@ -78,12 +80,7 @@ export default function TodayPage() {
         hour={now.getHours()}
       />
 
-      {isLoading && (
-        <div className="flex flex-col items-center justify-center py-16">
-          <Loader2 className="text-muted-foreground size-6 animate-spin" />
-          <p className="text-muted-foreground mt-3 text-sm">Memuat jadwal hari ini...</p>
-        </div>
-      )}
+      {isLoading && <LoadingState />}
 
       {isError && (
         <div className="flex flex-col items-center justify-center py-16">
@@ -116,31 +113,34 @@ export default function TodayPage() {
               >
                 <div className={cn("h-1.5 w-full", status.barColor)} />
                 <CardContent className="pt-4 pb-4">
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <h2 className="truncate text-base font-semibold">{c.className}</h2>
-                      <p className="text-muted-foreground text-xs">{c.schoolName}</p>
-                      <div className="text-muted-foreground flex items-center gap-3 text-xs">
-                        <span className="flex items-center gap-1">
-                          <Clock className="size-3" />
-                          {c.scheduleStartTime} - {c.scheduleEndTime}
-                        </span>
-                        {c.room && (
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                      <ClassAvatar name={c.className} size="md" className="mt-0.5" />
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <h2 className="truncate text-base font-semibold">{c.className}</h2>
+                        <p className="text-muted-foreground text-xs">{c.schoolName}</p>
+                        <div className="text-muted-foreground flex items-center gap-3 text-xs">
                           <span className="flex items-center gap-1">
-                            <MapPin className="size-3" />
-                            {c.room}
+                            <Clock className="size-3" />
+                            {c.scheduleStartTime} - {c.scheduleEndTime}
                           </span>
+                          {c.room && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="size-3" />
+                              {c.room}
+                            </span>
+                          )}
+                        </div>
+                        {c.topic ? (
+                          <p className="text-xs font-medium">
+                            Meeting {c.meetingNumber}: {c.topic}
+                          </p>
+                        ) : (
+                          <p className="text-destructive/80 text-xs">
+                            Belum ada lesson plan untuk meeting ini
+                          </p>
                         )}
                       </div>
-                      {c.topic ? (
-                        <p className="text-xs font-medium">
-                          Meeting {c.meetingNumber}: {c.topic}
-                        </p>
-                      ) : (
-                        <p className="text-destructive/80 text-xs">
-                          Belum ada lesson plan untuk meeting ini
-                        </p>
-                      )}
                     </div>
                     <Badge variant={status.variant} className={cn("ml-2 shrink-0", status.accent)}>
                       {status.label}
