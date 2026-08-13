@@ -177,12 +177,18 @@ model Curriculum {
   @@map("curriculums")
 }
 
+enum ClassType {
+  REGULAR
+  TEACHER_TRAINING
+}
+
 model Class {
   id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   schoolId           String    @db.Uuid
   curriculumId       String?   @db.Uuid
   teacherId          String    @db.Uuid
   name               String
+  classType          ClassType @default(REGULAR) // REGULAR = student classes, TEACHER_TRAINING = Guru & Staff English course — kept in separate admin submenus, never listed together
   room               String?
   scheduleDaysOfWeek Int[] // 0 = Sunday .. 6 = Saturday; classes often meet 2x/week — kept in sync with scheduleSlots
   isActive           Boolean   @default(true)

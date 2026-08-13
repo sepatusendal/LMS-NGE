@@ -24,24 +24,26 @@ import {
 import { useSchools } from "@/features/schools/use-schools";
 import { useTeachers } from "@/features/teachers/use-teachers";
 import { useCurriculums } from "@/features/curriculum/use-curriculum";
-import { DAY_OPTIONS, classSchema, type Class, type ClassInput } from "./schema";
+import { DAY_OPTIONS, classSchema, type Class, type ClassInput, type ClassType } from "./schema";
 import { useCreateClass, useUpdateClass } from "./use-classes";
 
 export function ClassFormDialog({
   open,
   onOpenChange,
   classItem,
+  classType = "REGULAR",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   classItem?: Class;
+  classType?: ClassType;
 }) {
   const isEdit = Boolean(classItem);
   const { data: schools } = useSchools();
   const { data: teachers } = useTeachers();
   const { data: curriculums } = useCurriculums();
-  const createClass = useCreateClass();
-  const updateClass = useUpdateClass();
+  const createClass = useCreateClass(classType);
+  const updateClass = useUpdateClass(classType);
 
   const {
     register,

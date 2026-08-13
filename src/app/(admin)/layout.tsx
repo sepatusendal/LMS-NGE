@@ -14,6 +14,7 @@ import {
   FileHeart,
   ShieldUser,
   UserRoundX,
+  Presentation,
 } from "lucide-react";
 import { AppSidebar, type NavItem } from "@/components/shared/app-sidebar";
 import { MobileTopbar } from "@/components/shared/mobile-topbar";
@@ -30,6 +31,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
       { href: "/schools", label: "Daftar Sekolah", icon: Building2 },
       { href: "/students", label: "Siswa", icon: Users },
       { href: "/classes", label: "Kelas", icon: BookOpen },
+      { href: "/teacher-training", label: "Kelas Guru & Staff", icon: Presentation },
       { href: "/lesson-plans", label: "Lesson Plan", icon: CalendarDays },
       { href: "/reports", label: "Daily Teaching Report", icon: FileText },
       { href: "/parent-reports", label: "Laporan Orang Tua", icon: FileHeart },

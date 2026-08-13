@@ -93,7 +93,7 @@ function NavSection({
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
-                <child.icon className="size-3.5" aria-hidden="true" />
+                <child.icon className="size-4" aria-hidden="true" />
                 {child.label}
               </Link>
             );

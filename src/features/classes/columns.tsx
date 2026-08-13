@@ -5,11 +5,11 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { formatScheduleSlots, type Class } from "./schema";
+import { formatScheduleSlots, type Class, type ClassType } from "./schema";
 import { useSetClassActive } from "./use-classes";
 
-function ActiveToggleCell({ classItem }: { classItem: Class }) {
-  const setActive = useSetClassActive();
+function ActiveToggleCell({ classItem, classType }: { classItem: Class; classType: ClassType }) {
+  const setActive = useSetClassActive(classType);
   return (
     <div className="flex items-center gap-2">
       <Switch
@@ -28,6 +28,7 @@ function ActiveToggleCell({ classItem }: { classItem: Class }) {
 
 export function createClassColumns(
   onEdit: (classItem: Class) => void,
+  classType: ClassType = "REGULAR",
 ): ColumnDef<Class>[] {
   return [
     {
@@ -57,7 +58,7 @@ export function createClassColumns(
     {
       accessorKey: "isActive",
       header: "Status",
-      cell: ({ row }) => <ActiveToggleCell classItem={row.original} />,
+      cell: ({ row }) => <ActiveToggleCell classItem={row.original} classType={classType} />,
     },
     {
       id: "actions",

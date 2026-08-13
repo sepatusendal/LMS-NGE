@@ -8,8 +8,8 @@ import { createClassColumns } from "@/features/classes/columns";
 import { ClassFormDialog } from "@/features/classes/class-form-dialog";
 import type { Class } from "@/features/classes/schema";
 
-export default function ClassesPage() {
-  const { data: classes, isLoading } = useClasses("REGULAR");
+export default function TeacherTrainingClassesPage() {
+  const { data: classes, isLoading } = useClasses("TEACHER_TRAINING");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Class | undefined>();
 
@@ -18,7 +18,7 @@ export default function ClassesPage() {
       createClassColumns((classItem) => {
         setEditing(classItem);
         setDialogOpen(true);
-      }, "REGULAR"),
+      }, "TEACHER_TRAINING"),
     [],
   );
 
@@ -26,9 +26,9 @@ export default function ClassesPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Kelas</h1>
+          <h1 className="text-xl font-semibold">Kelas Guru & Staff</h1>
           <p className="text-muted-foreground text-sm">
-            Kelola kelas, jadwal, dan penugasan teacher.
+            Kelas English training untuk guru, staf, dan karyawan — terpisah dari kelas siswa.
           </p>
         </div>
         <Button
@@ -52,6 +52,7 @@ export default function ClassesPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         classItem={editing}
+        classType="TEACHER_TRAINING"
       />
     </div>
   );

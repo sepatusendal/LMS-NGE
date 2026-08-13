@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import type { Class, ClassInput, ScheduleSlot } from "./schema";
+import type { Class, ClassInput, ClassType, ScheduleSlot } from "./schema";
 
 interface ClassRow {
   id: string;
@@ -7,6 +7,7 @@ interface ClassRow {
   schoolId: string;
   teacherId: string;
   curriculumId: string | null;
+  classType: ClassType;
   room: string | null;
   scheduleDaysOfWeek: number[];
   isActive: boolean;
@@ -18,22 +19,14 @@ interface ClassRow {
 }
 
 const SELECT = `
-  id, name, schoolId, teacherId, curriculumId, room, scheduleDaysOfWeek,
+  id, name, schoolId, teacherId, curriculumId, classType, room, scheduleDaysOfWeek,
   isActive, createdAt,
   schools(name), curriculums(name), teachers(users(fullName)),
   class_schedule_slots(dayOfWeek, startTime, endTime)
 `;
 
-export async function fetchClasses(): Promise<Class[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("classes")
-    .select(SELECT)
-    .is("deletedAt", null)
-    .order("name");
-  if (error) throw error;
-
-  return (data as unknown as ClassRow[]).map((row) => ({
+function mapRow(row: ClassRow): Class {
+  return {
     id: row.id,
     name: row.name,
     schoolId: row.schoolId,
@@ -42,20 +35,49 @@ export async function fetchClasses(): Promise<Class[]> {
     teacherName: row.teachers?.users?.fullName ?? "-",
     curriculumId: row.curriculumId,
     curriculumName: row.curriculums?.name ?? null,
+    classType: row.classType,
     room: row.room,
     scheduleDaysOfWeek: row.scheduleDaysOfWeek,
     scheduleSlots: row.class_schedule_slots ?? [],
     isActive: row.isActive,
     createdAt: row.createdAt,
-  }));
+  };
 }
 
-function toPayload(input: ClassInput) {
+/** Fetch a single class regardless of classType — used by the detail page,
+ * which is shared between the Classes and Kelas Guru & Staff submenus. */
+export async function fetchClassById(id: string): Promise<Class | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("classes")
+    .select(SELECT)
+    .eq("id", id)
+    .is("deletedAt", null)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? mapRow(data as unknown as ClassRow) : null;
+}
+
+/** Pass classType to scope the Classes / Kelas Guru & Staff list pages to
+ * one type; omit it for admin-wide surfaces (dashboard, reports, lesson
+ * plan compliance) that should still cover both. */
+export async function fetchClasses(classType?: ClassType): Promise<Class[]> {
+  const supabase = createClient();
+  let query = supabase.from("classes").select(SELECT).is("deletedAt", null).order("name");
+  if (classType) query = query.eq("classType", classType);
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return (data as unknown as ClassRow[]).map(mapRow);
+}
+
+function toPayload(input: ClassInput, classType: ClassType) {
   return {
     name: input.name,
     schoolId: input.schoolId,
     teacherId: input.teacherId,
     curriculumId: input.curriculumId || null,
+    classType,
     room: input.room || null,
     scheduleDaysOfWeek: input.scheduleDaysOfWeek.map(Number),
   };
@@ -86,11 +108,11 @@ async function syncScheduleSlots(supabase: ReturnType<typeof createClient>, clas
   if (upsertError) throw upsertError;
 }
 
-export async function createClassRecord(input: ClassInput) {
+export async function createClassRecord(input: ClassInput, classType: ClassType = "REGULAR") {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("classes")
-    .insert(toPayload(input))
+    .insert(toPayload(input, classType))
     .select("id")
     .single();
   if (error) throw error;
@@ -98,11 +120,11 @@ export async function createClassRecord(input: ClassInput) {
   await syncScheduleSlots(supabase, (data as { id: string }).id, input);
 }
 
-export async function updateClassRecord(id: string, input: ClassInput) {
+export async function updateClassRecord(id: string, input: ClassInput, classType: ClassType = "REGULAR") {
   const supabase = createClient();
   const { error } = await supabase
     .from("classes")
-    .update(toPayload(input))
+    .update(toPayload(input, classType))
     .eq("id", id);
   if (error) throw error;
 

@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useClasses } from "@/features/classes/use-classes";
+import { useClass } from "@/features/classes/use-classes";
 import { useStudents } from "@/features/students/use-students";
 import {
   useClassRoster,
@@ -36,8 +36,9 @@ export default function ClassDetailPage() {
   const classId = params.id;
   const router = useRouter();
 
-  const { data: classes } = useClasses();
-  const classItem = classes?.find((c) => c.id === classId);
+  const { data: classItem } = useClass(classId);
+  const backHref = classItem?.classType === "TEACHER_TRAINING" ? "/teacher-training" : "/classes";
+  const rosterLabel = classItem?.classType === "TEACHER_TRAINING" ? "Roster Peserta" : "Roster Siswa";
 
   const { data: roster, isLoading: rosterLoading } = useClassRoster(classId);
   const { data: allStudents } = useStudents();
@@ -56,7 +57,7 @@ export default function ClassDetailPage() {
   if (!classItem) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push("/classes")}>
+        <Button variant="ghost" size="sm" onClick={() => router.push(backHref)}>
           ← Kembali
         </Button>
         <p className="text-muted-foreground text-sm">Memuat data kelas...</p>
@@ -68,7 +69,7 @@ export default function ClassDetailPage() {
     <div className="space-y-6">
       <div>
         <Link
-          href="/classes"
+          href={backHref}
           className="text-muted-foreground text-sm hover:underline"
         >
           ← Kembali ke Kelas
@@ -88,7 +89,7 @@ export default function ClassDetailPage() {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-medium">Roster Siswa</h2>
+          <h2 className="font-medium">{rosterLabel}</h2>
           <div className="flex gap-2">
             <Select
               items={enrollableStudents.map((s) => ({

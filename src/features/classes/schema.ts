@@ -50,6 +50,8 @@ export const classSchema = z
 
 export type ClassInput = z.infer<typeof classSchema>;
 
+export type ClassType = "REGULAR" | "TEACHER_TRAINING";
+
 export interface Class {
   id: string;
   name: string;
@@ -59,6 +61,7 @@ export interface Class {
   teacherName: string;
   curriculumId: string | null;
   curriculumName: string | null;
+  classType: ClassType;
   room: string | null;
   scheduleDaysOfWeek: number[];
   scheduleSlots: ScheduleSlot[];

@@ -143,6 +143,7 @@ async function main() {
           schoolId,
           teacherId: teacherIdByName[c.tutor],
           name: c.name,
+          classType: "TEACHER_TRAINING",
           room: c.room,
           scheduleDaysOfWeek: [c.dayOfWeek],
           isActive: true,
