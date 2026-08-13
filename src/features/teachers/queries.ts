@@ -5,6 +5,7 @@ interface TeacherRow {
   id: string;
   userId: string;
   tutorId: string | null;
+  feePerMeeting: number | null;
   phone: string | null;
   isActive: boolean;
   createdAt: string;
@@ -15,7 +16,7 @@ export async function fetchTeachers(): Promise<Teacher[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("teachers")
-    .select("id, userId, tutorId, phone, isActive, createdAt, users(fullName, email)")
+    .select("id, userId, tutorId, feePerMeeting, phone, isActive, createdAt, users(fullName, email)")
     .is("deletedAt", null)
     .order("createdAt", { ascending: false });
   if (error) throw error;
@@ -24,6 +25,7 @@ export async function fetchTeachers(): Promise<Teacher[]> {
     id: row.id,
     userId: row.userId,
     tutorId: row.tutorId,
+    feePerMeeting: row.feePerMeeting,
     phone: row.phone,
     isActive: row.isActive,
     createdAt: row.createdAt,
@@ -37,7 +39,11 @@ export async function updateTeacher(id: string, userId: string, input: TeacherEd
 
   const { error: teacherError } = await supabase
     .from("teachers")
-    .update({ tutorId: input.tutorId || null, phone: input.phone || null })
+    .update({
+      tutorId: input.tutorId || null,
+      feePerMeeting: input.feePerMeeting ? Number(input.feePerMeeting) : null,
+      phone: input.phone || null,
+    })
     .eq("id", id);
   if (teacherError) {
     if (teacherError.code === "23505") {

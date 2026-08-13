@@ -17,12 +17,9 @@ import { useStudents } from "@/features/students/use-students";
 import { useTeachers } from "@/features/teachers/use-teachers";
 import { useClasses } from "@/features/classes/use-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
+import { formatRupiah } from "@/lib/currency";
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
-
-function formatRupiah(n: number) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
-}
 
 function StatBlock({
   icon: Icon,

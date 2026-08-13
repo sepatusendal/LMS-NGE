@@ -41,6 +41,7 @@ export function TeacherCreateDialog({
         fullName: "",
         email: "",
         tutorId: "",
+        feePerMeeting: "",
         phone: "",
         password: generateRandomPassword(),
       });
@@ -81,6 +82,21 @@ export function TeacherCreateDialog({
             <Input id="tutorId" {...register("tutorId")} />
             {errors.tutorId && (
               <p className="text-destructive text-sm">{errors.tutorId.message}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="feePerMeeting">Fee per Meeting (Rp, opsional)</Label>
+            <Input
+              id="feePerMeeting"
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step={1}
+              placeholder="Contoh: 100000"
+              {...register("feePerMeeting")}
+            />
+            {errors.feePerMeeting && (
+              <p className="text-destructive text-sm">{errors.feePerMeeting.message}</p>
             )}
           </div>
           <div className="space-y-2">

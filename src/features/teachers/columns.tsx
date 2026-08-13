@@ -4,6 +4,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { formatRupiah } from "@/lib/currency";
 import type { Teacher } from "./schema";
 import { useSetTeacherActive } from "./use-teachers";
 
@@ -36,6 +37,12 @@ export function createTeacherColumns(
       cell: ({ row }) => row.original.tutorId || "-",
     },
     { accessorKey: "email", header: "Email" },
+    {
+      accessorKey: "feePerMeeting",
+      header: "Fee/Kedatangan",
+      cell: ({ row }) =>
+        row.original.feePerMeeting != null ? formatRupiah(row.original.feePerMeeting) : "-",
+    },
     {
       accessorKey: "phone",
       header: "No. HP",
