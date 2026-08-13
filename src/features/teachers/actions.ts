@@ -22,9 +22,12 @@ export async function createTeacherAccount(rawInput: TeacherCreateInput) {
 
   const { error: teacherError } = await admin
     .from("teachers")
-    .insert({ userId: authData.user.id, phone: input.phone || null });
+    .insert({ userId: authData.user.id, tutorId: input.tutorId || null, phone: input.phone || null });
   if (teacherError) {
     await admin.auth.admin.deleteUser(authData.user.id);
+    if (teacherError.code === "23505") {
+      throw new Error("Tutor ID sudah dipakai teacher lain");
+    }
     throw new Error(teacherError.message);
   }
 

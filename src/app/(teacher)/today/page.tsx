@@ -28,8 +28,18 @@ const STATUS_CONFIG: Record<
   checked_in: { label: "Isi Absensi", variant: "outline", accent: "text-[#eda100]", barColor: "bg-[#eda100]" },
   attendance_done: { label: "Check-out", variant: "outline", accent: "text-[#eda100]", barColor: "bg-[#eda100]" },
   checked_out: { label: "Isi Report", variant: "outline", accent: "text-[#4b60ac]", barColor: "bg-[#4b60ac]" },
-  report_submitted: { label: "Selesai", variant: "default", accent: "text-[#1baf7a]", barColor: "bg-[#1baf7a]" },
-  course_completed: { label: "Kelas Selesai", variant: "default", accent: "text-[#1baf7a]", barColor: "bg-[#1baf7a]" },
+  report_submitted: {
+    label: "Selesai",
+    variant: "outline",
+    accent: "border-transparent bg-[#1baf7a] px-2.5 py-1 text-[13px] font-semibold text-white",
+    barColor: "bg-[#1baf7a]",
+  },
+  course_completed: {
+    label: "Kelas Selesai",
+    variant: "outline",
+    accent: "border-transparent bg-[#1baf7a] px-2.5 py-1 text-[13px] font-semibold text-white",
+    barColor: "bg-[#1baf7a]",
+  },
 };
 
 const DONE_STATUSES = new Set(["report_submitted", "course_completed"]);

@@ -56,7 +56,11 @@ export function TeacherEditDialog({
 
   useEffect(() => {
     if (open) {
-      reset({ fullName: teacher?.fullName ?? "", phone: teacher?.phone ?? "" });
+      reset({
+        fullName: teacher?.fullName ?? "",
+        tutorId: teacher?.tutorId ?? "",
+        phone: teacher?.phone ?? "",
+      });
       resetPw({ password: generateRandomPassword() });
     }
   }, [open, teacher, reset, resetPw]);
@@ -116,6 +120,13 @@ export function TeacherEditDialog({
             <Input id="fullName" aria-invalid={!!errors.fullName} {...register("fullName")} />
             {errors.fullName && (
               <p className="text-destructive text-sm">{errors.fullName.message}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tutorId">Tutor ID</Label>
+            <Input id="tutorId" aria-invalid={!!errors.tutorId} {...register("tutorId")} />
+            {errors.tutorId && (
+              <p className="text-destructive text-sm">{errors.tutorId.message}</p>
             )}
           </div>
           <div className="space-y-2">

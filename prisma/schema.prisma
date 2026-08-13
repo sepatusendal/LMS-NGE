@@ -67,6 +67,7 @@ model User {
 model Teacher {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId    String    @unique @db.Uuid
+  tutorId   String?   @unique // external tutor ID, disambiguates teachers/tutors with the same or similar name — not a foreign key
   phone     String?
   isActive  Boolean   @default(true)
   createdAt DateTime  @default(now()) @db.Timestamptz(3)

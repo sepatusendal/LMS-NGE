@@ -36,7 +36,14 @@ export function TeacherCreateDialog({
   } = useForm<TeacherCreateInput>({ resolver: zodResolver(teacherCreateSchema) });
 
   useEffect(() => {
-    if (open) reset({ fullName: "", email: "", phone: "", password: generateRandomPassword() });
+    if (open)
+      reset({
+        fullName: "",
+        email: "",
+        tutorId: "",
+        phone: "",
+        password: generateRandomPassword(),
+      });
   }, [open, reset]);
 
   async function onSubmit(values: TeacherCreateInput) {
@@ -67,6 +74,13 @@ export function TeacherCreateDialog({
             <Input id="email" type="email" {...register("email")} />
             {errors.email && (
               <p className="text-destructive text-sm">{errors.email.message}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tutorId">Tutor ID (opsional)</Label>
+            <Input id="tutorId" {...register("tutorId")} />
+            {errors.tutorId && (
+              <p className="text-destructive text-sm">{errors.tutorId.message}</p>
             )}
           </div>
           <div className="space-y-2">

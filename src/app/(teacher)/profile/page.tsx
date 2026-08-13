@@ -37,6 +37,10 @@ export default function ProfilePage() {
                 <p className="font-medium">{teacher?.email}</p>
               </div>
               <div>
+                <p className="text-muted-foreground text-xs">Tutor ID</p>
+                <p className="font-medium">{teacher?.tutorId || "-"}</p>
+              </div>
+              <div>
                 <p className="text-muted-foreground text-xs">No. HP</p>
                 <p className="font-medium">{teacher?.phone || "-"}</p>
               </div>

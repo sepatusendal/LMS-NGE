@@ -4,6 +4,7 @@ import type { Teacher, TeacherEditInput } from "./schema";
 interface TeacherRow {
   id: string;
   userId: string;
+  tutorId: string | null;
   phone: string | null;
   isActive: boolean;
   createdAt: string;
@@ -14,7 +15,7 @@ export async function fetchTeachers(): Promise<Teacher[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("teachers")
-    .select("id, userId, phone, isActive, createdAt, users(fullName, email)")
+    .select("id, userId, tutorId, phone, isActive, createdAt, users(fullName, email)")
     .is("deletedAt", null)
     .order("createdAt", { ascending: false });
   if (error) throw error;
@@ -22,6 +23,7 @@ export async function fetchTeachers(): Promise<Teacher[]> {
   return (data as unknown as TeacherRow[]).map((row) => ({
     id: row.id,
     userId: row.userId,
+    tutorId: row.tutorId,
     phone: row.phone,
     isActive: row.isActive,
     createdAt: row.createdAt,
@@ -35,9 +37,14 @@ export async function updateTeacher(id: string, userId: string, input: TeacherEd
 
   const { error: teacherError } = await supabase
     .from("teachers")
-    .update({ phone: input.phone || null })
+    .update({ tutorId: input.tutorId || null, phone: input.phone || null })
     .eq("id", id);
-  if (teacherError) throw teacherError;
+  if (teacherError) {
+    if (teacherError.code === "23505") {
+      throw new Error("Tutor ID sudah dipakai teacher lain");
+    }
+    throw teacherError;
+  }
 
   const { error: userError } = await supabase
     .from("users")

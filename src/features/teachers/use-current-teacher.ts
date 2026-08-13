@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export interface CurrentTeacher {
   teacherId: string;
+  tutorId: string | null;
   phone: string | null;
   fullName: string;
   email: string;
@@ -10,6 +11,7 @@ export interface CurrentTeacher {
 
 interface CurrentTeacherRow {
   id: string;
+  tutorId: string | null;
   phone: string | null;
   users: { fullName: string; email: string } | null;
 }
@@ -23,7 +25,7 @@ async function fetchCurrentTeacher(): Promise<CurrentTeacher> {
 
   const { data, error } = await supabase
     .from("teachers")
-    .select("id, phone, users(fullName, email)")
+    .select("id, tutorId, phone, users(fullName, email)")
     .eq("userId", user.id)
     .single();
   if (error) throw error;
@@ -31,6 +33,7 @@ async function fetchCurrentTeacher(): Promise<CurrentTeacher> {
   const row = data as unknown as CurrentTeacherRow;
   return {
     teacherId: row.id,
+    tutorId: row.tutorId,
     phone: row.phone,
     fullName: row.users?.fullName ?? "-",
     email: row.users?.email ?? "-",

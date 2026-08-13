@@ -3,6 +3,7 @@ import { z } from "zod";
 export const teacherCreateSchema = z.object({
   fullName: z.string().min(1, "Nama wajib diisi"),
   email: z.string().min(1, "Email wajib diisi").email("Format email salah"),
+  tutorId: z.string().optional(),
   phone: z.string().optional(),
   password: z.string().min(6, "Password minimal 6 karakter"),
 });
@@ -10,6 +11,7 @@ export type TeacherCreateInput = z.infer<typeof teacherCreateSchema>;
 
 export const teacherEditSchema = z.object({
   fullName: z.string().min(1, "Nama wajib diisi"),
+  tutorId: z.string().optional(),
   phone: z.string().optional(),
 });
 export type TeacherEditInput = z.infer<typeof teacherEditSchema>;
@@ -22,6 +24,7 @@ export type TeacherResetPasswordInput = z.infer<typeof teacherResetPasswordSchem
 export interface Teacher {
   id: string;
   userId: string;
+  tutorId: string | null;
   phone: string | null;
   isActive: boolean;
   createdAt: string;

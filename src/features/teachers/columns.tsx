@@ -30,6 +30,11 @@ export function createTeacherColumns(
 ): ColumnDef<Teacher>[] {
   return [
     { accessorKey: "fullName", header: "Nama" },
+    {
+      accessorKey: "tutorId",
+      header: "Tutor ID",
+      cell: ({ row }) => row.original.tutorId || "-",
+    },
     { accessorKey: "email", header: "Email" },
     {
       accessorKey: "phone",
