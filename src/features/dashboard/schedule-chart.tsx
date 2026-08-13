@@ -72,7 +72,7 @@ export function ScheduleChart() {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip />
+                <Tooltip cursor={{ fill: "rgba(15, 43, 70, 0.06)" }} />
                 <Bar
                   dataKey="Kelas"
                   radius={[3, 3, 0, 0]}

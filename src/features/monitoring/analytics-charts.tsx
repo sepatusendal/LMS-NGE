@@ -62,7 +62,10 @@ export function AnalyticsCharts() {
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} unit="%" />
-              <Tooltip formatter={(v: unknown) => (v === null || v === undefined ? "-" : `${v}%`)} />
+              <Tooltip
+                formatter={(v: unknown) => (v === null || v === undefined ? "-" : `${v}%`)}
+                cursor={{ stroke: "var(--primary)", strokeWidth: 1 }}
+              />
               <Line
                 type="monotone"
                 dataKey="Attendance Rate"
@@ -91,7 +94,10 @@ export function AnalyticsCharts() {
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} unit="%" />
-              <Tooltip formatter={(v: unknown) => (v === null || v === undefined ? "-" : `${v}%`)} />
+              <Tooltip
+                formatter={(v: unknown) => (v === null || v === undefined ? "-" : `${v}%`)}
+                cursor={{ stroke: "var(--primary)", strokeWidth: 1 }}
+              />
               <Line
                 type="monotone"
                 dataKey="Completion Rate"
