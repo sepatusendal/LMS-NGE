@@ -35,9 +35,10 @@ export function useReportNotes() {
   });
 }
 
-export function useTutorPayroll(from?: string | null, to?: string | null) {
+export function useTutorPayroll(from?: string | null, to?: string | null, enabled = true) {
   return useQuery({
     queryKey: ["dashboard-tutor-payroll", from, to],
     queryFn: () => fetchTutorPayroll(from, to),
+    enabled,
   });
 }

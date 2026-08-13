@@ -3,7 +3,7 @@ import { z } from "zod";
 const feePerMeetingField = z
   .string()
   .optional()
-  .refine((v) => !v || (Number.isInteger(Number(v)) && Number(v) >= 0), {
+  .refine((v) => !v || /^\d+$/.test(v), {
     message: "Fee harus angka Rupiah bulat, tidak boleh negatif",
   });
 
