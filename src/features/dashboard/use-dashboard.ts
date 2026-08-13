@@ -1,5 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchOpenFollowUps, fetchReportNotes, fetchReportStats, fetchTeacherAttendance } from "./queries";
+import {
+  fetchOpenFollowUps,
+  fetchReportNotes,
+  fetchReportStats,
+  fetchTeacherAttendance,
+  fetchTutorPayroll,
+} from "./queries";
 
 export function useTeacherAttendance(days: number) {
   return useQuery({
@@ -26,5 +32,12 @@ export function useReportNotes() {
   return useQuery({
     queryKey: ["dashboard-report-notes"],
     queryFn: () => fetchReportNotes(8),
+  });
+}
+
+export function useTutorPayroll() {
+  return useQuery({
+    queryKey: ["dashboard-tutor-payroll"],
+    queryFn: () => fetchTutorPayroll(),
   });
 }

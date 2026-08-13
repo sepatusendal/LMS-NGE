@@ -6,6 +6,7 @@ import { ComplianceAlert } from "@/features/lesson-plans/compliance-alert";
 import { StatusBoard } from "@/features/monitoring/status-board";
 import { AnalyticsCharts } from "@/features/monitoring/analytics-charts";
 import { OverviewStats } from "@/features/dashboard/overview-stats";
+import { TutorPayroll } from "@/features/dashboard/tutor-payroll";
 import { TeacherAttendanceTable } from "@/features/dashboard/teacher-attendance-table";
 import { ReportStatsPanel } from "@/features/dashboard/report-stats-panel";
 import { ScheduleChart } from "@/features/dashboard/schedule-chart";
@@ -52,6 +53,8 @@ export default function AdminDashboardPage() {
       />
 
       <OverviewStats />
+
+      <TutorPayroll />
 
       <section className="space-y-3">
         <SectionHeading

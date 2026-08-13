@@ -254,3 +254,66 @@ export async function fetchReportNotes(limit = 8): Promise<ReportNoteRow[]> {
     };
   });
 }
+
+interface PayrollCheckInRow {
+  teacherId: string;
+  teachers:
+    | { feePerMeeting: number | null; users: { fullName: string } | null }
+    | { feePerMeeting: number | null; users: { fullName: string } | null }[]
+    | null;
+}
+
+export interface TutorPayrollRow {
+  teacherId: string;
+  teacherName: string;
+  feePerMeeting: number | null;
+  attendedCount: number;
+  subtotal: number;
+}
+
+export interface TutorPayroll {
+  rows: TutorPayrollRow[];
+  totalAttended: number;
+  totalExpense: number;
+  unbilledCount: number;
+}
+
+export async function fetchTutorPayroll(): Promise<TutorPayroll> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("check_ins")
+    .select("teacherId, teachers(feePerMeeting, users(fullName))");
+  if (error) throw error;
+
+  const rows = data as unknown as PayrollCheckInRow[];
+  const byTeacher = new Map<string, TutorPayrollRow>();
+
+  rows.forEach((row) => {
+    const teacher = toOne(row.teachers);
+    const name = teacher?.users?.fullName ?? "-";
+    const fee = teacher?.feePerMeeting ?? null;
+    const existing = byTeacher.get(row.teacherId) ?? {
+      teacherId: row.teacherId,
+      teacherName: name,
+      feePerMeeting: fee,
+      attendedCount: 0,
+      subtotal: 0,
+    };
+    existing.attendedCount += 1;
+    byTeacher.set(row.teacherId, existing);
+  });
+
+  const list = Array.from(byTeacher.values())
+    .map((t) => ({
+      ...t,
+      subtotal: t.feePerMeeting != null ? t.feePerMeeting * t.attendedCount : 0,
+    }))
+    .sort((a, b) => b.subtotal - a.subtotal);
+
+  const totalAttended = list.reduce((sum, t) => sum + t.attendedCount, 0);
+  const totalExpense = list.reduce((sum, t) => sum + t.subtotal, 0);
+  const unbilledCount = list.filter((t) => t.feePerMeeting == null).length;
+
+  return { rows: list, totalAttended, totalExpense, unbilledCount };
+}
