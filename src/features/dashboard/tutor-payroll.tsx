@@ -233,19 +233,28 @@ export function TutorPayroll() {
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      layout="vertical"
                       data={chartData}
-                      margin={{ top: 5, right: 16, left: 0, bottom: 0 }}
+                      margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
                       <XAxis
-                        type="number"
+                        dataKey="name"
+                        tick={{ fontSize: 10 }}
+                        interval={0}
+                        angle={-35}
+                        textAnchor="end"
+                        height={52}
+                      />
+                      <YAxis
                         tick={{ fontSize: 11 }}
                         tickFormatter={(v) => compactRupiah(Number(v))}
+                        width={56}
                       />
-                      <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(v: unknown) => formatRupiah(Number(v))} />
-                      <Bar dataKey="subtotal" fill="var(--chart-3)" radius={[0, 4, 4, 0]} barSize={16} />
+                      <Tooltip
+                        formatter={(v: unknown) => formatRupiah(Number(v))}
+                        cursor={{ fill: "rgba(15, 43, 70, 0.06)" }}
+                      />
+                      <Bar dataKey="subtotal" fill="var(--chart-3)" radius={[4, 4, 0, 0]} barSize={28} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
