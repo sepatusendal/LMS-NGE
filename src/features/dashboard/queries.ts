@@ -278,12 +278,16 @@ export interface TutorPayroll {
   unbilledCount: number;
 }
 
-export async function fetchTutorPayroll(): Promise<TutorPayroll> {
+export async function fetchTutorPayroll(from?: string | null, to?: string | null): Promise<TutorPayroll> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("check_ins")
     .select("teacherId, teachers(feePerMeeting, users(fullName))");
+  if (from) query = query.gte("checkInTime", from);
+  if (to) query = query.lt("checkInTime", to);
+
+  const { data, error } = await query;
   if (error) throw error;
 
   const rows = data as unknown as PayrollCheckInRow[];

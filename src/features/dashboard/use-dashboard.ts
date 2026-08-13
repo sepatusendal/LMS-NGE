@@ -35,9 +35,9 @@ export function useReportNotes() {
   });
 }
 
-export function useTutorPayroll() {
+export function useTutorPayroll(from?: string | null, to?: string | null) {
   return useQuery({
-    queryKey: ["dashboard-tutor-payroll"],
-    queryFn: () => fetchTutorPayroll(),
+    queryKey: ["dashboard-tutor-payroll", from, to],
+    queryFn: () => fetchTutorPayroll(from, to),
   });
 }

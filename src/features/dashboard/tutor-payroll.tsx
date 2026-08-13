@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { Banknote, ListChecks } from "lucide-react";
 import {
   Bar,
@@ -12,6 +13,14 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -36,8 +45,68 @@ function compactRupiah(n: number): string {
   return formatRupiah(n);
 }
 
+type Period = "this-month" | "last-month" | "custom";
+
+function toDateInput(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function monthLabel(d: Date): string {
+  return d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+}
+
+function computeRange(period: Period, customFrom: string, customTo: string) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+
+  if (period === "this-month") {
+    const from = new Date(y, m, 1);
+    const to = new Date(y, m + 1, 1);
+    return { from: from.toISOString(), to: to.toISOString(), label: monthLabel(from) };
+  }
+
+  if (period === "last-month") {
+    const from = new Date(y, m - 1, 1);
+    const to = new Date(y, m, 1);
+    return { from: from.toISOString(), to: to.toISOString(), label: monthLabel(from) };
+  }
+
+  // custom — `to` eksklusif (hari setelah tanggal akhir).
+  const from = customFrom ? new Date(`${customFrom}T00:00:00`).toISOString() : null;
+  let to: string | null = null;
+  if (customTo) {
+    const d = new Date(`${customTo}T00:00:00`);
+    d.setDate(d.getDate() + 1);
+    to = d.toISOString();
+  }
+  const label = [customFrom, customTo].filter(Boolean).join(" – ") || "Semua waktu";
+  return { from, to, label };
+}
+
 export function TutorPayroll() {
-  const { data, isLoading } = useTutorPayroll();
+  const [period, setPeriod] = useState<Period>("this-month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+
+  const range = useMemo(
+    () => computeRange(period, customFrom, customTo),
+    [period, customFrom, customTo],
+  );
+  const { data, isLoading } = useTutorPayroll(range.from, range.to);
+
+  function handlePeriodChange(v: string | null) {
+    if (!v) return;
+    setPeriod(v as Period);
+    if (v === "custom" && !customFrom && !customTo) {
+      const now = new Date();
+      setCustomFrom(toDateInput(new Date(now.getFullYear(), now.getMonth(), 1)));
+      setCustomTo(toDateInput(new Date(now.getFullYear(), now.getMonth() + 1, 0)));
+    }
+  }
 
   if (isLoading || !data) {
     return (
@@ -55,19 +124,53 @@ export function TutorPayroll() {
 
   return (
     <section className="space-y-3">
-      <SectionHeading
-        icon={Banknote}
-        title="Beban Gaji Tutor"
-        description="Akumulasi fee per meeting × jumlah check-in. Tutor tanpa fee tidak masuk total beban."
-      />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <SectionHeading
+          icon={Banknote}
+          title="Beban Gaji Tutor"
+          description="Fee per meeting × jumlah check-in. Tutor tanpa fee tidak masuk total beban."
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={period} onValueChange={handlePeriodChange}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="this-month">Bulan Ini</SelectItem>
+              <SelectItem value="last-month">Bulan Lalu</SelectItem>
+              <SelectItem value="custom">Kustom</SelectItem>
+            </SelectContent>
+          </Select>
+          {period === "custom" && (
+            <>
+              <Input
+                type="date"
+                value={customFrom}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="w-auto"
+              />
+              <span className="text-muted-foreground text-xs">–</span>
+              <Input
+                type="date"
+                value={customTo}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="w-auto"
+              />
+            </>
+          )}
+        </div>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Card 1 — ringkasan beban pengeluaran + chart */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Banknote className="size-4" style={{ color: "var(--chart-3)" }} />
-              Beban Pengeluaran
+            <CardTitle className="flex items-center justify-between gap-2 text-sm">
+              <span className="flex items-center gap-2">
+                <Banknote className="size-4" style={{ color: "var(--chart-3)" }} />
+                Beban Pengeluaran
+              </span>
+              <span className="text-muted-foreground text-xs font-normal">{range.label}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -109,7 +212,7 @@ export function TutorPayroll() {
 
             <div className="h-60">
               {chartData.length === 0 ? (
-                <p className="text-muted-foreground text-sm">Belum ada data check-in.</p>
+                <p className="text-muted-foreground text-sm">Belum ada data check-in pada periode ini.</p>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
@@ -143,7 +246,7 @@ export function TutorPayroll() {
           </CardHeader>
           <CardContent>
             {data.rows.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Belum ada data check-in.</p>
+              <p className="text-muted-foreground text-sm">Belum ada data check-in pada periode ini.</p>
             ) : (
               <Table>
                 <TableHeader>
