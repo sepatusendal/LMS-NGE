@@ -180,11 +180,17 @@ export function TutorPayroll() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {/* Card 1 — ringkasan beban pengeluaran + chart */}
-          <Card>
+          <Card className="overflow-hidden">
+            <div className="h-1 w-full" style={{ backgroundColor: "var(--chart-3)" }} />
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between gap-2 text-sm">
+              <CardTitle className="flex items-center justify-between gap-2 text-base font-bold">
                 <span className="flex items-center gap-2">
-                  <Banknote className="size-4" style={{ color: "var(--chart-3)" }} />
+                  <span
+                    className="flex size-7 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: "color-mix(in oklab, var(--chart-3) 16%, transparent)" }}
+                  >
+                    <Banknote className="size-4" style={{ color: "var(--chart-3)" }} />
+                  </span>
                   Beban Pengeluaran
                 </span>
                 <span className="text-muted-foreground text-xs font-normal">{range.label}</span>
@@ -192,7 +198,7 @@ export function TutorPayroll() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-2xl font-semibold leading-tight">
+                <p className="text-3xl font-bold leading-tight" style={{ color: "var(--chart-3)" }}>
                   {formatRupiah(data.totalExpense)}
                 </p>
                 <p className="text-muted-foreground text-xs">Total beban gaji tutor</p>
@@ -269,10 +275,16 @@ export function TutorPayroll() {
           </Card>
 
           {/* Card 2 — detail per tutor */}
-          <Card>
+          <Card className="overflow-hidden">
+            <div className="h-1 w-full" style={{ backgroundColor: "var(--chart-5)" }} />
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <ListChecks className="size-4" style={{ color: "var(--chart-5)" }} />
+              <CardTitle className="flex items-center gap-2 text-base font-bold">
+                <span
+                  className="flex size-7 items-center justify-center rounded-lg"
+                  style={{ backgroundColor: "color-mix(in oklab, var(--chart-5) 16%, transparent)" }}
+                >
+                  <ListChecks className="size-4" style={{ color: "var(--chart-5)" }} />
+                </span>
                 Detail Gaji Tutor
               </CardTitle>
             </CardHeader>
