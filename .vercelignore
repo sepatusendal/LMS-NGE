@@ -1,0 +1,4 @@
+# Local source module PDFs (70-130MB each) — uploaded to Drive separately,
+# not part of the deploy. node_modules/.next/.git are excluded by Vercel by
+# default; this just stops the CLI from bundling the module PDFs.
+Modul Kelas Tutor
