@@ -4,6 +4,9 @@ import { House, CalendarDays, User, ClipboardCheck, NotebookPen, CalendarClock, 
 import { TeacherTopbar } from "@/components/shared/teacher-topbar";
 import { AppSidebar, type NavItem } from "@/components/shared/app-sidebar";
 import { BottomNav, type BottomNavItem } from "@/components/shared/bottom-nav";
+import { LoadingState } from "@/components/shared/loading-state";
+import { useCurrentUser } from "@/features/auth/use-current-user";
+import AdminLayout from "@/app/(admin)/layout";
 
 // Desktop sidebar groups Jadwal/Kelas under Lesson Plan (more room to show
 // a nested menu); the mobile bottom nav keeps everything flat and Absensi
@@ -37,6 +40,25 @@ export default function TeacherLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { data: currentUser, isLoading } = useCurrentUser();
+
+  // /lesson-plan/* is the one route both ADMIN and TEACHER can reach, and it
+  // physically lives in this (teacher) route group — without this check, an
+  // admin editing/creating a lesson plan would get swapped into teacher-style
+  // chrome (bottom nav, teacher sidebar) instead of staying in the admin
+  // shell they were just in. Gate on isLoading first so an admin doesn't see
+  // a flash of teacher chrome before their role resolves.
+  if (isLoading) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center">
+        <LoadingState />
+      </div>
+    );
+  }
+  if (currentUser?.role === "ADMIN") {
+    return <AdminLayout>{children}</AdminLayout>;
+  }
+
   return (
     <div className="flex min-h-dvh w-full flex-col md:flex-row">
       <div className="md:hidden">
