@@ -26,6 +26,7 @@ function StatBlock({
   label,
   value,
   sub,
+  progress,
   subSuppressHydrationWarning,
   color,
 }: {
@@ -33,29 +34,47 @@ function StatBlock({
   label: string;
   value: string;
   sub?: string;
+  progress?: number;
   subSuppressHydrationWarning?: boolean;
   color: string;
 }) {
   return (
-    <div className="group bg-card hover:shadow-md hover:-translate-y-px rounded-xl border p-4 shadow-sm transition-all duration-200">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-muted-foreground truncate text-[11px] font-medium">{label}</span>
+    <div
+      className="relative overflow-hidden rounded-xl border p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      style={{
+        background: `linear-gradient(135deg, color-mix(in oklab, ${color} 10%, var(--card)) 0%, var(--card) 60%)`,
+      }}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-muted-foreground truncate text-[11px] font-medium">{label}</p>
+          <p className="mt-1 text-2xl font-bold leading-none tracking-tight">{value}</p>
+        </div>
         <span
-          className="flex size-8 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110"
-          style={{ backgroundColor: `color-mix(in oklab, ${color} 14%, transparent)` }}
+          className="flex size-9 shrink-0 items-center justify-center rounded-lg"
+          style={{ backgroundColor: `color-mix(in oklab, ${color} 16%, transparent)` }}
         >
-          <Icon className="size-4" style={{ color }} />
+          <Icon className="size-4.5" style={{ color }} />
         </span>
       </div>
-      <p className="mt-2 text-2xl font-bold leading-none tracking-tight">{value}</p>
-      {sub && (
-        <p
-          className="text-muted-foreground mt-1.5 text-[11px]"
-          suppressHydrationWarning={subSuppressHydrationWarning}
-        >
-          {sub}
-        </p>
-      )}
+      <div className="mt-3">
+        {progress != null && (
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ width: `${Math.min(progress, 100)}%`, backgroundColor: color }}
+            />
+          </div>
+        )}
+        {sub && (
+          <p
+            className="text-muted-foreground mt-1.5 text-[11px]"
+            suppressHydrationWarning={subSuppressHydrationWarning}
+          >
+            {sub}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -110,10 +129,38 @@ export function OverviewStats() {
   return (
     <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-        <StatBlock icon={Building2} label="Sekolah Aktif" value={String(activeSchools)} color="var(--chart-1)" />
-        <StatBlock icon={Users} label="Siswa Aktif" value={String(activeStudents)} color="var(--chart-3)" />
-        <StatBlock icon={GraduationCap} label="Teacher Aktif" value={String(activeTeachers)} color="var(--chart-5)" />
-        <StatBlock icon={BookOpen} label="Kelas Aktif" value={String(activeClasses)} color="var(--chart-2)" />
+        <StatBlock
+          icon={Building2}
+          label="Sekolah Aktif"
+          value={String(activeSchools)}
+          sub={`${activeSchools} dari ${schools?.length ?? 0} sekolah`}
+          progress={schools?.length ? (activeSchools / schools.length) * 100 : 0}
+          color="var(--chart-1)"
+        />
+        <StatBlock
+          icon={Users}
+          label="Siswa Aktif"
+          value={String(activeStudents)}
+          sub={`${activeStudents} dari ${students?.length ?? 0} siswa`}
+          progress={students?.length ? (activeStudents / students.length) * 100 : 0}
+          color="var(--chart-3)"
+        />
+        <StatBlock
+          icon={GraduationCap}
+          label="Teacher Aktif"
+          value={String(activeTeachers)}
+          sub={`${activeTeachers} dari ${teachers?.length ?? 0} teacher`}
+          progress={teachers?.length ? (activeTeachers / teachers.length) * 100 : 0}
+          color="var(--chart-5)"
+        />
+        <StatBlock
+          icon={BookOpen}
+          label="Kelas Aktif"
+          value={String(activeClasses)}
+          sub={`${activeClasses} dari ${classes?.length ?? 0} kelas`}
+          progress={classes?.length ? (activeClasses / classes.length) * 100 : 0}
+          color="var(--chart-2)"
+        />
         <StatBlock
           icon={CalendarCheck}
           label="Kelas Hari Ini"
@@ -132,6 +179,7 @@ export function OverviewStats() {
           label="Kepatuhan Lesson Plan"
           value={complianceRate === null ? "-" : `${complianceRate}%`}
           sub="min. 2 minggu ke depan"
+          progress={complianceRate ?? 0}
           color={complianceRate !== null && complianceRate < 50 ? "var(--status-critical)" : "var(--status-good)"}
         />
       </div>
