@@ -46,7 +46,7 @@ export function TeacherTopbar({ navItems }: { navItems: TeacherNavItem[] }) {
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
-                  <Icon className="size-4" />
+                  <Icon className="size-4 shrink-0" />
                   {item.label}
                 </Link>
               );

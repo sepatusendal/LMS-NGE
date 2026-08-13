@@ -51,7 +51,7 @@ function NavSection({
             : "text-foreground hover:bg-muted",
         )}
       >
-        <item.icon className="size-4" aria-hidden="true" />
+        <item.icon className="size-4 shrink-0" aria-hidden="true" />
         {item.label}
       </Link>
     );
@@ -69,7 +69,7 @@ function NavSection({
         )}
       >
         <span className="flex items-center gap-2">
-          <item.icon className="size-4" aria-hidden="true" />
+          <item.icon className="size-4 shrink-0" aria-hidden="true" />
           {item.label}
         </span>
         {expanded ? (
@@ -93,7 +93,7 @@ function NavSection({
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
-                <child.icon className="size-4" aria-hidden="true" />
+                <child.icon className="size-4 shrink-0" aria-hidden="true" />
                 {child.label}
               </Link>
             );
