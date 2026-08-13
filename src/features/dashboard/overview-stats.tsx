@@ -69,6 +69,7 @@ export function OverviewStats() {
   const { data: classes } = useClasses();
   const { data: lessonPlans } = useLessonPlans();
   const [pricePerStudent, setPricePerStudent] = useState(300000);
+  const [targetMonthly, setTargetMonthly] = useState(150_000_000);
 
   const today = new Date().getDay();
 
@@ -109,24 +110,25 @@ export function OverviewStats() {
 
   const estimatedRevenue = activeStudents * pricePerStudent;
 
+  // Pertumbuhan basis siswa aktif vs bulan lalu (baseline = aktif sebelum bulan ini).
+  const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const lastMonthActive =
+    students?.filter((s) => s.isActive && new Date(s.createdAt) < firstOfMonth).length ?? 0;
+  const deltaPct = lastMonthActive > 0 ? Math.round(((activeStudents - lastMonthActive) / lastMonthActive) * 100) : 0;
+  const targetPct = targetMonthly > 0 ? Math.round((estimatedRevenue / targetMonthly) * 100) : 0;
+
   return (
     <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
       <div className="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-xl border sm:grid-cols-3 xl:grid-cols-6">
-        <StatBlock icon={Building2} label="Sekolah Aktif" value={String(activeSchools)} color="var(--chart-1)" />
-        <StatBlock icon={Users} label="Siswa Aktif" value={String(activeStudents)} color="var(--chart-3)" />
-        <StatBlock icon={GraduationCap} label="Teacher Aktif" value={String(activeTeachers)} color="var(--chart-5)" />
-        <StatBlock icon={BookOpen} label="Kelas Aktif" value={String(activeClasses)} color="var(--chart-2)" />
+        <StatBlock icon={Building2} label="Sekolah Aktif" value={String(activeSchools)} sub={`Dari ${schools?.length ?? 0} sekolah`} color="var(--chart-1)" />
+        <StatBlock icon={Users} label="Siswa Aktif" value={String(activeStudents)} sub={`Dari ${students?.length ?? 0} siswa`} color="var(--chart-3)" />
+        <StatBlock icon={GraduationCap} label="Teacher Aktif" value={String(activeTeachers)} sub={`Dari ${teachers?.length ?? 0} teacher`} color="var(--chart-5)" />
+        <StatBlock icon={BookOpen} label="Kelas Aktif" value={String(activeClasses)} sub={`Dari ${classes?.length ?? 0} kelas`} color="var(--chart-2)" />
         <StatBlock
           icon={CalendarCheck}
           label="Kelas Hari Ini"
           value={String(todayClasses)}
-          sub={new Date().toLocaleDateString("id-ID", { weekday: "long" })}
-          // Reads the viewer's local clock, which can legitimately differ
-          // from the server's at render time (e.g. near the UTC-midnight/
-          // WIB-7am boundary) — suppress the one-time hydration warning for
-          // this text node rather than deferring the whole component to a
-          // client-only render pass.
-          subSuppressHydrationWarning
+          sub="Jadwal hari ini"
           color="var(--chart-4)"
         />
         <StatBlock
@@ -139,28 +141,62 @@ export function OverviewStats() {
       </div>
 
       <Card className="bg-primary/[0.04] border-primary/20">
-        <CardContent className="flex items-center gap-3 py-3.5">
-          <div className="bg-primary/10 flex size-9 shrink-0 items-center justify-center rounded-lg">
-            <Wallet className="text-primary size-4.5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xl font-semibold leading-tight whitespace-nowrap">
-              {formatRupiah(estimatedRevenue)}
-            </p>
-            <p className="text-muted-foreground text-[11px] whitespace-nowrap">
-              Estimasi Pendapatan / Bulan
-            </p>
-            <div className="mt-1.5 flex items-center gap-1">
-              <span className="text-muted-foreground text-[11px]">Rp</span>
-              <Input
-                id="revenue-per-student"
-                type="number"
-                value={pricePerStudent}
-                onChange={(e) => setPricePerStudent(Number(e.target.value) || 0)}
-                className="h-6 w-24 text-[11px]"
-              />
-              <span className="text-muted-foreground text-[11px]">/siswa/bln</span>
+        <CardContent className="space-y-3 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="bg-primary/10 flex size-9 shrink-0 items-center justify-center rounded-lg">
+                <Wallet className="text-primary size-4.5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xl font-semibold leading-tight whitespace-nowrap">
+                  {formatRupiah(estimatedRevenue)}
+                </p>
+                <p className="text-muted-foreground text-[11px] whitespace-nowrap">
+                  Estimasi Pendapatan / Bulan
+                </p>
+              </div>
             </div>
+            <span
+              className="mt-0.5 shrink-0 text-[11px] font-medium"
+              style={{ color: deltaPct >= 0 ? "var(--status-good)" : "var(--status-critical)" }}
+              suppressHydrationWarning
+            >
+              {deltaPct >= 0 ? "+" : ""}
+              {deltaPct}% dari bulan lalu
+            </span>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-muted-foreground">Target Bulanan</span>
+              <span className="text-muted-foreground">{targetPct}%</span>
+            </div>
+            <div className="bg-primary/10 mt-1.5 h-1.5 overflow-hidden rounded-full">
+              <div
+                className="bg-primary h-full rounded-full transition-all"
+                style={{ width: `${Math.min(targetPct, 100)}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-muted-foreground text-[11px]">Rp</span>
+            <Input
+              id="revenue-per-student"
+              type="number"
+              value={pricePerStudent}
+              onChange={(e) => setPricePerStudent(Number(e.target.value) || 0)}
+              className="h-6 w-24 text-[11px]"
+            />
+            <span className="text-muted-foreground text-[11px]">/siswa/bln</span>
+            <span className="text-muted-foreground ml-2 text-[11px]">Target</span>
+            <Input
+              id="target-monthly"
+              type="number"
+              value={targetMonthly}
+              onChange={(e) => setTargetMonthly(Number(e.target.value) || 0)}
+              className="h-6 w-28 text-[11px]"
+            />
           </div>
         </CardContent>
       </Card>
