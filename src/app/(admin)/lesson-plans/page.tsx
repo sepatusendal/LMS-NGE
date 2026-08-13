@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, School, ChevronDown, ChevronRight, Clock } from "lucide-react";
+import { Search, School, ChevronDown, ChevronRight, Clock, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -30,11 +31,17 @@ export default function AdminLessonPlansPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold">Lesson Plan</h1>
-        <p className="text-muted-foreground text-sm">
-          Lihat lesson plan teacher per sekolah.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Lesson Plan</h1>
+          <p className="text-muted-foreground text-sm">
+            Lihat, edit, atau tambahkan lesson plan teacher per sekolah.
+          </p>
+        </div>
+        <Link href="/lesson-plan/new" className={buttonVariants({ variant: "default" })}>
+          <Plus className="size-4" />
+          Tambah Lesson Plan
+        </Link>
       </div>
 
       <div className="flex items-center gap-2">

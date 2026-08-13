@@ -30,6 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModuleCoverBanner } from "@/components/shared/module-cover";
 import { FileUpload } from "@/features/drive/file-upload";
 import { useMyClasses } from "@/features/classes/use-my-classes";
+import { useClasses } from "@/features/classes/use-classes";
 import { formatScheduleSlots } from "@/features/classes/schema";
 import {
   LEVEL_OPTIONS,
@@ -119,19 +120,32 @@ function Section({
 export function LessonPlanForm({
   lessonPlan,
   readOnly = false,
+  adminMode = false,
 }: {
   lessonPlan?: LessonPlan;
   readOnly?: boolean;
+  /** Admin authoring/editing on behalf of any teacher — picks from every
+   * class instead of the logged-in teacher's own, and the module-cover
+   * banner (which needs teacher-scoped data) is skipped. */
+  adminMode?: boolean;
 }) {
   const isEdit = Boolean(lessonPlan);
   const router = useRouter();
   const { data: myClasses } = useMyClasses();
+  const { data: allClasses } = useClasses(undefined, adminMode);
   // Lesson-plan authorship is restricted to a class's primary teacher at the
   // DB level (RLS) — a covering teacher reached only via a weekly schedule
   // override can read plans but not create/own one, so exclude those here.
-  const classes = myClasses?.filter((c) => c.isPrimary);
+  const classes = adminMode
+    ? allClasses?.map((c) => ({
+        id: c.id,
+        name: c.name,
+        schoolName: c.schoolName,
+        scheduleSlots: c.scheduleSlots,
+        teacherId: c.teacherId as string | undefined,
+      }))
+    : myClasses?.filter((c) => c.isPrimary);
   const { data: existingPlans } = useLessonPlans();
-  const createLessonPlan = useCreateLessonPlan();
   const updateLessonPlan = useUpdateLessonPlan();
 
   const [moduleDriveFileId, setModuleDriveFileId] = useState(
@@ -197,6 +211,8 @@ export function LessonPlanForm({
   const watchedClassId = watch("classId");
   const learningObjectives = watch("learningObjectives") ?? [];
   const selectedClassModule = myClasses?.find((c) => c.id === watchedClassId)?.module ?? null;
+  const selectedClassTeacherId = allClasses?.find((c) => c.id === watchedClassId)?.teacherId;
+  const createLessonPlan = useCreateLessonPlan(adminMode ? selectedClassTeacherId : undefined);
 
   useEffect(() => {
     if (isEdit || !watchedClassId || !existingPlans) return;
@@ -299,7 +315,7 @@ export function LessonPlanForm({
           )}
         </div>
 
-        {watchedClassId && <ModuleCoverBanner module={selectedClassModule} />}
+        {watchedClassId && !adminMode && <ModuleCoverBanner module={selectedClassModule} />}
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">

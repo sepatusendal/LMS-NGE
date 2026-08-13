@@ -3,40 +3,72 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { AlertCircle, NotebookPen } from "lucide-react";
+import { AlertCircle, NotebookPen, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { LessonPlanForm } from "@/features/lesson-plans/lesson-plan-form";
-import { useLessonPlan } from "@/features/lesson-plans/use-lesson-plans";
+import { useDeleteLessonPlan, useLessonPlan } from "@/features/lesson-plans/use-lesson-plans";
 import { useMyClasses } from "@/features/classes/use-my-classes";
+import { useCurrentUser } from "@/features/auth/use-current-user";
 import { LoadingState } from "@/components/shared/loading-state";
 
 export default function EditLessonPlanPage() {
   const params = useParams<{ id: string }>();
   const { data: lessonPlan, isLoading, isError, error } = useLessonPlan(params.id);
   const { data: myClasses } = useMyClasses();
+  const { data: currentUser } = useCurrentUser();
+  const deleteLessonPlan = useDeleteLessonPlan();
 
+  function handleDelete() {
+    if (!lessonPlan) return;
+    if (
+      window.confirm(
+        `Hapus lesson plan "${lessonPlan.topic}" (Meeting ${lessonPlan.meetingNumber})? Tindakan ini tidak bisa dibatalkan.`,
+      )
+    ) {
+      deleteLessonPlan.mutate(lessonPlan.id);
+    }
+  }
+
+  const isAdmin = currentUser?.role === "ADMIN";
   const isOwner = useMemo(
     () =>
-      lessonPlan && myClasses
+      isAdmin ||
+      (lessonPlan && myClasses
         ? myClasses.some((c) => c.isPrimary && c.id === lessonPlan.classId)
-        : false,
-    [lessonPlan, myClasses],
+        : false),
+    [isAdmin, lessonPlan, myClasses],
   );
 
   return (
     <div className="space-y-4">
       <Link
-        href="/lesson-plan"
+        href={isAdmin ? "/lesson-plans" : "/lesson-plan"}
         className="text-muted-foreground text-sm hover:underline"
       >
         ← Kembali ke Lesson Plan
       </Link>
-      <div className="flex items-center gap-3">
-        <div className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-xl">
-          <NotebookPen className="size-5" />
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-xl">
+            <NotebookPen className="size-5" />
+          </div>
+          <h1 className="text-xl font-semibold">
+            {isOwner ? "Edit Lesson Plan" : "Lihat Lesson Plan"}
+          </h1>
         </div>
-        <h1 className="text-xl font-semibold">
-          {isOwner ? "Edit Lesson Plan" : "Lihat Lesson Plan"}
-        </h1>
+        {isAdmin && lessonPlan && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            disabled={deleteLessonPlan.isPending}
+            onClick={handleDelete}
+          >
+            <Trash2 className="size-3.5" />
+            Hapus
+          </Button>
+        )}
       </div>
 
       {isError ? (
@@ -52,7 +84,7 @@ export default function EditLessonPlanPage() {
       ) : isLoading || !lessonPlan ? (
         <LoadingState />
       ) : (
-        <LessonPlanForm lessonPlan={lessonPlan} readOnly={!isOwner} />
+        <LessonPlanForm lessonPlan={lessonPlan} readOnly={!isOwner} adminMode={isAdmin} />
       )}
     </div>
   );

@@ -97,6 +97,7 @@ export async function fetchLessonPlan(id: string): Promise<LessonPlan> {
     .from("lesson_plans")
     .select(SELECT)
     .eq("id", id)
+    .is("deletedAt", null)
     .single();
   if (error) throw error;
   return mapRow(data as unknown as LessonPlanRow);
@@ -181,4 +182,17 @@ export async function updateLessonPlan(id: string, input: LessonPlanInput) {
     .update(toPayload(input))
     .eq("id", id);
   if (error) throw duplicateMeetingNumberError(error);
+}
+
+/** Admin-only — teachers have no delete path for lesson plans by design.
+ * Soft delete: RLS allows admin writes, and the meeting/report chain (if
+ * any) already references lessonPlanId, so this is left as a soft delete
+ * rather than cascading a hard delete through meetings/check-ins/reports. */
+export async function deleteLessonPlan(id: string) {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("lesson_plans")
+    .update({ deletedAt: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
 }

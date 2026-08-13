@@ -13,11 +13,14 @@ const CLASSES_KEY = ["classes"];
 const classesKey = (classType?: ClassType) => [...CLASSES_KEY, classType ?? "ALL"];
 
 /** Omit classType for admin-wide surfaces that should see both regular and
- * teacher-training classes; pass it to scope a list page to one type. */
-export function useClasses(classType?: ClassType) {
+ * teacher-training classes; pass it to scope a list page to one type. Pass
+ * enabled: false to skip the fetch entirely (e.g. a shared form that only
+ * needs this in one of its two modes). */
+export function useClasses(classType?: ClassType, enabled = true) {
   return useQuery({
     queryKey: classesKey(classType),
     queryFn: () => fetchClasses(classType),
+    enabled,
   });
 }
 

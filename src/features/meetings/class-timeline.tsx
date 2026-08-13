@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, CheckCircle, Clock, UserCheck, UserRoundCog } from "lucide-react";
+import { Loader2, CheckCircle, Clock, UserCheck, UserRoundCog, Settings2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useClassTimeline } from "@/features/meetings/use-timeline";
@@ -10,6 +10,7 @@ import {
   ReassignTutorDialog,
   type ReassignTutorTarget,
 } from "@/features/substitutes/reassign-tutor-dialog";
+import { MeetingAdminDialog } from "@/features/meetings/meeting-admin-dialog";
 
 const STATUS_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   COMPLETED: { label: "Selesai", variant: "default" },
@@ -29,12 +30,14 @@ function TimelineItem({
   totalEnrolled,
   canReassign,
   onReassign,
+  onManageMeeting,
 }: {
   entry: TimelineEntry;
   isLast: boolean;
   totalEnrolled: number;
   canReassign: boolean;
   onReassign: (entry: TimelineEntry) => void;
+  onManageMeeting: (entry: TimelineEntry) => void;
 }) {
   const hasMeeting = Boolean(entry.meetingId);
   const isCompleted = entry.meetingStatus === "COMPLETED";
@@ -110,6 +113,17 @@ function TimelineItem({
               >
                 <UserRoundCog className="size-3" />
                 {entry.isSubstitute ? "Kelola" : "Ganti Tutor"}
+              </Button>
+            )}
+            {hasMeeting && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-muted-foreground hover:text-foreground h-5 gap-1 px-1.5 text-[11px]"
+                onClick={() => onManageMeeting(entry)}
+              >
+                <Settings2 className="size-3" />
+                Kelola Meeting
               </Button>
             )}
           </div>
@@ -201,6 +215,13 @@ export function ClassTimeline({
   const { data, isLoading } = useClassTimeline(classId);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [target, setTarget] = useState<ReassignTutorTarget | null>(null);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [manageEntry, setManageEntry] = useState<TimelineEntry | null>(null);
+
+  function openManageDialog(entry: TimelineEntry) {
+    setManageEntry(entry);
+    setManageOpen(true);
+  }
 
   function openReassignDialog(entry: TimelineEntry) {
     setTarget({
@@ -260,11 +281,19 @@ export function ClassTimeline({
             totalEnrolled={data.totalEnrolled}
             canReassign={canReassign}
             onReassign={openReassignDialog}
+            onManageMeeting={openManageDialog}
           />
         );
       })}
 
       <ReassignTutorDialog open={dialogOpen} onOpenChange={setDialogOpen} target={target} />
+      <MeetingAdminDialog
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        meetingId={manageEntry?.meetingId ?? null}
+        classId={classId}
+        meetingLabel={manageEntry ? `Meeting ${manageEntry.meetingNumber} — ${manageEntry.topic}` : ""}
+      />
     </div>
   );
 }

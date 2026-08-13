@@ -1,12 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import { NotebookPen } from "lucide-react";
 import { LessonPlanForm } from "@/features/lesson-plans/lesson-plan-form";
+import { useCurrentUser } from "@/features/auth/use-current-user";
 
 export default function NewLessonPlanPage() {
+  const { data: currentUser } = useCurrentUser();
+  const isAdmin = currentUser?.role === "ADMIN";
+
   return (
     <div className="space-y-4">
       <Link
-        href="/lesson-plan"
+        href={isAdmin ? "/lesson-plans" : "/lesson-plan"}
         className="text-muted-foreground text-sm hover:underline"
       >
         ← Kembali ke Lesson Plan
@@ -22,7 +28,7 @@ export default function NewLessonPlanPage() {
           </p>
         </div>
       </div>
-      <LessonPlanForm />
+      <LessonPlanForm adminMode={isAdmin} />
     </div>
   );
 }
