@@ -125,7 +125,7 @@ export function ScheduleChart() {
                 <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                 <Tooltip
-                  cursor={{ fill: "rgba(15, 43, 70, 0.06)" }}
+                  cursor={{ fill: "color-mix(in oklab, var(--foreground) 6%, transparent)" }}
                   content={<ScheduleTooltip getClassesForDay={getClassesForDay} />}
                 />
                 <Bar

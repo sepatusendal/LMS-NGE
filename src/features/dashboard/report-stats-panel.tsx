@@ -102,7 +102,7 @@ export function ReportStatsPanel({ days = 14 }: { days?: number }) {
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip cursor={{ fill: "rgba(15, 43, 70, 0.06)" }} />
+                  <Tooltip cursor={{ fill: "color-mix(in oklab, var(--foreground) 6%, transparent)" }} />
                   <Bar dataKey="Report" fill="var(--primary)" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

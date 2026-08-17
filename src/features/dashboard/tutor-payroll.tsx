@@ -180,8 +180,8 @@ export function TutorPayroll() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {/* Card 1 — ringkasan beban pengeluaran + chart */}
-          <Card className="overflow-hidden">
-            <div className="h-1 w-full" style={{ backgroundColor: "var(--chart-3)" }} />
+          <Card className="relative">
+            <div className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: "var(--chart-3)" }} />
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between gap-2 text-base font-bold">
                 <span className="flex items-center gap-2">
@@ -258,7 +258,7 @@ export function TutorPayroll() {
                       />
                       <Tooltip
                         formatter={(v: unknown) => formatRupiah(Number(v))}
-                        cursor={{ fill: "rgba(15, 43, 70, 0.06)" }}
+                        cursor={{ fill: "color-mix(in oklab, var(--foreground) 6%, transparent)" }}
                       />
                       <Bar dataKey="subtotal" fill="var(--chart-3)" radius={[4, 4, 0, 0]} barSize={28} />
                     </BarChart>
@@ -275,8 +275,8 @@ export function TutorPayroll() {
           </Card>
 
           {/* Card 2 — detail per tutor */}
-          <Card className="overflow-hidden">
-            <div className="h-1 w-full" style={{ backgroundColor: "var(--chart-5)" }} />
+          <Card className="relative">
+            <div className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: "var(--chart-5)" }} />
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base font-bold">
                 <span
