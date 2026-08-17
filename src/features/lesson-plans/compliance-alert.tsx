@@ -13,10 +13,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useClasses } from "@/features/classes/use-classes";
-import { parseLocalDate } from "@/lib/date";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
-
-const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+import { getClassComplianceStatus } from "./compliance";
 
 interface NonCompliantClass {
   id: string;
@@ -34,47 +32,18 @@ export function ComplianceAlert() {
   const { nonCompliant } = useMemo(() => {
     if (!classes || !lessonPlans) return { nonCompliant: [] };
     const now = Date.now();
-    const threshold = now + TWO_WEEKS_MS;
 
-    const bad: NonCompliantClass[] = [];
-
-    classes.forEach((c) => {
-      const classPlans = lessonPlans
-        .filter((p) => p.classId === c.id)
-        .sort(
-          (a, b) =>
-            parseLocalDate(b.scheduledDate).getTime() -
-            parseLocalDate(a.scheduledDate).getTime(),
-        );
-
-      const latest = classPlans[0];
-
-      if (!latest) {
-        bad.push({
-          id: c.id,
-          name: c.name,
-          schoolName: c.schoolName,
-          teacherName: c.teacherName,
-          latestDate: null,
-          daysLeft: -1,
-        });
-        return;
-      }
-
-      const latestMs = parseLocalDate(latest.scheduledDate).getTime();
-      const daysLeft = Math.ceil((latestMs - now) / (24 * 60 * 60 * 1000));
-
-      if (latestMs < threshold) {
-        bad.push({
-          id: c.id,
-          name: c.name,
-          schoolName: c.schoolName,
-          teacherName: c.teacherName,
-          latestDate: latest.scheduledDate,
-          daysLeft,
-        });
-      }
-    });
+    const bad: NonCompliantClass[] = classes
+      .map((c) => ({ c, status: getClassComplianceStatus(c.id, lessonPlans, now) }))
+      .filter(({ status }) => !status.isCompliant)
+      .map(({ c, status }) => ({
+        id: c.id,
+        name: c.name,
+        schoolName: c.schoolName,
+        teacherName: c.teacherName,
+        latestDate: status.latestDate,
+        daysLeft: status.daysLeft,
+      }));
 
     bad.sort((a, b) => a.daysLeft - b.daysLeft);
     return { nonCompliant: bad };

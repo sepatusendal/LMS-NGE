@@ -13,27 +13,74 @@ import {
 } from "recharts";
 import { Clock, MapPin, CalendarRange } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { useClasses } from "@/features/classes/use-classes";
-import { getSlotForDay } from "@/features/classes/schema";
+import { getSlotForDay, type Class, type ScheduleSlot } from "@/features/classes/schema";
 
 const DAY_LABELS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
+type ClassWithSlot = Class & { slot: ScheduleSlot | null };
+
+function ScheduleTooltip({
+  active,
+  payload,
+  getClassesForDay,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: { dayIndex: number } }>;
+  getClassesForDay: (dayIndex: number) => ClassWithSlot[];
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  const dayIndex = payload[0].payload.dayIndex;
+  const list = getClassesForDay(dayIndex);
+
+  return (
+    <div className="max-w-[260px] rounded-lg border bg-popover p-2.5 text-popover-foreground shadow-md">
+      <p className="mb-1.5 text-xs font-semibold">
+        {DAY_LABELS[dayIndex]} · {list.length} kelas
+      </p>
+      {list.length === 0 ? (
+        <p className="text-muted-foreground text-xs">Tidak ada kelas terjadwal.</p>
+      ) : (
+        <div className="max-h-52 space-y-1.5 overflow-y-auto pr-1">
+          {list.map((c) => (
+            <div key={c.id} className="rounded-md bg-muted/40 px-2 py-1.5">
+              <p className="truncate text-xs font-medium">{c.name}</p>
+              <p className="text-muted-foreground truncate text-[11px]">
+                {c.schoolName} · {c.teacherName}
+              </p>
+              <div className="mt-1 flex items-center gap-2 text-[10px]">
+                <span className="inline-flex items-center gap-0.5">
+                  <Clock className="size-3" />
+                  {c.slot ? `${c.slot.startTime}-${c.slot.endTime}` : "-"}
+                </span>
+                {c.room && (
+                  <span className="text-muted-foreground inline-flex items-center gap-0.5">
+                    <MapPin className="size-2.5" />
+                    {c.room}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ScheduleChart() {
   const { data: classes, isLoading } = useClasses();
   // Deferred to client-only: `new Date().getDay()` reads the viewer's local
   // clock, which can differ from the server's at render time (e.g. near the
   // UTC-midnight/WIB-7am boundary) — computing it during the initial render
-  // would make the "today" highlight/dot mismatch between SSR and
-  // hydration. `null` until mount renders identically on both sides.
+  // would make the "today" highlight/dot mismatch between SSR and hydration.
   const [today, setToday] = useState<number | null>(null);
   useEffect(() => setToday(new Date().getDay()), []);
+
+  // Tapping a bar pins its day's class list below the chart — the hover
+  // tooltip alone isn't reachable on touch devices, which have no hover.
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  useEffect(() => {
-    if (today !== null) setSelectedDay((prev) => prev ?? today);
-  }, [today]);
-  const effectiveSelectedDay = selectedDay ?? 1;
+  const effectiveSelectedDay = selectedDay ?? today;
 
   const chartData = useMemo(() => {
     const counts = new Array(7).fill(0);
@@ -43,12 +90,17 @@ export function ScheduleChart() {
     return DAY_LABELS.map((label, i) => ({ day: label.slice(0, 3), dayIndex: i, Kelas: counts[i] }));
   }, [classes]);
 
-  const classesByDay = useMemo(() => {
-    return (classes ?? [])
-      .filter((c) => c.isActive && c.scheduleDaysOfWeek.includes(effectiveSelectedDay))
-      .map((c) => ({ ...c, slot: getSlotForDay(c.scheduleSlots, effectiveSelectedDay) }))
-      .sort((a, b) => (a.slot?.startTime ?? "").localeCompare(b.slot?.startTime ?? ""));
-  }, [classes, effectiveSelectedDay]);
+  // Kelas untuk satu hari (diurutkan per jam) — dihitung on-demand per hari
+  // yang di-hover/di-tap, bukan semua 7 hari sekaligus di setiap render.
+  const getClassesForDay = useMemo(() => {
+    return (dayIndex: number): ClassWithSlot[] =>
+      (classes ?? [])
+        .filter((c) => c.isActive && c.scheduleDaysOfWeek.includes(dayIndex))
+        .map((c) => ({ ...c, slot: getSlotForDay(c.scheduleSlots, dayIndex) }))
+        .sort((a, b) => (a.slot?.startTime ?? "").localeCompare(b.slot?.startTime ?? ""));
+  }, [classes]);
+
+  const selectedList = effectiveSelectedDay === null ? [] : getClassesForDay(effectiveSelectedDay);
 
   return (
     <Card>
@@ -72,14 +124,17 @@ export function ScheduleChart() {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="day" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip cursor={{ fill: "rgba(15, 43, 70, 0.06)" }} />
+                <Tooltip
+                  cursor={{ fill: "rgba(15, 43, 70, 0.06)" }}
+                  content={<ScheduleTooltip getClassesForDay={getClassesForDay} />}
+                />
                 <Bar
                   dataKey="Kelas"
                   radius={[3, 3, 0, 0]}
                   className="cursor-pointer"
                   onClick={(data) => {
                     const dayIndex = (data as unknown as { payload: { dayIndex: number } }).payload.dayIndex;
-                    setSelectedDay(dayIndex);
+                    setSelectedDay((prev) => (prev === dayIndex ? null : dayIndex));
                   }}
                 >
                   {chartData.map((d) => (
@@ -95,56 +150,37 @@ export function ScheduleChart() {
           )}
         </div>
 
-        {!isLoading && (
+        {!isLoading && effectiveSelectedDay !== null && (
           <div className="mt-3 border-t pt-3">
-            <div className="mb-2.5 flex flex-wrap gap-1">
-              {DAY_LABELS.map((label, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setSelectedDay(i)}
-                  className={cn(
-                    "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
-                    i === effectiveSelectedDay
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/70",
-                  )}
-                >
-                  {label.slice(0, 3)}
-                  {i === today && <span className="ml-1 opacity-70">•</span>}
-                </button>
-              ))}
-            </div>
-
             <p className="text-muted-foreground mb-2 text-xs font-medium">
-              {classesByDay.length} kelas pada hari {DAY_LABELS[effectiveSelectedDay]}
+              {selectedList.length} kelas pada hari {DAY_LABELS[effectiveSelectedDay]}
               {effectiveSelectedDay === today && " (hari ini)"}
+              {selectedDay !== null && " · tap lagi untuk tutup"}
             </p>
-
-            {classesByDay.length === 0 ? (
-              <p className="text-muted-foreground py-4 text-center text-sm">
+            {selectedList.length === 0 ? (
+              <p className="text-muted-foreground py-2 text-center text-xs">
                 Tidak ada kelas terjadwal pada hari {DAY_LABELS[effectiveSelectedDay]}.
               </p>
             ) : (
-              <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
-                {classesByDay.map((c) => (
+              <div className="max-h-52 space-y-1.5 overflow-y-auto pr-1">
+                {selectedList.map((c) => (
                   <div
                     key={c.id}
-                    className="bg-muted/40 flex items-center justify-between gap-3 rounded-lg px-3 py-2"
+                    className="bg-muted/40 flex items-center justify-between gap-3 rounded-lg px-2.5 py-1.5"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{c.name}</p>
-                      <p className="text-muted-foreground truncate text-xs">
+                      <p className="truncate text-xs font-medium">{c.name}</p>
+                      <p className="text-muted-foreground truncate text-[11px]">
                         {c.schoolName} · {c.teacherName}
                       </p>
                     </div>
-                    <div className="flex shrink-0 flex-col items-end gap-0.5">
-                      <Badge variant="secondary" className="gap-1 text-[10px]">
+                    <div className="flex shrink-0 items-center gap-2 text-[10px]">
+                      <span className="inline-flex items-center gap-0.5">
                         <Clock className="size-3" />
                         {c.slot ? `${c.slot.startTime}-${c.slot.endTime}` : "-"}
-                      </Badge>
+                      </span>
                       {c.room && (
-                        <span className="text-muted-foreground flex items-center gap-0.5 text-[10px]">
+                        <span className="text-muted-foreground inline-flex items-center gap-0.5">
                           <MapPin className="size-2.5" />
                           {c.room}
                         </span>

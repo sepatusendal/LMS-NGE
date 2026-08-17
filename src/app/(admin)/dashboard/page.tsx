@@ -6,6 +6,7 @@ import { ComplianceAlert } from "@/features/lesson-plans/compliance-alert";
 import { StatusBoard } from "@/features/monitoring/status-board";
 import { AnalyticsCharts } from "@/features/monitoring/analytics-charts";
 import { OverviewStats } from "@/features/dashboard/overview-stats";
+import { RevenueCard, TodayCard } from "@/features/dashboard/overview-sidebar";
 import { TutorPayroll } from "@/features/dashboard/tutor-payroll";
 import { TeacherAttendanceTable } from "@/features/dashboard/teacher-attendance-table";
 import { ReportStatsPanel } from "@/features/dashboard/report-stats-panel";
@@ -44,7 +45,7 @@ export default function AdminDashboardPage() {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <DashboardHero
         greeting={greeting}
         firstName={firstName}
@@ -52,10 +53,30 @@ export default function AdminDashboardPage() {
         hour={now?.getHours() ?? 9}
       />
 
+      {/* 1 — KPI metrics row */}
       <OverviewStats />
 
-      <TutorPayroll />
+      {/* 2 — Tren & analitik: chart lebar (8) + jadwal & ringkasan samping (4) */}
+      <section className="space-y-3">
+        <SectionHeading
+          icon={LineChart}
+          title="Tren & Analitik"
+          description="Performa teaching report, kehadiran, dan jadwal dalam 14 hari terakhir."
+        />
+        <div className="grid gap-5 lg:grid-cols-12">
+          <div className="space-y-5 lg:col-span-8">
+            <ReportStatsPanel />
+            <AnalyticsCharts />
+          </div>
+          <div className="grid gap-5 lg:col-span-4">
+            <ScheduleChart />
+            <RevenueCard />
+            <TodayCard />
+          </div>
+        </div>
+      </section>
 
+      {/* 3 — Operasional hari ini (tabel lebar, full width) */}
       <section className="space-y-3">
         <SectionHeading
           icon={Activity}
@@ -65,30 +86,19 @@ export default function AdminDashboardPage() {
         <StatusBoard />
       </section>
 
-      <section className="space-y-3">
-        <SectionHeading
-          icon={LineChart}
-          title="Tren & Analitik"
-          description="Performa teaching report, kehadiran, dan jadwal dalam 14 hari terakhir."
-        />
-        <div className="grid gap-4 lg:grid-cols-2">
-          <ReportStatsPanel />
-          <ScheduleChart />
-        </div>
-        <AnalyticsCharts />
-      </section>
+      {/* 4 — Beban gaji tutor (modul keuangan, full width) */}
+      <TutorPayroll />
 
+      {/* 5 — Perlu perhatian: kepatuhan, disiplin guru, catatan, follow-up */}
       <section className="space-y-3">
         <SectionHeading
           icon={ListChecks}
           title="Perlu Perhatian"
           description="Kepatuhan lesson plan, kedisiplinan guru, dan follow-up siswa."
         />
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid items-start gap-5 lg:grid-cols-2">
           <ComplianceAlert />
           <TeacherAttendanceTable />
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
           <ReportNotesTable />
           <FollowUpsTable />
         </div>

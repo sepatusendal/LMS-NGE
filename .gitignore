@@ -49,6 +49,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local opencode config (may contain MCP API keys)
+opencode.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

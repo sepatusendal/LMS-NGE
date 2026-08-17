@@ -2,3 +2,7 @@
 # not part of the deploy. node_modules/.next/.git are excluded by Vercel by
 # default; this just stops the CLI from bundling the module PDFs.
 Modul Kelas Tutor
+
+# Local opencode/MCP config — contains the NeedMCP API key, never belongs in
+# a deploy (it's a local editor config, unrelated to the Next.js app).
+opencode.json

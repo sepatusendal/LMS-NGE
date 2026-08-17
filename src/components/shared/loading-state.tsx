@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 // Everything else in the app speaks Indonesian — these stay English on
@@ -27,12 +27,14 @@ export function LoadingState({
   label?: string;
   className?: string;
 }) {
-  const message = useMemo(
-    () =>
-      label ??
-      FUNNY_LOADING_MESSAGES[Math.floor(Math.random() * FUNNY_LOADING_MESSAGES.length)],
-    [label],
-  );
+  // Picking a random message during render would make the server's pick and
+  // the client's hydration-time pick disagree, which React flags as a
+  // hydration mismatch. Render a deterministic message first (identical on
+  // both sides), then swap to a random one client-only after mount.
+  const [message, setMessage] = useState(label ?? FUNNY_LOADING_MESSAGES[0]);
+  useEffect(() => {
+    setMessage(label ?? FUNNY_LOADING_MESSAGES[Math.floor(Math.random() * FUNNY_LOADING_MESSAGES.length)]);
+  }, [label]);
 
   return (
     <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
