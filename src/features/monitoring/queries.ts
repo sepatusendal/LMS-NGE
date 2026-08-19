@@ -27,6 +27,7 @@ interface LessonPlanRow {
 interface ClassRow {
   id: string;
   name: string;
+  classType: "REGULAR" | "TEACHER_TRAINING";
   room: string | null;
   scheduleDaysOfWeek: number[];
   class_schedule_slots: { dayOfWeek: number; startTime: string; endTime: string }[];
@@ -75,7 +76,7 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
   const { data: allClasses, error: clsErr } = await supabase
     .from("classes")
     .select(
-      "id, name, room, scheduleDaysOfWeek, class_schedule_slots(dayOfWeek, startTime, endTime), teacherId, schoolId, schools(id, name), teachers(users(fullName))",
+      "id, name, classType, room, scheduleDaysOfWeek, class_schedule_slots(dayOfWeek, startTime, endTime), teacherId, schoolId, schools(id, name), teachers(users(fullName))",
     )
     .eq("isActive", true)
     .is("deletedAt", null);
@@ -172,6 +173,7 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
       return {
         classId: cls.id,
         className: cls.name,
+        classType: cls.classType,
         schoolId: cls.schoolId,
         schoolName: cls.schools?.name ?? "-",
         teacherId,

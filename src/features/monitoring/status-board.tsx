@@ -227,6 +227,11 @@ export function StatusBoard() {
                       <TableRow key={r.lessonPlanId ?? `${r.classId}-no-lp`}>
                         <TableCell className="font-medium whitespace-nowrap">
                           {r.className}
+                          {r.classType === "TEACHER_TRAINING" && (
+                            <Badge variant="secondary" className="ml-1.5 text-[10px]">
+                              Guru & Staff
+                            </Badge>
+                          )}
                           {r.isSubstitute && (
                             <Badge variant="outline" className="ml-1.5 text-[10px]">
                               Sub

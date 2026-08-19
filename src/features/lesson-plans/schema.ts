@@ -97,5 +97,6 @@ export interface LessonPlan {
   differentiationHomework: string | null;
   moduleDriveFileId: string | null;
   moduleFileName: string | null;
+  createdByTeacherName: string;
   createdAt: string;
 }

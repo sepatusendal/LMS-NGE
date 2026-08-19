@@ -30,6 +30,19 @@ export async function fetchClassRoster(classId: string): Promise<RosterStudent[]
   }));
 }
 
+export async function fetchTeacherStudentCount(classIds: string[]): Promise<number> {
+  if (classIds.length === 0) return 0;
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("class_enrollments")
+    .select("studentId")
+    .in("classId", classIds)
+    .is("unenrolledAt", null);
+  if (error) throw error;
+
+  return new Set((data as { studentId: string }[]).map((row) => row.studentId)).size;
+}
+
 export async function enrollStudent(classId: string, studentId: string) {
   const supabase = createClient();
   const { error } = await supabase

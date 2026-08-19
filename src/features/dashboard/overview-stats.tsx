@@ -61,7 +61,12 @@ export function OverviewStats() {
   const activeSchools = schools?.filter((s) => s.isActive).length ?? 0;
   const activeStudents = students?.filter((s) => s.isActive).length ?? 0;
   const activeTeachers = teachers?.filter((t) => t.isActive).length ?? 0;
-  const activeClasses = classes?.filter((c) => c.isActive).length ?? 0;
+  // Kartu ini fokus ke kelas siswa (REGULAR); kelas guru & staff dihitung terpisah
+  // biar angka "Kelas Aktif" gak nyampur dua populasi yang beda.
+  const regularClasses = classes?.filter((c) => c.classType === "REGULAR") ?? [];
+  const activeClasses = regularClasses.filter((c) => c.isActive).length;
+  const activeTeacherTrainingClasses =
+    classes?.filter((c) => c.classType === "TEACHER_TRAINING" && c.isActive).length ?? 0;
 
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -91,10 +96,10 @@ export function OverviewStats() {
       />
       <StatBlock
         icon={BookOpen}
-        label="Kelas Aktif"
+        label="Kelas Siswa Aktif"
         value={String(activeClasses)}
-        sub={`${activeClasses} dari ${classes?.length ?? 0} kelas`}
-        progress={classes?.length ? (activeClasses / classes.length) * 100 : 0}
+        sub={`${activeClasses} dari ${regularClasses.length} kelas · ${activeTeacherTrainingClasses} kelas guru & staff`}
+        progress={regularClasses.length ? (activeClasses / regularClasses.length) * 100 : 0}
         color="var(--chart-2)"
       />
     </div>

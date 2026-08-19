@@ -415,9 +415,12 @@ model TeachingReport {
   actualTeachingDate  DateTime @db.Date
 
   skills               String[]            @default([]) // Listening, Speaking, Writing, Reading
-  objectivesAchieved   ObjectivesAchieved?
+  objectivesAchieved   ObjectivesAchieved? // derived from `objectives` below, not picked directly
   whatWentWell         String?
   whatNeedsImprovement String?
+  /// Concrete plan for how whatNeedsImprovement will be addressed — required
+  /// client-side whenever whatNeedsImprovement is filled in.
+  actionPlan           String?
   nextLessonNotes      String?
   homeworkAssigned     String?
   photoDriveFileId     String?
@@ -427,14 +430,31 @@ model TeachingReport {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  meeting           Meeting           @relation(fields: [meetingId], references: [id])
-  originalTeacher   Teacher           @relation("ReportOriginalTeacher", fields: [originalTeacherId], references: [id])
-  substituteTeacher Teacher?          @relation("ReportSubstituteTeacher", fields: [substituteTeacherId], references: [id])
+  meeting           Meeting                    @relation(fields: [meetingId], references: [id])
+  originalTeacher   Teacher                    @relation("ReportOriginalTeacher", fields: [originalTeacherId], references: [id])
+  substituteTeacher Teacher?                   @relation("ReportSubstituteTeacher", fields: [substituteTeacherId], references: [id])
   followUps         StudentFollowUp[]
   progressRecords   ProgressRecord[]
+  objectives        ReportLearningObjective[]
 
   @@index([actualTeachingDate])
   @@map("teaching_reports")
+}
+
+/// One row per lesson-plan learning objective, snapshotted at report time —
+/// objectives are freeform strings on LessonPlan.learningObjectives, not a
+/// normalized/id'd table, so the text is stored directly rather than an FK.
+model ReportLearningObjective {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teachingReportId String   @db.Uuid
+  objectiveText    String
+  achieved         Boolean
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+
+  teachingReport TeachingReport @relation(fields: [teachingReportId], references: [id])
+
+  @@index([teachingReportId])
+  @@map("report_learning_objectives")
 }
 
 model StudentFollowUp {

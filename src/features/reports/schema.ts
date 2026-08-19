@@ -11,19 +11,40 @@ export const OBJECTIVES_LABEL: Record<ObjectivesAchieved, string> = {
 
 export const SKILL_OPTIONS = ["Listening", "Speaking", "Writing", "Reading"] as const;
 
-export const reportSchema = z.object({
-  meetingId: z.string().min(1),
-  skills: z.array(z.string()).default([]),
-  objectivesAchieved: z.enum(OBJECTIVES_OPTIONS).optional(),
-  whatWentWell: z.string().optional(),
-  whatNeedsImprovement: z.string().optional(),
-  nextLessonNotes: z.string().optional(),
-  homeworkAssigned: z.string().optional(),
-  followUps: z.array(z.object({
-    studentId: z.string().min(1),
-    note: z.string().min(1, "Catatan wajib diisi"),
-  })).default([]),
-});
+export interface ReportObjectiveInput {
+  text: string;
+  achieved: boolean;
+}
+
+export const reportSchema = z
+  .object({
+    meetingId: z.string().min(1),
+    skills: z.array(z.string()).default([]),
+    objectives: z
+      .array(z.object({ text: z.string().min(1), achieved: z.boolean() }))
+      .default([]),
+    whatWentWell: z.string().optional(),
+    whatNeedsImprovement: z.string().optional(),
+    // Required whenever whatNeedsImprovement is filled in (see superRefine
+    // below) — a "needs improvement" note like "be more patient" needs a
+    // follow-up on *how* that will be practiced next class.
+    actionPlan: z.string().optional(),
+    nextLessonNotes: z.string().optional(),
+    homeworkAssigned: z.string().optional(),
+    followUps: z.array(z.object({
+      studentId: z.string().min(1),
+      note: z.string().min(1, "Catatan wajib diisi"),
+    })).default([]),
+  })
+  .superRefine((data, ctx) => {
+    if ((data.whatNeedsImprovement ?? "").trim() && !(data.actionPlan ?? "").trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["actionPlan"],
+        message: "Action plan wajib diisi kalau ada catatan yang perlu ditingkatkan",
+      });
+    }
+  });
 export type ReportInput = z.infer<typeof reportSchema>;
 
 export interface TeachingReport {
@@ -35,8 +56,10 @@ export interface TeachingReport {
   actualTeachingDate: string;
   skills: string[];
   objectivesAchieved: ObjectivesAchieved | null;
+  objectives: { objectiveText: string; achieved: boolean }[];
   whatWentWell: string | null;
   whatNeedsImprovement: string | null;
+  actionPlan: string | null;
   nextLessonNotes: string | null;
   homeworkAssigned: string | null;
   photoDriveFileId: string | null;

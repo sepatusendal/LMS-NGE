@@ -41,6 +41,7 @@ export default function AdminReportsPage() {
   const { data: classes } = useClasses();
   const [schoolId, setSchoolId] = useState("");
   const [classId, setClassId] = useState("");
+  const [classType, setClassType] = useState("");
 
   const schoolIdByClassId = useMemo(() => new Map((classes ?? []).map((c) => [c.id, c.schoolId])), [classes]);
 
@@ -49,9 +50,10 @@ export default function AdminReportsPage() {
     return reports.filter((r) => {
       if (schoolId && schoolIdByClassId.get(r.classId) !== schoolId) return false;
       if (classId && r.classId !== classId) return false;
+      if (classType && r.classType !== classType) return false;
       return true;
     });
-  }, [reports, schoolId, classId, schoolIdByClassId]);
+  }, [reports, schoolId, classId, classType, schoolIdByClassId]);
 
   return (
     <div className="space-y-4">
@@ -103,6 +105,24 @@ export default function AdminReportsPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select
+          items={[
+            { value: "", label: "Semua tipe" },
+            { value: "REGULAR", label: "Kelas Reguler" },
+            { value: "TEACHER_TRAINING", label: "Kelas Guru & Staff" },
+          ]}
+          value={classType}
+          onValueChange={(v) => setClassType(v ?? "")}
+        >
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Semua tipe" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Semua tipe</SelectItem>
+            <SelectItem value="REGULAR">Kelas Reguler</SelectItem>
+            <SelectItem value="TEACHER_TRAINING">Kelas Guru & Staff</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="rounded-lg border">
@@ -136,6 +156,11 @@ export default function AdminReportsPage() {
                     <TableCell className="whitespace-nowrap">{formatDate(r.actualTeachingDate)}</TableCell>
                     <TableCell className="font-medium whitespace-nowrap">
                       {r.className}
+                      {r.classType === "TEACHER_TRAINING" && (
+                        <Badge variant="secondary" className="ml-1.5 text-[10px]">
+                          Guru & Staff
+                        </Badge>
+                      )}
                       {r.isSubstitute && (
                         <Badge variant="outline" className="ml-1.5 text-[10px]">
                           Sub

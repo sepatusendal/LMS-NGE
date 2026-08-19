@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { fetchReport, createReport } from "./queries";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
-import type { ObjectivesAchieved } from "./schema";
+import type { ReportObjectiveInput } from "./schema";
 
 const REPORT_KEY = ["teaching-report"];
 
@@ -21,9 +21,10 @@ export function useCreateReport(meetingId: string) {
   return useMutation({
     mutationFn: (input: {
       skills: string[];
-      objectivesAchieved?: ObjectivesAchieved;
+      objectives: ReportObjectiveInput[];
       whatWentWell?: string;
       whatNeedsImprovement?: string;
+      actionPlan?: string;
       nextLessonNotes?: string;
       homeworkAssigned?: string;
       photoDriveFileId?: string;

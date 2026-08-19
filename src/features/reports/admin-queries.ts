@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import type { ObjectivesAchieved } from "./schema";
+import type { ClassType } from "@/features/classes/schema";
 
 export interface AdminReportListItem {
   id: string;
@@ -7,6 +8,7 @@ export interface AdminReportListItem {
   actualTeachingDate: string;
   classId: string;
   className: string;
+  classType: ClassType;
   schoolName: string;
   teacherName: string;
   isSubstitute: boolean;
@@ -22,6 +24,7 @@ export interface AdminReportDetail {
   meetingId: string;
   actualTeachingDate: string;
   className: string;
+  classType: ClassType;
   schoolName: string;
   teacherName: string;
   isSubstitute: boolean;
@@ -31,8 +34,10 @@ export interface AdminReportDetail {
   scheduledDate: string;
   skills: string[];
   objectivesAchieved: ObjectivesAchieved | null;
+  objectives: { objectiveText: string; achieved: boolean }[];
   whatWentWell: string | null;
   whatNeedsImprovement: string | null;
+  actionPlan: string | null;
   nextLessonNotes: string | null;
   homeworkAssigned: string | null;
   summary: string | null;
@@ -52,6 +57,7 @@ interface ReportRow {
   objectivesAchieved: ObjectivesAchieved | null;
   whatWentWell: string | null;
   whatNeedsImprovement: string | null;
+  actionPlan: string | null;
   nextLessonNotes: string | null;
   homeworkAssigned: string | null;
   summary: string | null;
@@ -88,11 +94,11 @@ async function buildContext(reports: ReportRow[]) {
   const classIds = [...new Set(Array.from(lpById.values()).map((lp) => lp.classId))];
   const { data: classes, error: clsErr } = await supabase
     .from("classes")
-    .select("id, name, schoolId")
+    .select("id, name, schoolId, classType")
     .in("id", classIds);
   if (clsErr) throw clsErr;
   const clsById = new Map(
-    (classes as unknown as { id: string; name: string; schoolId: string }[]).map((c) => [c.id, c]),
+    (classes as unknown as { id: string; name: string; schoolId: string; classType: ClassType }[]).map((c) => [c.id, c]),
   );
 
   const schoolIds = [...new Set(Array.from(clsById.values()).map((c) => c.schoolId))];
@@ -164,6 +170,7 @@ export async function fetchAdminReports(): Promise<AdminReportListItem[]> {
       actualTeachingDate: r.actualTeachingDate,
       classId: lp?.classId ?? "",
       className: cls?.name ?? "-",
+      classType: cls?.classType ?? "REGULAR",
       schoolName: cls ? (ctx.schoolNameById.get(cls.schoolId) ?? "-") : "-",
       teacherName: ctx.teacherNameById.get(r.originalTeacherId) ?? "-",
       isSubstitute,
@@ -182,7 +189,7 @@ export async function fetchAdminReportDetail(id: string): Promise<AdminReportDet
   const { data, error } = await supabase
     .from("teaching_reports")
     .select(
-      "id, meetingId, originalTeacherId, substituteTeacherId, actualTeachingDate, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement, nextLessonNotes, homeworkAssigned, summary, photoDriveFileId",
+      "id, meetingId, originalTeacherId, substituteTeacherId, actualTeachingDate, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement, actionPlan, nextLessonNotes, homeworkAssigned, summary, photoDriveFileId",
     )
     .eq("id", id)
     .maybeSingle();
@@ -206,11 +213,18 @@ export async function fetchAdminReportDetail(id: string): Promise<AdminReportDet
     .eq("teachingReportId", id);
   if (fuErr) throw fuErr;
 
+  const { data: objectives, error: objErr } = await supabase
+    .from("report_learning_objectives")
+    .select("objectiveText, achieved")
+    .eq("teachingReportId", id);
+  if (objErr) throw objErr;
+
   return {
     id: report.id,
     meetingId: report.meetingId,
     actualTeachingDate: report.actualTeachingDate,
     className: cls?.name ?? "-",
+    classType: cls?.classType ?? "REGULAR",
     schoolName: cls ? (ctx.schoolNameById.get(cls.schoolId) ?? "-") : "-",
     teacherName: ctx.teacherNameById.get(report.originalTeacherId) ?? "-",
     isSubstitute,
@@ -220,8 +234,10 @@ export async function fetchAdminReportDetail(id: string): Promise<AdminReportDet
     scheduledDate: lp?.scheduledDate ?? report.actualTeachingDate,
     skills: report.skills,
     objectivesAchieved: report.objectivesAchieved,
+    objectives: (objectives as unknown as { objectiveText: string; achieved: boolean }[]) ?? [],
     whatWentWell: report.whatWentWell,
     whatNeedsImprovement: report.whatNeedsImprovement,
+    actionPlan: report.actionPlan,
     nextLessonNotes: report.nextLessonNotes,
     homeworkAssigned: report.homeworkAssigned,
     summary: report.summary,

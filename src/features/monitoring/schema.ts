@@ -1,6 +1,7 @@
 export interface ClassStatusRow {
   classId: string;
   className: string;
+  classType: "REGULAR" | "TEACHER_TRAINING";
   schoolId: string;
   schoolName: string;
   teacherId: string;

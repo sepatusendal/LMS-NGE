@@ -19,6 +19,7 @@ import { getClassComplianceStatus } from "./compliance";
 interface NonCompliantClass {
   id: string;
   name: string;
+  classType: "REGULAR" | "TEACHER_TRAINING";
   schoolName: string;
   teacherName: string;
   latestDate: string | null;
@@ -39,6 +40,7 @@ export function ComplianceAlert() {
       .map(({ c, status }) => ({
         id: c.id,
         name: c.name,
+        classType: c.classType,
         schoolName: c.schoolName,
         teacherName: c.teacherName,
         latestDate: status.latestDate,
@@ -85,7 +87,14 @@ export function ComplianceAlert() {
               <TableBody>
                 {nonCompliant.map((c) => (
                   <TableRow key={c.id}>
-                    <TableCell className="font-medium whitespace-nowrap">{c.name}</TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">
+                      {c.name}
+                      {c.classType === "TEACHER_TRAINING" && (
+                        <Badge variant="secondary" className="ml-1.5 text-[10px]">
+                          Guru & Staff
+                        </Badge>
+                      )}
+                    </TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap">
                       {c.teacherName}
                     </TableCell>

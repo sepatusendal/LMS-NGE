@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Check, X as XIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdminReportDetail } from "@/features/reports/use-admin-reports";
@@ -49,6 +49,11 @@ export default function ReportDetailPage() {
           <div>
             <h1 className="text-xl font-semibold">
               {report.className}
+              {report.classType === "TEACHER_TRAINING" && (
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  Guru & Staff
+                </Badge>
+              )}
               {report.isSubstitute && (
                 <Badge variant="outline" className="ml-2 text-xs">
                   Substitute
@@ -82,6 +87,26 @@ export default function ReportDetailPage() {
         </CardContent>
       </Card>
 
+      {report.objectives.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Learning Objectives</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            {report.objectives.map((o, i) => (
+              <p key={i} className="flex items-start gap-2 text-sm">
+                {o.achieved ? (
+                  <Check className="text-emerald-600 mt-0.5 size-4 shrink-0" />
+                ) : (
+                  <XIcon className="text-destructive mt-0.5 size-4 shrink-0" />
+                )}
+                <span className={o.achieved ? undefined : "text-muted-foreground"}>{o.objectiveText}</span>
+              </p>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
@@ -95,8 +120,14 @@ export default function ReportDetailPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">What Needs Improvement</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-2">
             <p className="text-muted-foreground text-sm">{report.whatNeedsImprovement || "-"}</p>
+            {report.actionPlan && (
+              <p className="text-sm">
+                <span className="text-muted-foreground">Action Plan: </span>
+                {report.actionPlan}
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

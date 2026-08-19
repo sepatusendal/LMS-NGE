@@ -1,11 +1,11 @@
 import { createClient } from "@/lib/supabase/client";
-import type { TeachingReport, ObjectivesAchieved } from "./schema";
+import type { TeachingReport, ReportObjectiveInput } from "./schema";
 
 export async function fetchReport(meetingId: string): Promise<TeachingReport | null> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("teaching_reports")
-    .select("*")
+    .select("*, objectives:report_learning_objectives(objectiveText, achieved)")
     .eq("meetingId", meetingId)
     .maybeSingle();
   if (error) throw error;
@@ -17,9 +17,10 @@ export async function createReport(input: {
   meetingId: string;
   originalTeacherId: string;
   skills: string[];
-  objectivesAchieved?: ObjectivesAchieved;
+  objectives: ReportObjectiveInput[];
   whatWentWell?: string;
   whatNeedsImprovement?: string;
+  actionPlan?: string;
   nextLessonNotes?: string;
   homeworkAssigned?: string;
   photoDriveFileId?: string;
@@ -37,7 +38,6 @@ export async function createReport(input: {
     p_meeting_id: input.meetingId,
     p_original_teacher_id: input.originalTeacherId,
     p_skills: input.skills,
-    p_objectives_achieved: input.objectivesAchieved || null,
     p_what_went_well: input.whatWentWell || null,
     p_what_needs_improvement: input.whatNeedsImprovement || null,
     p_next_lesson_notes: input.nextLessonNotes || null,
@@ -45,6 +45,8 @@ export async function createReport(input: {
     p_photo_drive_file_id: input.photoDriveFileId || null,
     p_photo_file_name: input.photoFileName || null,
     p_follow_ups: input.followUps.map((f) => ({ studentId: f.studentId, note: f.note })),
+    p_objectives: input.objectives.map((o) => ({ text: o.text, achieved: o.achieved })),
+    p_action_plan: input.actionPlan || null,
   });
   if (error) throw error;
 }

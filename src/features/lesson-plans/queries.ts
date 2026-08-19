@@ -25,6 +25,7 @@ interface LessonPlanRow {
   moduleFileName: string | null;
   createdAt: string;
   classes: { name: string } | null;
+  createdByTeacher: { users: { fullName: string } | { fullName: string }[] | null } | { users: { fullName: string } | { fullName: string }[] | null }[] | null;
 }
 
 const SELECT = `
@@ -33,8 +34,14 @@ const SELECT = `
   vocabularyFocus, stages, questionsToAsk, differentiationSupport,
   differentiationExtension, differentiationHomework, moduleDriveFileId,
   moduleFileName, createdAt,
-  classes(name)
+  classes(name),
+  createdByTeacher:teachers!lesson_plans_createdByTeacherId_fkey(users(fullName))
 `;
+
+function toOne<T>(rel: T | T[] | null | undefined): T | null {
+  if (!rel) return null;
+  return Array.isArray(rel) ? (rel[0] ?? null) : rel;
+}
 
 /** `stages` is freeform Json — older rows were saved with separate
  * tutorActivity/studentActivity fields (pre-merge). Fold those into the
@@ -76,6 +83,7 @@ function mapRow(row: LessonPlanRow): LessonPlan {
     differentiationHomework: row.differentiationHomework,
     moduleDriveFileId: row.moduleDriveFileId,
     moduleFileName: row.moduleFileName,
+    createdByTeacherName: toOne(toOne(row.createdByTeacher)?.users)?.fullName ?? "-",
     createdAt: row.createdAt,
   };
 }

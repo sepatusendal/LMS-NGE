@@ -5,6 +5,7 @@ import {
   upsertAttendance,
   bulkUpsertAttendance,
 } from "./queries";
+import { fetchClassAttendanceSummary } from "./admin-queries";
 import type { AttendanceInput, BulkAttendanceInput } from "./schema";
 
 const ATTENDANCE_KEY = ["attendances"];
@@ -14,6 +15,14 @@ export function useAttendances(meetingId: string) {
     queryKey: [...ATTENDANCE_KEY, meetingId],
     queryFn: () => fetchAttendances(meetingId),
     enabled: Boolean(meetingId),
+  });
+}
+
+export function useClassAttendanceSummary(classId: string) {
+  return useQuery({
+    queryKey: ["class-attendance-summary", classId],
+    queryFn: () => fetchClassAttendanceSummary(classId),
+    enabled: Boolean(classId),
   });
 }
 

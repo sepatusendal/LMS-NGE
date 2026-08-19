@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useCreateReport } from "@/features/reports/use-reports";
@@ -22,17 +23,32 @@ import { FileUpload } from "@/features/drive/file-upload";
 import {
   reportSchema,
   SKILL_OPTIONS,
-  OBJECTIVES_OPTIONS,
   OBJECTIVES_LABEL,
+  type ObjectivesAchieved,
   type ReportInput,
 } from "@/features/reports/schema";
+
+const OBJECTIVES_BADGE_VARIANT: Record<ObjectivesAchieved, "default" | "secondary" | "destructive"> = {
+  YES: "default",
+  PARTIALLY: "secondary",
+  NO: "destructive",
+};
+
+function deriveObjectivesAchieved(objectives: { achieved: boolean }[]): ObjectivesAchieved | null {
+  if (objectives.length === 0) return null;
+  const achievedCount = objectives.filter((o) => o.achieved).length;
+  if (achievedCount === objectives.length) return "YES";
+  if (achievedCount === 0) return "NO";
+  return "PARTIALLY";
+}
 
 interface Props {
   meetingId: string;
   classId: string;
+  learningObjectives: string[];
 }
 
-export function ReportForm({ meetingId, classId }: Props) {
+export function ReportForm({ meetingId, classId, learningObjectives }: Props) {
   const createReport = useCreateReport(meetingId);
   const { data: roster, refetch: refetchRoster } = useClassRoster(classId);
   const [followUps, setFollowUps] = useState<{ studentId: string; studentName: string; note: string }[]>([]);
@@ -41,11 +57,17 @@ export function ReportForm({ meetingId, classId }: Props) {
   const [isCheckingRoster, setIsCheckingRoster] = useState(false);
   const [photoDriveFileId, setPhotoDriveFileId] = useState("");
   const [photoFileName, setPhotoFileName] = useState("");
+  // Defaults to every objective achieved — the teacher unchecks the ones
+  // that weren't met, rather than picking a flat YES/PARTIALLY/NO status.
+  const [objectives, setObjectives] = useState(
+    learningObjectives.map((text) => ({ text, achieved: true })),
+  );
 
   const {
     register,
-    control,
     handleSubmit,
+    watch,
+    formState: { errors },
   } = useForm({
     resolver: zodResolver(reportSchema),
     defaultValues: {
@@ -54,6 +76,14 @@ export function ReportForm({ meetingId, classId }: Props) {
       followUps: [],
     },
   });
+
+  function toggleObjective(index: number, achieved: boolean) {
+    setObjectives((prev) => prev.map((o, i) => (i === index ? { ...o, achieved } : o)));
+  }
+
+  const derivedStatus = deriveObjectivesAchieved(objectives);
+  const whatNeedsImprovement = watch("whatNeedsImprovement");
+  const showActionPlan = Boolean((whatNeedsImprovement ?? "").trim());
 
   async function addFollowUp() {
     if (!selectedStudentId || !followUpNote.trim()) return;
@@ -92,9 +122,10 @@ export function ReportForm({ meetingId, classId }: Props) {
     const v = values as unknown as ReportInput;
     await createReport.mutateAsync({
       skills: v.skills || [],
-      objectivesAchieved: v.objectivesAchieved,
+      objectives,
       whatWentWell: v.whatWentWell,
       whatNeedsImprovement: v.whatNeedsImprovement,
+      actionPlan: v.actionPlan,
       nextLessonNotes: v.nextLessonNotes,
       homeworkAssigned: v.homeworkAssigned,
       followUps: followUps.map((f) => ({ studentId: f.studentId, note: f.note })),
@@ -122,31 +153,33 @@ export function ReportForm({ meetingId, classId }: Props) {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label>Tujuan Pembelajaran</Label>
-        <Controller
-          control={control}
-          name="objectivesAchieved"
-          render={({ field }) => (
-            <Select
-              items={OBJECTIVES_OPTIONS.map((o) => ({ value: o, label: OBJECTIVES_LABEL[o] }))}
-              value={field.value ?? ""}
-              onValueChange={(v) => v && field.onChange(v)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih..." />
-              </SelectTrigger>
-              <SelectContent>
-                {OBJECTIVES_OPTIONS.map((o) => (
-                  <SelectItem key={o} value={o}>
-                    {OBJECTIVES_LABEL[o]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
-      </div>
+      {objectives.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label>Tujuan Pembelajaran Tercapai?</Label>
+            {derivedStatus && (
+              <Badge variant={OBJECTIVES_BADGE_VARIANT[derivedStatus]} className="text-[10px]">
+                {OBJECTIVES_LABEL[derivedStatus]}
+              </Badge>
+            )}
+          </div>
+          <p className="text-muted-foreground text-xs">
+            Semua objective dianggap tercapai secara default — uncheck yang belum tercapai.
+          </p>
+          <div className="divide-y rounded-lg border">
+            {objectives.map((o, i) => (
+              <label key={i} className="flex items-start gap-2.5 px-3 py-2.5 text-sm">
+                <Checkbox
+                  checked={o.achieved}
+                  onCheckedChange={(checked) => toggleObjective(i, checked === true)}
+                  className="mt-0.5"
+                />
+                <span className={o.achieved ? undefined : "text-muted-foreground line-through"}>{o.text}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="whatWentWell">Hal Positif Hari Ini</Label>
@@ -158,8 +191,23 @@ export function ReportForm({ meetingId, classId }: Props) {
         <Textarea id="whatNeedsImprovement" rows={2} {...register("whatNeedsImprovement")} />
       </div>
 
+      {showActionPlan && (
+        <div className="space-y-2">
+          <Label htmlFor="actionPlan">
+            Action Plan <span className="text-destructive">*</span>
+          </Label>
+          <p className="text-muted-foreground text-xs">
+            Gimana caranya ini bakal dilatih/diperbaiki di sesi mengajar berikutnya?
+          </p>
+          <Textarea id="actionPlan" rows={2} {...register("actionPlan")} aria-invalid={Boolean(errors.actionPlan)} />
+          {errors.actionPlan && (
+            <p className="text-destructive text-xs">{errors.actionPlan.message}</p>
+          )}
+        </div>
+      )}
+
       <div className="space-y-2">
-        <Label htmlFor="nextLessonNotes">Catatan untuk Pertemuan Selanjutnya</Label>
+        <Label htmlFor="nextLessonNotes">Catatan untuk Pertemuan Selanjutnya (materi/bab yang perlu dilanjutkan)</Label>
         <Textarea id="nextLessonNotes" rows={2} {...register("nextLessonNotes")} />
       </div>
 

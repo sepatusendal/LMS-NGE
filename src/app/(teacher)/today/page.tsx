@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Loader2, MapPin, Clock, CheckCircle, AlertCircle, Play, LogOut, FileText, Users } from "lucide-react";
+import { Loader2, MapPin, Clock, CheckCircle, AlertCircle, Play, LogOut, FileText, Users, Layers, Camera, ClipboardCheck } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useTodayClasses, useStartClass, useCheckOut } from "@/features/meetings/use-today";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
+import { useTeacherStats } from "@/features/classes/use-teacher-stats";
 import { updateCheckInPhoto } from "@/features/meetings/queries";
-import { AttendanceForm } from "@/features/meetings/attendance-form";
 import { ReportForm } from "@/features/meetings/report-form";
 import { FileUpload } from "@/features/drive/file-upload";
 import { ClassAvatar } from "@/components/shared/class-avatar";
@@ -47,17 +47,11 @@ const DONE_STATUSES = new Set(["report_submitted", "course_completed"]);
 export default function TodayPage() {
   const { data: classes, isLoading, isError, error } = useTodayClasses();
   const { data: teacher } = useCurrentTeacher();
+  const stats = useTeacherStats();
   const startClass = useStartClass();
   const checkOut = useCheckOut();
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
   const [handoverClassId, setHandoverClassId] = useState<string | null>(null);
-  const collapseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (collapseTimeoutRef.current) clearTimeout(collapseTimeoutRef.current);
-    };
-  }, []);
 
   const now = useMemo(() => new Date(), []);
   const greeting = useMemo(() => getTimeGreeting(now.getHours()), [now]);
@@ -89,6 +83,11 @@ export default function TodayPage() {
         totalCount={totalCount}
         hour={now.getHours()}
       />
+
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard icon={Layers} label="Kelas diampu" value={stats.classCount} loading={stats.isLoading} />
+        <StatCard icon={Users} label="Total siswa" value={stats.studentCount} loading={stats.isLoading} />
+      </div>
 
       {isLoading && <LoadingState />}
 
@@ -253,15 +252,26 @@ export default function TodayPage() {
                     )}
 
                     {c.meetingStatus === "checked_in" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full border-[#eda100]/40 text-[#a3730a] hover:bg-[#eda100]/10"
-                        onClick={() => toggleExpand(c.classId)}
-                      >
-                        <Users className="size-4" />
-                        <span className="ml-1.5">{isExpanded ? "Tutup Absensi" : "Isi Absensi Siswa"}</span>
-                      </Button>
+                      <div className="w-full space-y-2">
+                        <Link
+                          href="/absensi"
+                          className={cn(
+                            buttonVariants({ size: "sm" }),
+                            "w-full bg-[#eda100] hover:bg-[#c98500]",
+                          )}
+                        >
+                          <ClipboardCheck className="size-4" />
+                          <span className="ml-1.5">Isi Absensi Siswa</span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => toggleExpand(c.classId)}
+                          className="text-muted-foreground flex w-full items-center justify-center gap-1.5 text-xs hover:text-foreground"
+                        >
+                          <Camera className="size-3.5" />
+                          {isExpanded ? "Tutup foto kelas" : "Tambah foto kelas (opsional)"}
+                        </button>
+                      </div>
                     )}
 
                     {c.meetingStatus === "attendance_done" && (
@@ -337,32 +347,17 @@ export default function TodayPage() {
               {isExpanded && c.meetingStatus === "checked_in" && c.meetingId && (
                 <Card className="overflow-hidden border-2 border-[#eda100]/20 py-0">
                   <div className="flex items-center gap-2 bg-[#eda100]/10 px-4 py-2.5">
-                    <Users className="size-4 text-[#a3730a]" />
-                    <h3 className="text-sm font-semibold text-[#a3730a]">Absensi Siswa</h3>
+                    <Camera className="size-4 text-[#a3730a]" />
+                    <h3 className="text-sm font-semibold text-[#a3730a]">Foto Kelas</h3>
                   </div>
                   <CardContent className="pt-4">
-                    <AttendanceForm
-                      meetingId={c.meetingId}
-                      classId={c.classId}
-                      onDone={() => {
-                        if (collapseTimeoutRef.current) clearTimeout(collapseTimeoutRef.current);
-                        collapseTimeoutRef.current = setTimeout(() => {
-                          setExpandedClassId(null);
-                        }, 1500);
+                    <FileUpload
+                      onUploaded={(driveFileId, fileName) => {
+                        if (driveFileId) {
+                          updateCheckInPhoto(c.meetingId!, driveFileId, fileName);
+                        }
                       }}
                     />
-                    <div className="mt-3 border-t pt-3">
-                      <p className="text-muted-foreground mb-2 text-xs">
-                        Foto kelas (opsional)
-                      </p>
-                      <FileUpload
-                        onUploaded={(driveFileId, fileName) => {
-                          if (driveFileId) {
-                            updateCheckInPhoto(c.meetingId!, driveFileId, fileName);
-                          }
-                        }}
-                      />
-                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -425,7 +420,7 @@ export default function TodayPage() {
                   <Card>
                     <CardContent className="pt-4">
                       <h3 className="mb-3 text-sm font-medium">Daily Teaching Report</h3>
-                      <ReportForm meetingId={c.meetingId} classId={c.classId} />
+                      <ReportForm meetingId={c.meetingId} classId={c.classId} learningObjectives={c.learningObjectives} />
                     </CardContent>
                   </Card>
                 )}
@@ -517,6 +512,28 @@ function EmptyTodayState() {
       <p className="text-muted-foreground mt-1 max-w-xs text-sm">
         Nikmati waktu istirahatmu! Belum ada jadwal mengajar untuk hari ini.
       </p>
+    </div>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  loading,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+  loading: boolean;
+}) {
+  return (
+    <div className="rounded-2xl bg-white p-3.5 shadow-sm">
+      <div className="flex items-center gap-1.5">
+        <Icon className="text-muted-foreground size-3.5" />
+        <p className="text-muted-foreground text-xs">{label}</p>
+      </div>
+      <p className="mt-1 text-xl font-bold">{loading ? "-" : value}</p>
     </div>
   );
 }

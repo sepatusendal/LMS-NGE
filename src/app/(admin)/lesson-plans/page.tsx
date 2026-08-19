@@ -153,6 +153,14 @@ export default function AdminLessonPlansPage() {
                                   },
                                 )}
                               </p>
+                              <p className="text-muted-foreground text-xs">
+                                Disubmit oleh {plan.createdByTeacherName} ·{" "}
+                                {new Date(plan.createdAt).toLocaleDateString("id-ID", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </p>
                             </div>
                             <Badge variant="outline" className="text-xs">
                               Level {plan.level || "-"}

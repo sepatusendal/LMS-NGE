@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -30,6 +31,7 @@ import { formatScheduleSlots } from "@/features/classes/schema";
 import { ScheduleOverridesPanel } from "@/features/classes/schedule-overrides-panel";
 import { SubstitutePanel } from "@/features/substitutes/substitute-panel";
 import { ClassTimeline } from "@/features/meetings/class-timeline";
+import { ClassAttendanceSummary } from "@/features/attendances/class-attendance-summary";
 
 export default function ClassDetailPage() {
   const params = useParams<{ id: string }>();
@@ -74,7 +76,12 @@ export default function ClassDetailPage() {
         >
           ← Kembali ke Kelas
         </Link>
-        <h1 className="mt-1 text-xl font-semibold">{classItem.name}</h1>
+        <div className="mt-1 flex items-center gap-2">
+          <h1 className="text-xl font-semibold">{classItem.name}</h1>
+          <Badge variant={classItem.classType === "TEACHER_TRAINING" ? "secondary" : "outline"}>
+            {classItem.classType === "TEACHER_TRAINING" ? "Kelas Guru & Staff" : "Kelas Reguler"}
+          </Badge>
+        </div>
         <p className="text-muted-foreground text-sm">
           {classItem.schoolName} · {classItem.teacherName}
           {classItem.room ? ` · Ruang ${classItem.room}` : ""} ·{" "}
@@ -172,6 +179,8 @@ export default function ClassDetailPage() {
           </Table>
         </div>
       </div>
+
+      <ClassAttendanceSummary classId={classItem.id} />
 
       <div className="space-y-3">
         <h2 className="font-medium">Timeline Kelas</h2>
