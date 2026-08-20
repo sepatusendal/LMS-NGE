@@ -49,7 +49,7 @@ export async function fetchTeacherAttendance(days: number): Promise<TeacherAtten
 
   return Array.from(byTeacher.values())
     .map((t) => ({ ...t, onTimeRate: Math.round((t.onTimeCount / t.totalSessions) * 100) }))
-    .sort((a, b) => b.totalSessions - a.totalSessions);
+    .sort((a, b) => a.onTimeRate - b.onTimeRate || b.totalSessions - a.totalSessions);
 }
 
 interface MeetingReportRow {

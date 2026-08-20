@@ -30,32 +30,34 @@ export function TeacherAttendanceTable({ days = 30 }: { days?: number }) {
         ) : !data || data.length === 0 ? (
           <p className="text-muted-foreground text-sm">Belum ada data check-in.</p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Teacher</TableHead>
-                <TableHead className="text-right">Sesi</TableHead>
-                <TableHead className="text-right">Tepat Waktu</TableHead>
-                <TableHead className="text-right">Terlambat</TableHead>
-                <TableHead className="text-right">% Tepat Waktu</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((t) => (
-                <TableRow key={t.teacherId}>
-                  <TableCell className="font-medium">{t.teacherName}</TableCell>
-                  <TableCell className="text-right">{t.totalSessions}</TableCell>
-                  <TableCell className="text-right">{t.onTimeCount}</TableCell>
-                  <TableCell className="text-right">{t.lateCount}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={t.onTimeRate >= 80 ? "default" : "destructive"} className="text-xs">
-                      {t.onTimeRate}%
-                    </Badge>
-                  </TableCell>
+          <div className="max-h-80 overflow-y-auto rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Teacher</TableHead>
+                  <TableHead className="text-right">Sesi</TableHead>
+                  <TableHead className="text-right">Tepat Waktu</TableHead>
+                  <TableHead className="text-right">Terlambat</TableHead>
+                  <TableHead className="text-right">% Tepat Waktu</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data.map((t) => (
+                  <TableRow key={t.teacherId}>
+                    <TableCell className="font-medium">{t.teacherName}</TableCell>
+                    <TableCell className="text-right">{t.totalSessions}</TableCell>
+                    <TableCell className="text-right">{t.onTimeCount}</TableCell>
+                    <TableCell className="text-right">{t.lateCount}</TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant={t.onTimeRate >= 80 ? "default" : "destructive"} className="text-xs">
+                        {t.onTimeRate}%
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

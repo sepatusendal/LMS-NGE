@@ -71,7 +71,7 @@ export function ComplianceAlert() {
           <p className="text-muted-foreground text-sm">Memuat data...</p>
         ) : nonCompliant.length === 0 ? (
           <div className="flex items-center gap-2 text-sm">
-            <CheckCircle className="text-emerald-500 size-4" />
+            <CheckCircle className="size-4" style={{ color: "var(--status-good)" }} />
             <span>Semua kelas aman — lesson plan tersedia min. 2 minggu ke depan.</span>
           </div>
         ) : (

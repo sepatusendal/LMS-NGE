@@ -49,7 +49,7 @@ export function AnalyticsCharts() {
     <div className="grid gap-4 sm:grid-cols-2">
       <Card>
         <CardHeader className="flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm">Attendance Rate (14 hari)</CardTitle>
+          <CardTitle className="text-sm">Student Attendance Rate (14 hari)</CardTitle>
           {attendanceLatest !== null && (
             <span className="text-lg font-semibold" style={{ color: "var(--chart-1)" }}>
               {attendanceLatest}%

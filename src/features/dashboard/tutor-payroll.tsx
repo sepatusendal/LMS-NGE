@@ -292,45 +292,47 @@ export function TutorPayroll() {
               {data.rows.length === 0 ? (
                 <p className="text-muted-foreground text-sm">Belum ada data check-in pada periode ini.</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tutor</TableHead>
-                      <TableHead className="text-right">Fee</TableHead>
-                      <TableHead className="text-right">Hadir</TableHead>
-                      <TableHead className="text-right">Subtotal</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.rows.map((t) => (
-                      <TableRow key={t.teacherId}>
-                        <TableCell className="font-medium">{t.teacherName}</TableCell>
-                        <TableCell className="text-right">
-                          {t.feePerMeeting != null ? (
-                            formatRupiah(t.feePerMeeting)
-                          ) : (
-                            <Badge variant="outline" className="text-xs">
-                              belum set
-                            </Badge>
-                          )}
+                <div className="max-h-80 overflow-y-auto rounded-lg border">
+                  <Table>
+                    <TableHeader className="[&_tr]:bg-card sticky top-0 z-10 [&_tr]:border-b">
+                      <TableRow>
+                        <TableHead>Tutor</TableHead>
+                        <TableHead className="text-right">Fee</TableHead>
+                        <TableHead className="text-right">Hadir</TableHead>
+                        <TableHead className="text-right">Subtotal</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.rows.map((t) => (
+                        <TableRow key={t.teacherId}>
+                          <TableCell className="font-medium">{t.teacherName}</TableCell>
+                          <TableCell className="text-right">
+                            {t.feePerMeeting != null ? (
+                              formatRupiah(t.feePerMeeting)
+                            ) : (
+                              <Badge variant="outline" className="text-xs">
+                                belum set
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">{t.attendedCount}</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {formatRupiah(t.subtotal)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="bg-card sticky bottom-0 border-t hover:bg-card">
+                        <TableCell className="font-semibold">Total</TableCell>
+                        <TableCell className="text-muted-foreground text-right text-xs" colSpan={2}>
+                          {data.totalAttended} kehadiran
                         </TableCell>
-                        <TableCell className="text-right">{t.attendedCount}</TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatRupiah(t.subtotal)}
+                        <TableCell className="text-right font-semibold">
+                          {formatRupiah(data.totalExpense)}
                         </TableCell>
                       </TableRow>
-                    ))}
-                    <TableRow className="border-t">
-                      <TableCell className="font-semibold">Total</TableCell>
-                      <TableCell className="text-muted-foreground text-right text-xs" colSpan={2}>
-                        {data.totalAttended} kehadiran
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatRupiah(data.totalExpense)}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>

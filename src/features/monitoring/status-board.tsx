@@ -147,8 +147,14 @@ export function StatusBoard() {
             </div>
           )}
           {missingReportCount > 0 && (
-            <div className="border-amber-300 bg-amber-50 flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-              <FileWarning className="text-amber-600 size-4 shrink-0" />
+            <div
+              className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+              style={{
+                borderColor: "color-mix(in oklab, var(--status-warning) 40%, transparent)",
+                backgroundColor: "color-mix(in oklab, var(--status-warning) 10%, transparent)",
+              }}
+            >
+              <FileWarning className="size-4 shrink-0" style={{ color: "var(--status-warning)" }} />
               <span>
                 <span className="font-medium">{missingReportCount}</span> kelas
                 udah check-out tapi report belum disubmit
@@ -156,8 +162,14 @@ export function StatusBoard() {
             </div>
           )}
           {missingLpCount > 0 && (
-            <div className="border-amber-300 bg-amber-50 flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-              <FileWarning className="text-amber-600 size-4 shrink-0" />
+            <div
+              className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+              style={{
+                borderColor: "color-mix(in oklab, var(--status-warning) 40%, transparent)",
+                backgroundColor: "color-mix(in oklab, var(--status-warning) 10%, transparent)",
+              }}
+            >
+              <FileWarning className="size-4 shrink-0" style={{ color: "var(--status-warning)" }} />
               <span>
                 <span className="font-medium">{missingLpCount}</span> kelas terjadwal
                 hari ini belum punya lesson plan
@@ -306,7 +318,7 @@ export function StatusBoard() {
           )}
           {!isLoading && filtered.length > 0 && overdueCount === 0 && missingReportCount === 0 && (
             <div className="text-muted-foreground mt-2 flex items-center gap-1.5 text-xs">
-              <CheckCircle className="size-3.5 text-emerald-500" />
+              <CheckCircle className="size-3.5" style={{ color: "var(--status-good)" }} />
               Semua kelas hari ini on-track.
             </div>
           )}

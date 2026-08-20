@@ -42,8 +42,8 @@ export function ReportNotesTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((n, i) => (
-                <TableRow key={i}>
+              {data.map((n) => (
+                <TableRow key={`${n.className}-${n.date}-${n.note}`}>
                   <TableCell className="text-muted-foreground whitespace-nowrap">
                     {formatDate(n.date)}
                   </TableCell>

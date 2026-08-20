@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarCheck, ClipboardCheck, Wallet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ProgressBar, getThresholdColor } from "@/components/shared/progress-bar";
 import { useClasses } from "@/features/classes/use-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
@@ -53,6 +54,9 @@ export function RevenueCard() {
         <p className="text-muted-foreground mt-1 text-xs">/bulan dari {activeStudents} siswa aktif</p>
       </div>
       <div className="flex items-center gap-1">
+        <Label htmlFor="revenue-per-student" className="sr-only">
+          Harga per siswa per bulan
+        </Label>
         <span className="text-muted-foreground text-[11px]">Rp</span>
         <Input
           id="revenue-per-student"
@@ -63,6 +67,7 @@ export function RevenueCard() {
         />
         <span className="text-muted-foreground text-[11px]">/siswa/bln</span>
       </div>
+      <p className="text-muted-foreground/70 text-[10px]">Kalkulator lokal, gak tersimpan</p>
     </SidebarCard>
   );
 }

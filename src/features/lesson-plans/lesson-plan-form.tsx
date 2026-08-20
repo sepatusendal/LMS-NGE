@@ -35,7 +35,6 @@ import { formatScheduleSlots } from "@/features/classes/schema";
 import {
   LEVEL_OPTIONS,
   MATERIAL_OPTIONS,
-  PROCEDURE_OPTIONS,
   SKILL_OPTIONS,
   STAGE_NAMES,
   emptyLearningObjectives,
@@ -438,44 +437,11 @@ export function LessonPlanForm({
       </Section>
 
       <Section
-        title="Method, Procedure & Materials"
-        description="Pendekatan mengajar dan alat bantu yang dipakai"
+        title="Materials"
+        description="Alat bantu yang dipakai"
         icon={Wrench}
         accent="gold"
       >
-        <div className="space-y-2">
-          <Label htmlFor="method">Method</Label>
-          <Input
-            id="method"
-            placeholder="mis. Direct Method, TPR"
-            {...register("method")}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Procedure</Label>
-          <Controller
-            control={control}
-            name="procedure"
-            render={({ field }) => (
-              <Select
-                items={PROCEDURE_OPTIONS.map((p) => ({ value: p, label: p }))}
-                value={field.value}
-                onValueChange={field.onChange}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih procedure" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROCEDURE_OPTIONS.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {p}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
         <div className="space-y-2">
           <Label>Materials Required</Label>
           <div className="grid grid-cols-2 gap-2">
@@ -554,20 +520,14 @@ export function LessonPlanForm({
       </Section>
 
       <Section
-        title="Questions & Differentiation"
-        description="Pertanyaan pemantik dan penyesuaian untuk tiap siswa"
+        title="Differentiation"
+        description="Penyesuaian dalam kegiatan mengajar"
         icon={MessageCircleQuestion}
         accent="pink"
       >
         <div className="space-y-2">
-          <Label htmlFor="questionsToAsk">
-            Questions to Ask Students (1 baris = 1 pertanyaan)
-          </Label>
-          <Textarea id="questionsToAsk" rows={4} {...register("questionsToAsk")} />
-        </div>
-        <div className="space-y-2">
           <Label htmlFor="differentiationSupport">
-            Students Needing Extra Support
+            Approach/Strategy for Learners Needing Extra Support
           </Label>
           <Textarea
             id="differentiationSupport"
@@ -577,7 +537,7 @@ export function LessonPlanForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="differentiationExtension">
-            Extension Activities for Fast Learners
+            Approach/Strategy for Fast Learners
           </Label>
           <Textarea
             id="differentiationExtension"

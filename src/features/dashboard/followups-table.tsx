@@ -38,8 +38,8 @@ export function FollowUpsTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((f, i) => (
-                <TableRow key={i}>
+              {data.map((f) => (
+                <TableRow key={`${f.studentName}-${f.className}-${f.createdAt}`}>
                   <TableCell className="font-medium whitespace-nowrap">{f.studentName}</TableCell>
                   <TableCell className="whitespace-nowrap">{f.className}</TableCell>
                   <TableCell className="text-muted-foreground">{f.note}</TableCell>
