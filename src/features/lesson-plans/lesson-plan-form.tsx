@@ -391,12 +391,14 @@ export function LessonPlanForm({
           <Label>Learning Objectives</Label>
           <div className="space-y-2">
             {learningObjectives.map((_, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <span className="text-muted-foreground w-5 shrink-0 text-sm">
+              <div key={index} className="flex items-start gap-2">
+                <span className="text-muted-foreground w-5 shrink-0 pt-2 text-sm">
                   {index + 1}.
                 </span>
-                <Input
+                <Textarea
+                  rows={1}
                   placeholder="By the end of this lesson, students will be able to..."
+                  className="min-h-9 resize-none py-1.5"
                   {...register(`learningObjectives.${index}` as const)}
                 />
                 {learningObjectives.length > 1 && (
@@ -404,7 +406,7 @@ export function LessonPlanForm({
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="shrink-0"
+                    className="mt-0.5 shrink-0"
                     onClick={() => removeObjective(index)}
                   >
                     <X className="size-3.5" />

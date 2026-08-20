@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const LEVEL_OPTIONS = ["SD", "SMP", "SMA"];
-export const SKILL_OPTIONS = ["Listening", "Speaking", "Writing", "Reading"];
+export const SKILL_OPTIONS = ["Listening", "Speaking", "Writing", "Reading", "Vocabulary", "Grammar"];
 export const MATERIAL_OPTIONS = [
   "Whiteboard",
   "Markers",
