@@ -14,6 +14,8 @@ export interface NavChild {
   href: string;
   label: string;
   icon: LucideIcon;
+  /** Small count pill next to the label — e.g. classes needing a lesson plan. */
+  badge?: number;
 }
 
 export interface NavItem {
@@ -21,6 +23,18 @@ export interface NavItem {
   icon: LucideIcon;
   href?: string;
   children?: NavChild[];
+  /** Small count pill next to the label. Left unset on a group, it rolls up
+   * to the sum of its children's badges — set explicitly to override. */
+  badge?: number;
+}
+
+function NavBadge({ count }: { count?: number }) {
+  if (!count || count <= 0) return null;
+  return (
+    <span className="bg-destructive text-destructive-foreground ml-auto flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full px-1 text-[10px] font-semibold tabular-nums">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
 }
 
 function NavSection({
@@ -40,6 +54,9 @@ function NavSection({
 
   const [expanded, setExpanded] = useState(isParentActive);
 
+  const rolledUpBadge =
+    item.badge ?? item.children?.reduce((sum, c) => sum + (c.badge ?? 0), 0);
+
   if (item.href && !hasChildren) {
     return (
       <Link
@@ -53,6 +70,7 @@ function NavSection({
       >
         <item.icon className="size-4 shrink-0" aria-hidden="true" />
         {item.label}
+        <NavBadge count={item.badge} />
       </Link>
     );
   }
@@ -72,11 +90,14 @@ function NavSection({
           <item.icon className="size-4 shrink-0" aria-hidden="true" />
           {item.label}
         </span>
-        {expanded ? (
-          <ChevronDown className="size-3.5 shrink-0" />
-        ) : (
-          <ChevronRight className="size-3.5 shrink-0" />
-        )}
+        <span className="flex items-center gap-1.5">
+          <NavBadge count={rolledUpBadge} />
+          {expanded ? (
+            <ChevronDown className="size-3.5 shrink-0" />
+          ) : (
+            <ChevronRight className="size-3.5 shrink-0" />
+          )}
+        </span>
       </button>
       {expanded && item.children && (
         <div className="mt-1 ml-4 flex flex-col gap-0.5 border-l pl-3">
@@ -95,6 +116,7 @@ function NavSection({
               >
                 <child.icon className="size-4 shrink-0" aria-hidden="true" />
                 {child.label}
+                <NavBadge count={child.badge} />
               </Link>
             );
           })}

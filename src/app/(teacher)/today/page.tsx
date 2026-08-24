@@ -19,6 +19,8 @@ import { HandoverSummaryPanel } from "@/features/substitutes/handover-summary-pa
 import { ABSENCE_REASON_LABEL } from "@/features/substitutes/schema";
 import { getTimeGreeting } from "@/lib/greeting";
 import { TimeOfDayIllustration } from "@/components/shared/time-of-day-illustration";
+import { useComplianceCount } from "@/features/lesson-plans/use-compliance-count";
+import { AlarmClockCheck } from "lucide-react";
 
 const STATUS_CONFIG: Record<
   string,
@@ -48,6 +50,7 @@ export default function TodayPage() {
   const { data: classes, isLoading, isError, error } = useTodayClasses();
   const { data: teacher } = useCurrentTeacher();
   const stats = useTeacherStats();
+  const { count: lessonPlanDueCount } = useComplianceCount();
   const startClass = useStartClass();
   const checkOut = useCheckOut();
   const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
@@ -88,6 +91,25 @@ export default function TodayPage() {
         <StatCard icon={Layers} label="Kelas diampu" value={stats.classCount} loading={stats.isLoading} />
         <StatCard icon={Users} label="Total siswa" value={stats.studentCount} loading={stats.isLoading} />
       </div>
+
+      {lessonPlanDueCount > 0 && (
+        <Link
+          href="/lesson-plan"
+          className="bg-[#eda100]/10 flex items-center gap-3 rounded-2xl border border-[#eda100]/20 px-4 py-3 text-sm transition-colors hover:bg-[#eda100]/15"
+        >
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#eda100]/15">
+            <AlarmClockCheck className="size-4 text-[#a3730a]" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="font-semibold text-[#a3730a]">
+              {lessonPlanDueCount} kelas perlu lesson plan
+            </span>
+            <span className="text-muted-foreground block text-xs">
+              Siapkan lesson plan minimal 2 minggu ke depan biar pengganti bisa langsung catch-up.
+            </span>
+          </span>
+        </Link>
+      )}
 
       {isLoading && <LoadingState />}
 

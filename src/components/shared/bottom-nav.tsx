@@ -13,6 +13,17 @@ export interface BottomNavItem {
    * for the one action (Absensi) that should be unmistakably the easiest
    * target to hit, not just another item in the row. */
   emphasized?: boolean;
+  /** Small count dot on the icon's corner — e.g. classes needing a lesson plan. */
+  badge?: number;
+}
+
+function IconBadge({ count }: { count?: number }) {
+  if (!count || count <= 0) return null;
+  return (
+    <span className="bg-destructive text-destructive-foreground absolute -top-1 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-0.5 text-[9px] font-semibold tabular-nums">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
 }
 
 export function BottomNav({ items }: { items: BottomNavItem[] }) {
@@ -55,11 +66,14 @@ export function BottomNav({ items }: { items: BottomNavItem[] }) {
               isActive ? "text-primary" : "text-muted-foreground",
             )}
           >
-            <Icon
-              className="size-5"
-              strokeWidth={isActive ? 2.5 : 2}
-              aria-hidden="true"
-            />
+            <span className="relative">
+              <Icon
+                className="size-5"
+                strokeWidth={isActive ? 2.5 : 2}
+                aria-hidden="true"
+              />
+              <IconBadge count={item.badge} />
+            </span>
             {item.label}
           </Link>
         );

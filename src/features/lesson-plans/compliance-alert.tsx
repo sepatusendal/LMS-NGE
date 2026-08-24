@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -32,6 +33,20 @@ interface NonCompliantClass {
 interface LessonPlanComplianceRow extends NonCompliantClass {
   isCompliant: boolean;
 }
+
+interface TeacherComplianceRow {
+  teacherName: string;
+  lateCount: number;
+  worstClassName: string;
+  worstDaysLeft: number;
+}
+
+const TEACHER_COMPLIANCE_COLUMNS: ExcelColumn<TeacherComplianceRow>[] = [
+  { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
+  { header: "Jumlah Kelas Telat", key: "count", width: 18, value: (r) => r.lateCount },
+  { header: "Kelas Paling Telat", key: "worstClass", width: 22, value: (r) => r.worstClassName },
+  { header: "Sisa/Telat Hari", key: "worstDays", width: 16, value: (r) => r.worstDaysLeft },
+];
 
 interface ReportComplianceRow {
   className: string;
@@ -65,6 +80,7 @@ export function ComplianceAlert() {
   const { data: classes, isLoading: classesLoading } = useClasses();
   const { data: lessonPlans, isLoading: plansLoading } = useLessonPlans();
   const { data: reports } = useAdminReports();
+  const [view, setView] = useState<"class" | "teacher">("class");
 
   const { nonCompliant, allCompliance } = useMemo(() => {
     if (!classes || !lessonPlans) return { nonCompliant: [], allCompliance: [] };
@@ -87,6 +103,26 @@ export function ComplianceAlert() {
     const bad = all.filter((c) => !c.isCompliant).sort((a, b) => a.daysLeft - b.daysLeft);
     return { nonCompliant: bad, allCompliance: all };
   }, [classes, lessonPlans]);
+
+  const byTeacher = useMemo((): TeacherComplianceRow[] => {
+    const grouped = new Map<string, NonCompliantClass[]>();
+    for (const c of nonCompliant) {
+      const list = grouped.get(c.teacherName) ?? [];
+      list.push(c);
+      grouped.set(c.teacherName, list);
+    }
+    return Array.from(grouped.entries())
+      .map(([teacherName, list]) => {
+        const worst = list.reduce((a, b) => (a.daysLeft <= b.daysLeft ? a : b));
+        return {
+          teacherName,
+          lateCount: list.length,
+          worstClassName: worst.name,
+          worstDaysLeft: worst.daysLeft,
+        };
+      })
+      .sort((a, b) => a.worstDaysLeft - b.worstDaysLeft || b.lateCount - a.lateCount);
+  }, [nonCompliant]);
 
   const reportCompliance = useMemo((): ReportComplianceRow[] => {
     if (!classes) return [];
@@ -131,6 +167,7 @@ export function ComplianceAlert() {
             disabled={isLoading}
             sheets={[
               { name: "Kepatuhan Lesson Plan", columns: LP_COMPLIANCE_COLUMNS, rows: allCompliance },
+              { name: "Rekap per Teacher", columns: TEACHER_COMPLIANCE_COLUMNS, rows: byTeacher },
               { name: "Kepatuhan Daily Teaching Report", columns: REPORT_COMPLIANCE_COLUMNS, rows: reportCompliance },
             ]}
           />
@@ -145,42 +182,94 @@ export function ComplianceAlert() {
             <span>Semua kelas aman — lesson plan tersedia min. 2 minggu ke depan.</span>
           </div>
         ) : (
-          <div className="max-h-80 overflow-y-auto rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kelas</TableHead>
-                  <TableHead>Teacher</TableHead>
-                  <TableHead className="text-right">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {nonCompliant.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium whitespace-nowrap">
-                      {c.name}
-                      {c.classType === "TEACHER_TRAINING" && (
-                        <Badge variant="secondary" className="ml-1.5 text-[10px]">
-                          Guru & Staff
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground whitespace-nowrap">
-                      {c.teacherName}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant={c.latestDate === null ? "destructive" : "secondary"} className="text-xs">
-                        {c.latestDate === null
-                          ? "Belum ada"
-                          : c.daysLeft < 0
-                            ? `Telat ${Math.abs(c.daysLeft)}h`
-                            : `${c.daysLeft}h lagi`}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="space-y-3">
+            <div className="bg-muted inline-flex items-center gap-0.5 rounded-lg p-0.5 text-xs font-medium">
+              <button
+                type="button"
+                onClick={() => setView("class")}
+                className={cn(
+                  "rounded-md px-2.5 py-1 transition-colors",
+                  view === "class" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
+                )}
+              >
+                Per Kelas
+              </button>
+              <button
+                type="button"
+                onClick={() => setView("teacher")}
+                className={cn(
+                  "rounded-md px-2.5 py-1 transition-colors",
+                  view === "teacher" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
+                )}
+              >
+                Per Teacher
+              </button>
+            </div>
+
+            <div className="max-h-80 overflow-y-auto rounded-lg border">
+              {view === "class" ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Kelas</TableHead>
+                      <TableHead>Teacher</TableHead>
+                      <TableHead className="text-right">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {nonCompliant.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell className="font-medium whitespace-nowrap">
+                          {c.name}
+                          {c.classType === "TEACHER_TRAINING" && (
+                            <Badge variant="secondary" className="ml-1.5 text-[10px]">
+                              Guru & Staff
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground whitespace-nowrap">
+                          {c.teacherName}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant={c.latestDate === null ? "destructive" : "secondary"} className="text-xs">
+                            {c.latestDate === null
+                              ? "Belum ada"
+                              : c.daysLeft < 0
+                                ? `Telat ${Math.abs(c.daysLeft)}h`
+                                : `${c.daysLeft}h lagi`}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Teacher</TableHead>
+                      <TableHead className="text-right">Jumlah Kelas Telat</TableHead>
+                      <TableHead className="text-right">Paling Telat</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {byTeacher.map((t) => (
+                      <TableRow key={t.teacherName}>
+                        <TableCell className="font-medium whitespace-nowrap">{t.teacherName}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant={t.lateCount > 1 ? "destructive" : "secondary"} className="text-xs">
+                            {t.lateCount} kelas
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-right whitespace-nowrap text-xs">
+                          {t.worstClassName} ({t.worstDaysLeft < 0 ? `Telat ${Math.abs(t.worstDaysLeft)}h` : `${t.worstDaysLeft}h lagi`})
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
