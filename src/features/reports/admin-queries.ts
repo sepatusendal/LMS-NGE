@@ -24,6 +24,9 @@ export interface AdminReportListItem {
   nextLessonNotes: string | null;
   homeworkAssigned: string | null;
   summary: string | null;
+  languageSkillsFocus: string | null;
+  activitiesLog: string | null;
+  resourcesUsed: string | null;
   objectivesTotal: number;
   objectivesAchievedCount: number;
   followUps: { studentName: string; note: string }[];
@@ -51,6 +54,9 @@ export interface AdminReportDetail {
   nextLessonNotes: string | null;
   homeworkAssigned: string | null;
   summary: string | null;
+  languageSkillsFocus: string | null;
+  activitiesLog: string | null;
+  resourcesUsed: string | null;
   photoDriveFileId: string | null;
   attendancePresent: number;
   attendanceTotal: number;
@@ -72,6 +78,9 @@ interface ReportRow {
   homeworkAssigned: string | null;
   summary: string | null;
   photoDriveFileId: string | null;
+  languageSkillsFocus: string | null;
+  activitiesLog: string | null;
+  resourcesUsed: string | null;
 }
 
 async function buildFollowUpsAndObjectives(reportIds: string[]) {
@@ -193,7 +202,7 @@ export async function fetchAdminReports(): Promise<AdminReportListItem[]> {
   const { data, error } = await supabase
     .from("teaching_reports")
     .select(
-      "id, meetingId, originalTeacherId, substituteTeacherId, actualTeachingDate, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement, actionPlan, nextLessonNotes, homeworkAssigned, summary, photoDriveFileId",
+      "id, meetingId, originalTeacherId, substituteTeacherId, actualTeachingDate, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement, actionPlan, nextLessonNotes, homeworkAssigned, summary, photoDriveFileId, languageSkillsFocus, activitiesLog, resourcesUsed",
     )
     .order("actualTeachingDate", { ascending: false });
   if (error) throw error;
@@ -236,6 +245,9 @@ export async function fetchAdminReports(): Promise<AdminReportListItem[]> {
       nextLessonNotes: r.nextLessonNotes,
       homeworkAssigned: r.homeworkAssigned,
       summary: r.summary,
+      languageSkillsFocus: r.languageSkillsFocus,
+      activitiesLog: r.activitiesLog,
+      resourcesUsed: r.resourcesUsed,
       objectivesTotal: objectives.total,
       objectivesAchievedCount: objectives.achieved,
       followUps: followUpsByReport.get(r.id) ?? [],
@@ -249,7 +261,7 @@ export async function fetchAdminReportDetail(id: string): Promise<AdminReportDet
   const { data, error } = await supabase
     .from("teaching_reports")
     .select(
-      "id, meetingId, originalTeacherId, substituteTeacherId, actualTeachingDate, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement, actionPlan, nextLessonNotes, homeworkAssigned, summary, photoDriveFileId",
+      "id, meetingId, originalTeacherId, substituteTeacherId, actualTeachingDate, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement, actionPlan, nextLessonNotes, homeworkAssigned, summary, photoDriveFileId, languageSkillsFocus, activitiesLog, resourcesUsed",
     )
     .eq("id", id)
     .maybeSingle();
@@ -301,6 +313,9 @@ export async function fetchAdminReportDetail(id: string): Promise<AdminReportDet
     nextLessonNotes: report.nextLessonNotes,
     homeworkAssigned: report.homeworkAssigned,
     summary: report.summary,
+    languageSkillsFocus: report.languageSkillsFocus,
+    activitiesLog: report.activitiesLog,
+    resourcesUsed: report.resourcesUsed,
     photoDriveFileId: report.photoDriveFileId,
     attendancePresent: attendance.present,
     attendanceTotal: attendance.total,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
@@ -15,7 +15,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   curriculumSchema,
+  REPORT_FORMAT_LABEL,
+  REPORT_FORMAT_OPTIONS,
   type Curriculum,
   type CurriculumInput,
 } from "./schema";
@@ -38,6 +47,7 @@ export function CurriculumFormDialog({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<CurriculumInput>({ resolver: zodResolver(curriculumSchema) });
 
@@ -47,6 +57,7 @@ export function CurriculumFormDialog({
         name: curriculum?.name ?? "",
         gradeLevel: curriculum?.gradeLevel ?? "",
         description: curriculum?.description ?? "",
+        reportFormat: curriculum?.reportFormat ?? "STANDARD",
       });
     }
   }, [open, curriculum, reset]);
@@ -94,6 +105,34 @@ export function CurriculumFormDialog({
           <div className="space-y-2">
             <Label htmlFor="description">Deskripsi</Label>
             <Textarea id="description" {...register("description")} />
+          </div>
+          <div className="space-y-2">
+            <Label>Format Laporan</Label>
+            <Controller
+              control={control}
+              name="reportFormat"
+              render={({ field }) => (
+                <Select
+                  items={REPORT_FORMAT_OPTIONS.map((v) => ({ value: v, label: REPORT_FORMAT_LABEL[v] }))}
+                  value={field.value}
+                  onValueChange={(v) => v && field.onChange(v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REPORT_FORMAT_OPTIONS.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {REPORT_FORMAT_LABEL[v]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <p className="text-muted-foreground text-xs">
+              Albright pakai field teaching report yang beda (Unit &amp; Topic, Activities, Resources) dari format standar NUFA.
+            </p>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>

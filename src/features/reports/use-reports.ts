@@ -27,6 +27,9 @@ export function useCreateReport(meetingId: string) {
       actionPlan?: string;
       nextLessonNotes?: string;
       homeworkAssigned?: string;
+      languageSkillsFocus?: string;
+      activitiesLog?: string;
+      resourcesUsed?: string;
       photoDriveFileId?: string;
       photoFileName?: string;
       followUps: { studentId: string; note: string }[];

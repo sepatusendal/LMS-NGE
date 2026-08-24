@@ -39,6 +39,8 @@ export default function ReportDetailPage() {
     return <p className="text-muted-foreground text-sm">Report tidak ditemukan.</p>;
   }
 
+  const isAlbright = Boolean(report.languageSkillsFocus || report.activitiesLog || report.resourcesUsed);
+
   return (
     <div className="space-y-4">
       <div>
@@ -107,30 +109,61 @@ export default function ReportDetailPage() {
         </Card>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">What Went Well</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-sm">{report.whatWentWell || "-"}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">What Needs Improvement</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-muted-foreground text-sm">{report.whatNeedsImprovement || "-"}</p>
-            {report.actionPlan && (
-              <p className="text-sm">
-                <span className="text-muted-foreground">Action Plan: </span>
-                {report.actionPlan}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      {isAlbright ? (
+        <>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Activities</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-sm whitespace-pre-wrap">{report.activitiesLog || "-"}</p>
+            </CardContent>
+          </Card>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Language &amp; Skills Focus</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-sm">{report.languageSkillsFocus || "-"}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Resources</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-sm">{report.resourcesUsed || "-"}</p>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">What Went Well</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-sm">{report.whatWentWell || "-"}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">What Needs Improvement</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-muted-foreground text-sm">{report.whatNeedsImprovement || "-"}</p>
+              {report.actionPlan && (
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Action Plan: </span>
+                  {report.actionPlan}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>

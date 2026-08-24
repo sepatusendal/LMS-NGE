@@ -13,7 +13,7 @@ interface ClassRow {
   isActive: boolean;
   createdAt: string;
   schools: { name: string } | null;
-  curriculums: { name: string } | null;
+  curriculums: { name: string; gradeLevel: string; reportFormat: "STANDARD" | "ALBRIGHT" } | null;
   teachers: { users: { fullName: string } | null } | null;
   class_schedule_slots: { dayOfWeek: number; startTime: string; endTime: string }[];
 }
@@ -21,7 +21,7 @@ interface ClassRow {
 const SELECT = `
   id, name, schoolId, teacherId, curriculumId, classType, room, scheduleDaysOfWeek,
   isActive, createdAt,
-  schools(name), curriculums(name), teachers(users(fullName)),
+  schools(name), curriculums(name, gradeLevel, reportFormat), teachers(users(fullName)),
   class_schedule_slots(dayOfWeek, startTime, endTime)
 `;
 
@@ -35,6 +35,8 @@ function mapRow(row: ClassRow): Class {
     teacherName: row.teachers?.users?.fullName ?? "-",
     curriculumId: row.curriculumId,
     curriculumName: row.curriculums?.name ?? null,
+    curriculumGradeLevel: row.curriculums?.gradeLevel ?? null,
+    curriculumReportFormat: row.curriculums?.reportFormat ?? "STANDARD",
     classType: row.classType,
     room: row.room,
     scheduleDaysOfWeek: row.scheduleDaysOfWeek,

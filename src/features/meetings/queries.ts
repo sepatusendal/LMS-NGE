@@ -157,6 +157,7 @@ interface ClassRow {
   class_schedule_slots: { dayOfWeek: number; startTime: string; endTime: string }[];
   schoolId: string;
   schools: { name: string } | null;
+  curriculums: { reportFormat: "STANDARD" | "ALBRIGHT" } | null;
   // Resolved for `today` after fetch — the class's own slot for today, before
   // any override is layered on top.
   scheduleStartTime: string;
@@ -210,7 +211,7 @@ function toOne<T>(rel: T | T[] | null | undefined): T | null {
 const CLASS_SELECT = `
   id, name, room, scheduleDaysOfWeek, schoolId,
   class_schedule_slots(dayOfWeek, startTime, endTime),
-  schools(name)
+  schools(name), curriculums(reportFormat)
 `;
 
 /** Resolves each class's own scheduleStartTime/EndTime to its slot for
@@ -390,6 +391,7 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
         classId: cls.id,
         className: cls.name,
         schoolName: cls.schools?.name ?? "-",
+        curriculumReportFormat: cls.curriculums?.reportFormat ?? "STANDARD",
         scheduleStartTime: cls.scheduleStartTime,
         scheduleEndTime: cls.scheduleEndTime,
         room: cls.room,
@@ -447,6 +449,7 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
       classId: cls.id,
       className: cls.name,
       schoolName: cls.schools?.name ?? "-",
+      curriculumReportFormat: cls.curriculums?.reportFormat ?? "STANDARD",
       scheduleStartTime: cls.scheduleStartTime,
       scheduleEndTime: cls.scheduleEndTime,
       room: cls.room,

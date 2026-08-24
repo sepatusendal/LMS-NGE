@@ -31,6 +31,10 @@ export const reportSchema = z
     actionPlan: z.string().optional(),
     nextLessonNotes: z.string().optional(),
     homeworkAssigned: z.string().optional(),
+    // Albright-curriculum-only fields — see ReportForm's curriculumReportFormat prop.
+    languageSkillsFocus: z.string().optional(),
+    activitiesLog: z.string().optional(),
+    resourcesUsed: z.string().optional(),
     followUps: z.array(z.object({
       studentId: z.string().min(1),
       note: z.string().min(1, "Catatan wajib diisi"),
@@ -62,6 +66,9 @@ export interface TeachingReport {
   actionPlan: string | null;
   nextLessonNotes: string | null;
   homeworkAssigned: string | null;
+  languageSkillsFocus: string | null;
+  activitiesLog: string | null;
+  resourcesUsed: string | null;
   photoDriveFileId: string | null;
   photoFileName: string | null;
   summary: string | null;

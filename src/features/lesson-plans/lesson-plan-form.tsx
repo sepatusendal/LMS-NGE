@@ -212,6 +212,14 @@ export function LessonPlanForm({
   const selectedClassModule = myClasses?.find((c) => c.id === watchedClassId)?.module ?? null;
   const selectedClassTeacherId = allClasses?.find((c) => c.id === watchedClassId)?.teacherId;
   const createLessonPlan = useCreateLessonPlan(adminMode ? selectedClassTeacherId : undefined);
+  // Albright-curriculum classes use a lighter-weight lesson plan — just
+  // schedule + Unit & Topic — since the detailed pedagogical breakdown
+  // (stages, materials, differentiation) isn't part of that curriculum's
+  // format. The Activities/Resources/Language Focus specific to Albright
+  // are captured post-class in the Teaching Report instead.
+  const isAlbright = adminMode
+    ? allClasses?.find((c) => c.id === watchedClassId)?.curriculumReportFormat === "ALBRIGHT"
+    : myClasses?.find((c) => c.id === watchedClassId)?.curriculumReportFormat === "ALBRIGHT";
 
   useEffect(() => {
     if (isEdit || !watchedClassId || !existingPlans) return;
@@ -346,6 +354,7 @@ export function LessonPlanForm({
           )}
         </div>
 
+        {!isAlbright && (
         <div className="space-y-2">
           <Label>Level</Label>
           <Controller
@@ -371,193 +380,211 @@ export function LessonPlanForm({
             )}
           />
         </div>
+        )}
 
         <div className="space-y-2">
-          <Label htmlFor="topic">Topic</Label>
-          <Input id="topic" {...register("topic")} />
+          <Label htmlFor="topic">{isAlbright ? "Unit & Topic" : "Topic"}</Label>
+          <Input
+            id="topic"
+            placeholder={isAlbright ? "mis. Unit 1: Welcome" : undefined}
+            {...register("topic")}
+          />
           {errors.topic && (
             <p className="text-destructive text-sm">{errors.topic.message}</p>
+          )}
+          {isAlbright && (
+            <p className="text-muted-foreground text-xs">
+              Kurikulum Albright — detail Activities, Resources, dan Language Focus diisi setelah kelas selesai, di Daily Teaching Report.
+            </p>
           )}
         </div>
       </Section>
 
-      <Section
-        title="Learning Objectives & Skills"
-        description="Apa yang siswa capai di akhir pertemuan"
-        icon={Target}
-        accent="green"
-      >
-        <div className="space-y-2">
-          <Label>Learning Objectives</Label>
+      {!isAlbright && (
+        <Section
+          title="Learning Objectives & Skills"
+          description="Apa yang siswa capai di akhir pertemuan"
+          icon={Target}
+          accent="green"
+        >
           <div className="space-y-2">
-            {learningObjectives.map((_, index) => (
-              <div key={index} className="flex items-start gap-2">
-                <span className="text-muted-foreground w-5 shrink-0 pt-2 text-sm">
-                  {index + 1}.
-                </span>
-                <Textarea
-                  rows={1}
-                  placeholder="By the end of this lesson, students will be able to..."
-                  className="min-h-9 resize-none py-1.5"
-                  {...register(`learningObjectives.${index}` as const)}
-                />
-                {learningObjectives.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="mt-0.5 shrink-0"
-                    onClick={() => removeObjective(index)}
-                  >
-                    <X className="size-3.5" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-          <Button type="button" variant="outline" size="sm" onClick={addObjective}>
-            <Plus className="size-3.5" />
-            Tambah Poin
-          </Button>
-        </div>
-        <div className="space-y-2">
-          <Label>Skill</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {SKILL_OPTIONS.map((skill) => (
-              <label key={skill} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  value={skill}
-                  className="accent-primary size-4"
-                  {...register("skills")}
-                />
-                {skill}
-              </label>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      <Section
-        title="Materials"
-        description="Alat bantu yang dipakai"
-        icon={Wrench}
-        accent="gold"
-      >
-        <div className="space-y-2">
-          <Label>Materials Required</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {MATERIAL_OPTIONS.map((material) => (
-              <label
-                key={material}
-                className="flex items-center gap-2 text-sm"
-              >
-                <input
-                  type="checkbox"
-                  value={material}
-                  className="accent-primary size-4"
-                  {...register("materialsRequired")}
-                />
-                {material}
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="vocabularyFocus">Vocabulary / Language Focus</Label>
-          <Textarea
-            id="vocabularyFocus"
-            rows={2}
-            {...register("vocabularyFocus")}
-          />
-        </div>
-      </Section>
-
-      <Section
-        title="Stage-by-Stage"
-        description="Rangkaian aktivitas dari awal sampai akhir kelas"
-        icon={ListOrdered}
-        accent="orange"
-      >
-        <div className="space-y-3">
-          {stageFields.map((field, index) => (
-            <div
-              key={field.id}
-              className="bg-muted/30 space-y-2 rounded-lg border p-3"
-            >
-              <div className="flex items-center gap-2">
-                <span className="bg-chart-2/15 text-chart-2 flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold">
-                  {index + 1}
-                </span>
-                <p className="text-sm font-medium">
-                  {field.stage || STAGE_NAMES[index] || `Tahap ${index + 1}`}
-                </p>
-              </div>
-              <input
-                type="hidden"
-                defaultValue={field.stage || STAGE_NAMES[index] || ""}
-                {...register(`stages.${index}.stage` as const)}
-              />
-              <Textarea
-                rows={2}
-                placeholder="Aktivitas tutor & siswa di tahap ini"
-                className="bg-card"
-                {...register(`stages.${index}.activity` as const)}
-              />
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Input
-                  placeholder="Media (opsional)"
-                  className="bg-card"
-                  {...register(`stages.${index}.media` as const)}
-                />
-                <Input
-                  placeholder="Assessment (opsional)"
-                  className="bg-card"
-                  {...register(`stages.${index}.assessment` as const)}
-                />
-              </div>
+            <Label>Learning Objectives</Label>
+            <div className="space-y-2">
+              {learningObjectives.map((_, index) => (
+                <div key={index} className="flex items-start gap-2">
+                  <span className="text-muted-foreground w-5 shrink-0 pt-2 text-sm">
+                    {index + 1}.
+                  </span>
+                  <Textarea
+                    rows={1}
+                    placeholder="By the end of this lesson, students will be able to..."
+                    className="min-h-9 resize-none py-1.5"
+                    {...register(`learningObjectives.${index}` as const)}
+                  />
+                  {learningObjectives.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="mt-0.5 shrink-0"
+                      onClick={() => removeObjective(index)}
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </Section>
-
-      <Section
-        title="Differentiation"
-        description="Penyesuaian dalam kegiatan mengajar"
-        icon={MessageCircleQuestion}
-        accent="pink"
-      >
-        <div className="space-y-2">
-          <Label htmlFor="differentiationSupport">
-            Approach/Strategy for Learners Needing Extra Support
-          </Label>
-          <Textarea
-            id="differentiationSupport"
-            rows={2}
-            {...register("differentiationSupport")}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="differentiationExtension">
-            Approach/Strategy for Fast Learners
-          </Label>
-          <Textarea
-            id="differentiationExtension"
-            rows={2}
-            {...register("differentiationExtension")}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="differentiationHomework">
-            Homework (opsional)
-          </Label>
-          <Textarea
-            id="differentiationHomework"
-            rows={2}
-            {...register("differentiationHomework")}
-          />
-        </div>
+            <Button type="button" variant="outline" size="sm" onClick={addObjective}>
+              <Plus className="size-3.5" />
+              Tambah Poin
+            </Button>
+          </div>
+          <div className="space-y-2">
+            <Label>Skill</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {SKILL_OPTIONS.map((skill) => (
+                <label key={skill} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    value={skill}
+                    className="accent-primary size-4"
+                    {...register("skills")}
+                  />
+                  {skill}
+                </label>
+              ))}
+            </div>
+          </div>
         </Section>
+      )}
+
+      {!isAlbright && (
+        <Section
+          title="Materials"
+          description="Alat bantu yang dipakai"
+          icon={Wrench}
+          accent="gold"
+        >
+          <div className="space-y-2">
+            <Label>Materials Required</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {MATERIAL_OPTIONS.map((material) => (
+                <label
+                  key={material}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <input
+                    type="checkbox"
+                    value={material}
+                    className="accent-primary size-4"
+                    {...register("materialsRequired")}
+                  />
+                  {material}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="vocabularyFocus">Vocabulary / Language Focus</Label>
+            <Textarea
+              id="vocabularyFocus"
+              rows={2}
+              {...register("vocabularyFocus")}
+            />
+          </div>
+        </Section>
+      )}
+
+      {!isAlbright && (
+        <Section
+          title="Stage-by-Stage"
+          description="Rangkaian aktivitas dari awal sampai akhir kelas"
+          icon={ListOrdered}
+          accent="orange"
+        >
+          <div className="space-y-3">
+            {stageFields.map((field, index) => (
+              <div
+                key={field.id}
+                className="bg-muted/30 space-y-2 rounded-lg border p-3"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="bg-chart-2/15 text-chart-2 flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold">
+                    {index + 1}
+                  </span>
+                  <p className="text-sm font-medium">
+                    {field.stage || STAGE_NAMES[index] || `Tahap ${index + 1}`}
+                  </p>
+                </div>
+                <input
+                  type="hidden"
+                  defaultValue={field.stage || STAGE_NAMES[index] || ""}
+                  {...register(`stages.${index}.stage` as const)}
+                />
+                <Textarea
+                  rows={2}
+                  placeholder="Aktivitas tutor & siswa di tahap ini"
+                  className="bg-card"
+                  {...register(`stages.${index}.activity` as const)}
+                />
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <Input
+                    placeholder="Media (opsional)"
+                    className="bg-card"
+                    {...register(`stages.${index}.media` as const)}
+                  />
+                  <Input
+                    placeholder="Assessment (opsional)"
+                    className="bg-card"
+                    {...register(`stages.${index}.assessment` as const)}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {!isAlbright && (
+        <Section
+          title="Differentiation"
+          description="Penyesuaian dalam kegiatan mengajar"
+          icon={MessageCircleQuestion}
+          accent="pink"
+        >
+          <div className="space-y-2">
+            <Label htmlFor="differentiationSupport">
+              Approach/Strategy for Learners Needing Extra Support
+            </Label>
+            <Textarea
+              id="differentiationSupport"
+              rows={2}
+              {...register("differentiationSupport")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="differentiationExtension">
+              Approach/Strategy for Fast Learners
+            </Label>
+            <Textarea
+              id="differentiationExtension"
+              rows={2}
+              {...register("differentiationExtension")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="differentiationHomework">
+              Homework (opsional)
+            </Label>
+            <Textarea
+              id="differentiationHomework"
+              rows={2}
+              {...register("differentiationHomework")}
+            />
+          </div>
+        </Section>
+      )}
 
         <Section
           title="Modul Pembelajaran"

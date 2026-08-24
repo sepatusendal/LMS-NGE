@@ -56,6 +56,9 @@ const EXPORT_COLUMNS: ExcelColumn<AdminReportListItem>[] = [
   { header: "Catatan Pelajaran Berikutnya", key: "nextLesson", width: 34, value: (r) => r.nextLessonNotes ?? "-" },
   { header: "PR/Homework", key: "homework", width: 30, value: (r) => r.homeworkAssigned ?? "-" },
   { header: "Summary", key: "summary", width: 34, value: (r) => r.summary ?? "-" },
+  { header: "Language & Skills Focus (Albright)", key: "languageSkillsFocus", width: 30, value: (r) => r.languageSkillsFocus ?? "-" },
+  { header: "Activities (Albright)", key: "activitiesLog", width: 40, value: (r) => r.activitiesLog ?? "-" },
+  { header: "Resources (Albright)", key: "resourcesUsed", width: 30, value: (r) => r.resourcesUsed ?? "-" },
   {
     header: "Follow-up Siswa",
     key: "followUps",

@@ -23,6 +23,9 @@ export async function createReport(input: {
   actionPlan?: string;
   nextLessonNotes?: string;
   homeworkAssigned?: string;
+  languageSkillsFocus?: string;
+  activitiesLog?: string;
+  resourcesUsed?: string;
   photoDriveFileId?: string;
   photoFileName?: string;
   followUps: { studentId: string; note: string }[];
@@ -47,6 +50,9 @@ export async function createReport(input: {
     p_follow_ups: input.followUps.map((f) => ({ studentId: f.studentId, note: f.note })),
     p_objectives: input.objectives.map((o) => ({ text: o.text, achieved: o.achieved })),
     p_action_plan: input.actionPlan || null,
+    p_language_skills_focus: input.languageSkillsFocus || null,
+    p_activities_log: input.activitiesLog || null,
+    p_resources_used: input.resourcesUsed || null,
   });
   if (error) throw error;
 }

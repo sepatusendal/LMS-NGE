@@ -26,6 +26,9 @@ export interface MyClass {
    * Google Drive. Null if the class has no curriculum assigned yet, or the
    * curriculum has no module uploaded. */
   module: ClassModule | null;
+  /** STANDARD (default) or ALBRIGHT — drives which Lesson Plan / Teaching
+   * Report field set to render for this class. */
+  curriculumReportFormat: "STANDARD" | "ALBRIGHT";
 }
 
 interface MyClassRow {
@@ -39,11 +42,12 @@ interface MyClassRow {
     name: string;
     moduleDriveFileId: string | null;
     moduleFileName: string | null;
+    reportFormat: "STANDARD" | "ALBRIGHT";
   } | null;
 }
 
 const SELECT =
-  "id, name, scheduleDaysOfWeek, room, schools(name), class_schedule_slots(dayOfWeek, startTime, endTime), curriculums(name, moduleDriveFileId, moduleFileName)";
+  "id, name, scheduleDaysOfWeek, room, schools(name), class_schedule_slots(dayOfWeek, startTime, endTime), curriculums(name, moduleDriveFileId, moduleFileName, reportFormat)";
 
 async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
   const supabase = createClient();
@@ -104,6 +108,7 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
             curriculumName: row.curriculums.name,
           }
         : null,
+    curriculumReportFormat: row.curriculums?.reportFormat ?? "STANDARD",
   });
 
   return [

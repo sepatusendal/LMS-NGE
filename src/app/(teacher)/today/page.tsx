@@ -420,7 +420,12 @@ export default function TodayPage() {
                   <Card>
                     <CardContent className="pt-4">
                       <h3 className="mb-3 text-sm font-medium">Daily Teaching Report</h3>
-                      <ReportForm meetingId={c.meetingId} classId={c.classId} learningObjectives={c.learningObjectives} />
+                      <ReportForm
+                        meetingId={c.meetingId}
+                        classId={c.classId}
+                        learningObjectives={c.learningObjectives}
+                        curriculumReportFormat={c.curriculumReportFormat}
+                      />
                     </CardContent>
                   </Card>
                 )}

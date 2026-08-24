@@ -61,6 +61,8 @@ export interface Class {
   teacherName: string;
   curriculumId: string | null;
   curriculumName: string | null;
+  curriculumGradeLevel: string | null;
+  curriculumReportFormat: "STANDARD" | "ALBRIGHT";
   classType: ClassType;
   room: string | null;
   scheduleDaysOfWeek: number[];

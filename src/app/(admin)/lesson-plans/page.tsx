@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, School, ChevronDown, ChevronRight, Clock, Plus } from "lucide-react";
+import { Search, School, ChevronDown, ChevronRight, Clock, Plus, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { downloadAlbrightTeachingRecords } from "@/features/lesson-plans/albright-export";
 import {
   Select,
   SelectContent,
@@ -42,6 +43,34 @@ function buildLessonPlanColumns(classById: Map<string, Class>): ExcelColumn<Less
     { header: "Dibuat oleh", key: "createdBy", width: 22, value: (p) => p.createdByTeacherName },
     { header: "Tanggal Dibuat", key: "createdAt", width: 16, value: (p) => new Date(p.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) },
   ];
+}
+
+function AlbrightExportButton({
+  classId,
+  className,
+  level,
+}: {
+  classId: string;
+  className: string;
+  level: string;
+}) {
+  const [isExporting, setIsExporting] = useState(false);
+
+  async function handleExport() {
+    setIsExporting(true);
+    try {
+      await downloadAlbrightTeachingRecords(classId, className, level);
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  return (
+    <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting} className="w-full sm:w-auto">
+      {isExporting ? <Loader2 className="size-4 animate-spin" /> : <FileSpreadsheet className="size-4" />}
+      Download Teaching Records (Format Albright)
+    </Button>
+  );
 }
 
 export default function AdminLessonPlansPage() {
@@ -162,6 +191,13 @@ export default function AdminLessonPlansPage() {
 
                   {isExpanded && (
                     <div className="space-y-2 border-t pt-3">
+                      {cls.curriculumReportFormat === "ALBRIGHT" && (
+                        <AlbrightExportButton
+                          classId={cls.id}
+                          className={cls.name}
+                          level={cls.curriculumGradeLevel ?? cls.curriculumName ?? "Albright"}
+                        />
+                      )}
                       {classPlans.length === 0 ? (
                         <p className="text-muted-foreground text-xs">
                           Belum ada lesson plan.

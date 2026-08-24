@@ -22,6 +22,7 @@ export interface TodayClass {
   classId: string;
   className: string;
   schoolName: string;
+  curriculumReportFormat: "STANDARD" | "ALBRIGHT";
   scheduleStartTime: string;
   scheduleEndTime: string;
   room: string | null;

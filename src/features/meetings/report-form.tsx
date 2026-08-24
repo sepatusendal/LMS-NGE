@@ -46,9 +46,11 @@ interface Props {
   meetingId: string;
   classId: string;
   learningObjectives: string[];
+  curriculumReportFormat?: "STANDARD" | "ALBRIGHT";
 }
 
-export function ReportForm({ meetingId, classId, learningObjectives }: Props) {
+export function ReportForm({ meetingId, classId, learningObjectives, curriculumReportFormat = "STANDARD" }: Props) {
+  const isAlbright = curriculumReportFormat === "ALBRIGHT";
   const createReport = useCreateReport(meetingId);
   const { data: roster, refetch: refetchRoster } = useClassRoster(classId);
   const [followUps, setFollowUps] = useState<{ studentId: string; studentName: string; note: string }[]>([]);
@@ -121,13 +123,16 @@ export function ReportForm({ meetingId, classId, learningObjectives }: Props) {
   async function onSubmit(values: Record<string, unknown>) {
     const v = values as unknown as ReportInput;
     await createReport.mutateAsync({
-      skills: v.skills || [],
-      objectives,
-      whatWentWell: v.whatWentWell,
-      whatNeedsImprovement: v.whatNeedsImprovement,
-      actionPlan: v.actionPlan,
-      nextLessonNotes: v.nextLessonNotes,
+      skills: isAlbright ? [] : v.skills || [],
+      objectives: isAlbright ? [] : objectives,
+      whatWentWell: isAlbright ? undefined : v.whatWentWell,
+      whatNeedsImprovement: isAlbright ? undefined : v.whatNeedsImprovement,
+      actionPlan: isAlbright ? undefined : v.actionPlan,
+      nextLessonNotes: isAlbright ? undefined : v.nextLessonNotes,
       homeworkAssigned: v.homeworkAssigned,
+      languageSkillsFocus: isAlbright ? v.languageSkillsFocus : undefined,
+      activitiesLog: isAlbright ? v.activitiesLog : undefined,
+      resourcesUsed: isAlbright ? v.resourcesUsed : undefined,
       followUps: followUps.map((f) => ({ studentId: f.studentId, note: f.note })),
       photoDriveFileId: photoDriveFileId || undefined,
       photoFileName: photoFileName || undefined,
@@ -136,83 +141,113 @@ export function ReportForm({ meetingId, classId, learningObjectives }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label>Skill yang Diajarkan</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {SKILL_OPTIONS.map((skill) => (
-            <label key={skill} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                value={skill}
-                className="accent-primary size-4"
-                {...register("skills")}
-              />
-              {skill}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {objectives.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <Label>Tujuan Pembelajaran Tercapai?</Label>
-            {derivedStatus && (
-              <Badge variant={OBJECTIVES_BADGE_VARIANT[derivedStatus]} className="text-[10px]">
-                {OBJECTIVES_LABEL[derivedStatus]}
-              </Badge>
-            )}
+      {isAlbright ? (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="languageSkillsFocus">Language &amp; Skills Focus</Label>
+            <p className="text-muted-foreground text-xs">
+              Contoh: &quot;Grammar: to be, Listening&quot; atau &quot;Vocabulary: Jobs, Speaking&quot;
+            </p>
+            <Textarea id="languageSkillsFocus" rows={2} {...register("languageSkillsFocus")} />
           </div>
-          <p className="text-muted-foreground text-xs">
-            Semua objective dianggap tercapai secara default — uncheck yang belum tercapai.
-          </p>
-          <div className="divide-y rounded-lg border">
-            {objectives.map((o, i) => (
-              <label key={i} className="flex items-start gap-2.5 px-3 py-2.5 text-sm">
-                <Checkbox
-                  checked={o.achieved}
-                  onCheckedChange={(checked) => toggleObjective(i, checked === true)}
-                  className="mt-0.5"
-                />
-                <span className={o.achieved ? undefined : "text-muted-foreground line-through"}>{o.text}</span>
-              </label>
-            ))}
+
+          <div className="space-y-2">
+            <Label htmlFor="activitiesLog">Activities</Label>
+            <p className="text-muted-foreground text-xs">
+              Rangkaian kegiatan yang dilakukan di kelas hari ini.
+            </p>
+            <Textarea id="activitiesLog" rows={5} {...register("activitiesLog")} />
           </div>
-        </div>
-      )}
 
-      <div className="space-y-2">
-        <Label htmlFor="whatWentWell">Hal Positif Hari Ini</Label>
-        <Textarea id="whatWentWell" rows={2} {...register("whatWentWell")} />
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="resourcesUsed">Resources</Label>
+            <p className="text-muted-foreground text-xs">
+              Contoh: &quot;Bright Book p. 14-15&quot;
+            </p>
+            <Textarea id="resourcesUsed" rows={2} {...register("resourcesUsed")} />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="space-y-2">
+            <Label>Skill yang Diajarkan</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {SKILL_OPTIONS.map((skill) => (
+                <label key={skill} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    value={skill}
+                    className="accent-primary size-4"
+                    {...register("skills")}
+                  />
+                  {skill}
+                </label>
+              ))}
+            </div>
+          </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="whatNeedsImprovement">Yang Perlu Ditingkatkan</Label>
-        <Textarea id="whatNeedsImprovement" rows={2} {...register("whatNeedsImprovement")} />
-      </div>
-
-      {showActionPlan && (
-        <div className="space-y-2">
-          <Label htmlFor="actionPlan">
-            Action Plan <span className="text-destructive">*</span>
-          </Label>
-          <p className="text-muted-foreground text-xs">
-            Gimana caranya ini bakal dilatih/diperbaiki di sesi mengajar berikutnya?
-          </p>
-          <Textarea id="actionPlan" rows={2} {...register("actionPlan")} aria-invalid={Boolean(errors.actionPlan)} />
-          {errors.actionPlan && (
-            <p className="text-destructive text-xs">{errors.actionPlan.message}</p>
+          {objectives.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label>Tujuan Pembelajaran Tercapai?</Label>
+                {derivedStatus && (
+                  <Badge variant={OBJECTIVES_BADGE_VARIANT[derivedStatus]} className="text-[10px]">
+                    {OBJECTIVES_LABEL[derivedStatus]}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Semua objective dianggap tercapai secara default — uncheck yang belum tercapai.
+              </p>
+              <div className="divide-y rounded-lg border">
+                {objectives.map((o, i) => (
+                  <label key={i} className="flex items-start gap-2.5 px-3 py-2.5 text-sm">
+                    <Checkbox
+                      checked={o.achieved}
+                      onCheckedChange={(checked) => toggleObjective(i, checked === true)}
+                      className="mt-0.5"
+                    />
+                    <span className={o.achieved ? undefined : "text-muted-foreground line-through"}>{o.text}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           )}
-        </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="whatWentWell">Hal Positif Hari Ini</Label>
+            <Textarea id="whatWentWell" rows={2} {...register("whatWentWell")} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="whatNeedsImprovement">Yang Perlu Ditingkatkan</Label>
+            <Textarea id="whatNeedsImprovement" rows={2} {...register("whatNeedsImprovement")} />
+          </div>
+
+          {showActionPlan && (
+            <div className="space-y-2">
+              <Label htmlFor="actionPlan">
+                Action Plan <span className="text-destructive">*</span>
+              </Label>
+              <p className="text-muted-foreground text-xs">
+                Gimana caranya ini bakal dilatih/diperbaiki di sesi mengajar berikutnya?
+              </p>
+              <Textarea id="actionPlan" rows={2} {...register("actionPlan")} aria-invalid={Boolean(errors.actionPlan)} />
+              {errors.actionPlan && (
+                <p className="text-destructive text-xs">{errors.actionPlan.message}</p>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="nextLessonNotes">Catatan untuk Pertemuan Selanjutnya (materi/bab yang perlu dilanjutkan)</Label>
+            <Textarea id="nextLessonNotes" rows={2} {...register("nextLessonNotes")} />
+          </div>
+        </>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="nextLessonNotes">Catatan untuk Pertemuan Selanjutnya (materi/bab yang perlu dilanjutkan)</Label>
-        <Textarea id="nextLessonNotes" rows={2} {...register("nextLessonNotes")} />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="homeworkAssigned">PR / Tugas (opsional)</Label>
+        <Label htmlFor="homeworkAssigned">{isAlbright ? "Homework (opsional)" : "PR / Tugas (opsional)"}</Label>
         <Textarea id="homeworkAssigned" rows={2} {...register("homeworkAssigned")} />
       </div>
 
