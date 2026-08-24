@@ -22,6 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ExportExcelButton } from "@/components/shared/export-excel-button";
+import type { ExcelColumn } from "@/lib/export-excel";
 import { useSchools } from "@/features/schools/use-schools";
 import { useTeachers } from "@/features/teachers/use-teachers";
 import {
@@ -42,6 +44,28 @@ const STATUS_LABEL: Record<ClassStatusRow["meetingStatus"], { label: string; var
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
+
+const EXPORT_COLUMNS: ExcelColumn<ClassStatusRow>[] = [
+  { header: "Kelas", key: "class", width: 22, value: (r) => r.className },
+  { header: "Tipe Kelas", key: "classType", width: 16, value: (r) => (r.classType === "TEACHER_TRAINING" ? "Guru & Staff" : "Reguler") },
+  { header: "Sekolah", key: "school", width: 22, value: (r) => r.schoolName },
+  { header: "Ruang", key: "room", width: 14, value: (r) => r.room ?? "-" },
+  { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
+  { header: "Substitute", key: "substitute", width: 16, value: (r) => (r.isSubstitute ? r.substituteTeacherName ?? "Ya" : "-") },
+  { header: "Alasan Substitute", key: "substituteReason", width: 24, value: (r) => r.substituteReason ?? "-" },
+  { header: "Jam", key: "time", width: 14, value: (r) => `${r.scheduleStartTime}-${r.scheduleEndTime}` },
+  { header: "Meeting", key: "meeting", width: 10, value: (r) => r.meetingNumber },
+  { header: "Topic", key: "topic", width: 26, value: (r) => r.topic },
+  { header: "Ada Lesson Plan", key: "hasLessonPlan", width: 16, value: (r) => (r.hasLessonPlan ? "Ya" : "Tidak") },
+  { header: "Status", key: "status", width: 18, value: (r) => STATUS_LABEL[r.meetingStatus].label },
+  { header: "Check-in", key: "checkIn", width: 12, value: (r) => r.checkInTime ?? "-" },
+  { header: "Check-out", key: "checkOut", width: 12, value: (r) => r.checkOutTime ?? "-" },
+  { header: "Terlambat", key: "late", width: 12, value: (r) => (r.isLate ? "Ya" : r.isLate === false ? "Tidak" : "-") },
+  { header: "Telat Check-in", key: "overdueCheckIn", width: 16, value: (r) => (r.isOverdueCheckIn ? "Ya" : "-") },
+  { header: "Report Belum Submit", key: "reportMissing", width: 18, value: (r) => (r.isReportMissing ? "Ya" : "-") },
+  { header: "Hari Libur", key: "isHoliday", width: 12, value: (r) => (r.isHoliday ? "Ya" : "-") },
+  { header: "Hadir", key: "attendance", width: 12, value: (r) => (r.attendanceTotal > 0 ? `${r.attendancePresent}/${r.attendanceTotal}` : "-") },
+];
 
 export function StatusBoard() {
   const [date, setDate] = useState(todayStr());
@@ -133,6 +157,10 @@ export function StatusBoard() {
             ))}
           </SelectContent>
         </Select>
+        <ExportExcelButton
+          filename={`status-board-${date}`}
+          sheets={[{ name: "Status Board", columns: EXPORT_COLUMNS, rows: filtered }]}
+        />
       </div>
 
       {(overdueCount > 0 || missingReportCount > 0 || missingLpCount > 0) && (

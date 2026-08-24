@@ -19,10 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ExportExcelButton } from "@/components/shared/export-excel-button";
 import { useSchools } from "@/features/schools/use-schools";
 import { useClasses } from "@/features/classes/use-classes";
 import { useAdminReports } from "@/features/reports/use-admin-reports";
 import { OBJECTIVES_LABEL } from "@/features/reports/schema";
+import type { AdminReportListItem } from "@/features/reports/admin-queries";
+import type { ExcelColumn } from "@/lib/export-excel";
 
 const OBJECTIVES_BADGE: Record<string, "default" | "secondary" | "destructive"> = {
   YES: "default",
@@ -33,6 +36,33 @@ const OBJECTIVES_BADGE: Record<string, "default" | "secondary" | "destructive"> 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
+
+const EXPORT_COLUMNS: ExcelColumn<AdminReportListItem>[] = [
+  { header: "Tanggal", key: "date", width: 14, value: (r) => formatDate(r.actualTeachingDate) },
+  { header: "Sekolah", key: "school", width: 22, value: (r) => r.schoolName },
+  { header: "Kelas", key: "class", width: 22, value: (r) => r.className },
+  { header: "Tipe Kelas", key: "classType", width: 16, value: (r) => (r.classType === "TEACHER_TRAINING" ? "Guru & Staff" : "Reguler") },
+  { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
+  { header: "Substitute", key: "substitute", width: 12, value: (r) => (r.isSubstitute ? "Ya" : "-") },
+  { header: "Meeting", key: "meeting", width: 10, value: (r) => r.meetingNumber },
+  { header: "Topic", key: "topic", width: 30, value: (r) => r.topic },
+  { header: "Skills Diajarkan", key: "skills", width: 30, value: (r) => (r.skills.length > 0 ? r.skills.join(", ") : "-") },
+  { header: "Hadir", key: "attendance", width: 12, value: (r) => (r.attendanceTotal > 0 ? `${r.attendancePresent}/${r.attendanceTotal}` : "-") },
+  { header: "Tujuan Tercapai", key: "objectives", width: 16, value: (r) => (r.objectivesAchieved ? OBJECTIVES_LABEL[r.objectivesAchieved] : "-") },
+  { header: "Checklist Objectives", key: "objectivesChecklist", width: 18, value: (r) => (r.objectivesTotal > 0 ? `${r.objectivesAchievedCount}/${r.objectivesTotal}` : "-") },
+  { header: "What Went Well", key: "wentWell", width: 34, value: (r) => r.whatWentWell ?? "-" },
+  { header: "What Needs Improvement", key: "needsImprovement", width: 34, value: (r) => r.whatNeedsImprovement ?? "-" },
+  { header: "Action Plan", key: "actionPlan", width: 34, value: (r) => r.actionPlan ?? "-" },
+  { header: "Catatan Pelajaran Berikutnya", key: "nextLesson", width: 34, value: (r) => r.nextLessonNotes ?? "-" },
+  { header: "PR/Homework", key: "homework", width: 30, value: (r) => r.homeworkAssigned ?? "-" },
+  { header: "Summary", key: "summary", width: 34, value: (r) => r.summary ?? "-" },
+  {
+    header: "Follow-up Siswa",
+    key: "followUps",
+    width: 40,
+    value: (r) => (r.followUps.length > 0 ? r.followUps.map((f) => `${f.studentName}: ${f.note}`).join(" | ") : "-"),
+  },
+];
 
 export default function AdminReportsPage() {
   const router = useRouter();
@@ -57,11 +87,17 @@ export default function AdminReportsPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">Daily Teaching Report</h1>
-        <p className="text-muted-foreground text-sm">
-          Semua report yang disubmit teacher — {reports?.length ?? 0} total.
-        </p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-semibold">Daily Teaching Report</h1>
+          <p className="text-muted-foreground text-sm">
+            Semua report yang disubmit teacher — {reports?.length ?? 0} total.
+          </p>
+        </div>
+        <ExportExcelButton
+          filename="daily-teaching-report"
+          sheets={[{ name: "Daily Teaching Report", columns: EXPORT_COLUMNS, rows: filtered }]}
+        />
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row">

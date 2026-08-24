@@ -17,6 +17,16 @@ export interface AdminReportListItem {
   objectivesAchieved: ObjectivesAchieved | null;
   attendancePresent: number;
   attendanceTotal: number;
+  skills: string[];
+  whatWentWell: string | null;
+  whatNeedsImprovement: string | null;
+  actionPlan: string | null;
+  nextLessonNotes: string | null;
+  homeworkAssigned: string | null;
+  summary: string | null;
+  objectivesTotal: number;
+  objectivesAchievedCount: number;
+  followUps: { studentName: string; note: string }[];
 }
 
 export interface AdminReportDetail {
@@ -62,6 +72,44 @@ interface ReportRow {
   homeworkAssigned: string | null;
   summary: string | null;
   photoDriveFileId: string | null;
+}
+
+async function buildFollowUpsAndObjectives(reportIds: string[]) {
+  const supabase = createClient();
+
+  const { data: followUps, error: fuErr } = await supabase
+    .from("student_follow_ups")
+    .select("teachingReportId, note, students(fullName)")
+    .in("teachingReportId", reportIds);
+  if (fuErr) throw fuErr;
+  const followUpsByReport = new Map<string, { studentName: string; note: string }[]>();
+  (
+    followUps as unknown as {
+      teachingReportId: string;
+      note: string;
+      students: { fullName: string } | { fullName: string }[] | null;
+    }[]
+  ).forEach((f) => {
+    const s = Array.isArray(f.students) ? f.students[0] : f.students;
+    const list = followUpsByReport.get(f.teachingReportId) ?? [];
+    list.push({ studentName: s?.fullName ?? "-", note: f.note });
+    followUpsByReport.set(f.teachingReportId, list);
+  });
+
+  const { data: objectives, error: objErr } = await supabase
+    .from("report_learning_objectives")
+    .select("teachingReportId, achieved")
+    .in("teachingReportId", reportIds);
+  if (objErr) throw objErr;
+  const objectivesByReport = new Map<string, { total: number; achieved: number }>();
+  (objectives as unknown as { teachingReportId: string; achieved: boolean }[]).forEach((o) => {
+    const cur = objectivesByReport.get(o.teachingReportId) ?? { total: 0, achieved: 0 };
+    cur.total += 1;
+    if (o.achieved) cur.achieved += 1;
+    objectivesByReport.set(o.teachingReportId, cur);
+  });
+
+  return { followUpsByReport, objectivesByReport };
 }
 
 async function buildContext(reports: ReportRow[]) {
@@ -145,7 +193,7 @@ export async function fetchAdminReports(): Promise<AdminReportListItem[]> {
   const { data, error } = await supabase
     .from("teaching_reports")
     .select(
-      "id, meetingId, originalTeacherId, substituteTeacherId, actualTeachingDate, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement, nextLessonNotes, homeworkAssigned, summary, photoDriveFileId",
+      "id, meetingId, originalTeacherId, substituteTeacherId, actualTeachingDate, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement, actionPlan, nextLessonNotes, homeworkAssigned, summary, photoDriveFileId",
     )
     .order("actualTeachingDate", { ascending: false });
   if (error) throw error;
@@ -154,6 +202,7 @@ export async function fetchAdminReports(): Promise<AdminReportListItem[]> {
   if (reports.length === 0) return [];
 
   const ctx = await buildContext(reports);
+  const { followUpsByReport, objectivesByReport } = await buildFollowUpsAndObjectives(reports.map((r) => r.id));
 
   return reports.map((r) => {
     const meeting = ctx.meetingById.get(r.meetingId);
@@ -163,6 +212,7 @@ export async function fetchAdminReports(): Promise<AdminReportListItem[]> {
     const isSubstitute = Boolean(
       meeting && meeting.actualTeacherId && meeting.actualTeacherId !== meeting.assignedTeacherId,
     );
+    const objectives = objectivesByReport.get(r.id) ?? { total: 0, achieved: 0 };
 
     return {
       id: r.id,
@@ -179,6 +229,16 @@ export async function fetchAdminReports(): Promise<AdminReportListItem[]> {
       objectivesAchieved: r.objectivesAchieved,
       attendancePresent: attendance.present,
       attendanceTotal: attendance.total,
+      skills: r.skills,
+      whatWentWell: r.whatWentWell,
+      whatNeedsImprovement: r.whatNeedsImprovement,
+      actionPlan: r.actionPlan,
+      nextLessonNotes: r.nextLessonNotes,
+      homeworkAssigned: r.homeworkAssigned,
+      summary: r.summary,
+      objectivesTotal: objectives.total,
+      objectivesAchievedCount: objectives.achieved,
+      followUps: followUpsByReport.get(r.id) ?? [],
     };
   });
 }

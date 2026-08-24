@@ -30,8 +30,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SectionHeading } from "@/components/shared/section-heading";
+import { ExportExcelButton } from "@/components/shared/export-excel-button";
 import { formatRupiah } from "@/lib/currency";
+import type { ExcelColumn } from "@/lib/export-excel";
 import { useTutorPayroll } from "./use-dashboard";
+import type { TutorPayrollRow } from "./queries";
 
 // Compact label buat sumbu chart — "Rp 1,25jt" / "Rp 125rb", biar tick
 // gak berdesakan. Tooltip tetap pakai formatRupiah penuh.
@@ -93,6 +96,23 @@ function computeRange(period: Period, customFrom: string, customTo: string) {
   return { from, to, label };
 }
 
+const EXPORT_COLUMNS: ExcelColumn<TutorPayrollRow>[] = [
+  { header: "Tutor", key: "teacher", width: 24, value: (r) => r.teacherName },
+  { header: "Fee per Meeting", key: "fee", width: 18, value: (r) => (r.feePerMeeting != null ? r.feePerMeeting : "belum set") },
+  { header: "Hadir", key: "attended", width: 10, value: (r) => r.attendedCount },
+  { header: "Subtotal", key: "subtotal", width: 18, value: (r) => r.subtotal },
+];
+
+interface PayrollSummaryRow {
+  label: string;
+  value: string | number;
+}
+
+const SUMMARY_COLUMNS: ExcelColumn<PayrollSummaryRow>[] = [
+  { header: "Ringkasan", key: "label", width: 26, value: (r) => r.label },
+  { header: "Nilai", key: "value", width: 20, value: (r) => r.value },
+];
+
 export function TutorPayroll() {
   const [period, setPeriod] = useState<Period>("this-month");
   const [customFrom, setCustomFrom] = useState("");
@@ -133,6 +153,24 @@ export function TutorPayroll() {
           description="Fee per meeting × jumlah check-in. Tutor tanpa fee tidak masuk total beban."
         />
         <div className="flex flex-wrap items-center gap-2">
+          <ExportExcelButton
+            filename={`gaji-tutor-${range.label}`}
+            sheets={[
+              {
+                name: "Ringkasan",
+                columns: SUMMARY_COLUMNS,
+                rows: data
+                  ? [
+                      { label: "Periode", value: range.label },
+                      { label: "Total Beban Gaji Tutor", value: data.totalExpense },
+                      { label: "Total Kehadiran", value: data.totalAttended },
+                      { label: "Tutor Belum Set Fee", value: data.unbilledCount },
+                    ]
+                  : [],
+              },
+              { name: "Detail Gaji Tutor", columns: EXPORT_COLUMNS, rows: data?.rows ?? [] },
+            ]}
+          />
           <Select items={PERIOD_OPTIONS} value={period} onValueChange={handlePeriodChange}>
             <SelectTrigger className="w-[130px]">
               <SelectValue />

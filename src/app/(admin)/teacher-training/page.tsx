@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/data-table";
+import { ExportExcelButton } from "@/components/shared/export-excel-button";
 import { useClasses } from "@/features/classes/use-classes";
 import { createClassColumns } from "@/features/classes/columns";
+import { CLASS_EXPORT_COLUMNS } from "@/features/classes/export-columns";
 import { ClassFormDialog } from "@/features/classes/class-form-dialog";
 import type { Class } from "@/features/classes/schema";
 
@@ -31,14 +33,20 @@ export default function TeacherTrainingClassesPage() {
             Kelas English training untuk guru, staf, dan karyawan — terpisah dari kelas siswa.
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditing(undefined);
-            setDialogOpen(true);
-          }}
-        >
-          Tambah Kelas
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportExcelButton
+            filename="kelas-guru-staff"
+            sheets={[{ name: "Kelas Guru & Staff", columns: CLASS_EXPORT_COLUMNS, rows: classes ?? [] }]}
+          />
+          <Button
+            onClick={() => {
+              setEditing(undefined);
+              setDialogOpen(true);
+            }}
+          >
+            Tambah Kelas
+          </Button>
+        </div>
       </div>
 
       <DataTable

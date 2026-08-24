@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/table";
 import { useClasses } from "@/features/classes/use-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
+import { useAdminReports } from "@/features/reports/use-admin-reports";
+import { ExportExcelButton } from "@/components/shared/export-excel-button";
+import type { ExcelColumn } from "@/lib/export-excel";
 import { getClassComplianceStatus } from "./compliance";
 
 interface NonCompliantClass {
@@ -26,18 +29,50 @@ interface NonCompliantClass {
   daysLeft: number;
 }
 
+interface LessonPlanComplianceRow extends NonCompliantClass {
+  isCompliant: boolean;
+}
+
+interface ReportComplianceRow {
+  className: string;
+  schoolName: string;
+  teacherName: string;
+  totalReports: number;
+  latestReportDate: string | null;
+  daysSinceLastReport: number | null;
+}
+
+const LP_COMPLIANCE_COLUMNS: ExcelColumn<LessonPlanComplianceRow>[] = [
+  { header: "Kelas", key: "class", width: 22, value: (r) => r.name },
+  { header: "Tipe Kelas", key: "type", width: 16, value: (r) => (r.classType === "TEACHER_TRAINING" ? "Guru & Staff" : "Reguler") },
+  { header: "Sekolah", key: "school", width: 22, value: (r) => r.schoolName },
+  { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
+  { header: "Lesson Plan Terjauh", key: "latestDate", width: 18, value: (r) => (r.latestDate ? new Date(r.latestDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "Belum ada") },
+  { header: "Sisa Hari", key: "daysLeft", width: 12, value: (r) => r.daysLeft },
+  { header: "Status", key: "status", width: 14, value: (r) => (r.isCompliant ? "Patuh" : "Perlu Perhatian") },
+];
+
+const REPORT_COMPLIANCE_COLUMNS: ExcelColumn<ReportComplianceRow>[] = [
+  { header: "Kelas", key: "class", width: 22, value: (r) => r.className },
+  { header: "Sekolah", key: "school", width: 22, value: (r) => r.schoolName },
+  { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
+  { header: "Total Report", key: "total", width: 14, value: (r) => r.totalReports },
+  { header: "Report Terakhir", key: "latest", width: 18, value: (r) => (r.latestReportDate ? new Date(r.latestReportDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "Belum pernah") },
+  { header: "Hari Sejak Report Terakhir", key: "daysSince", width: 20, value: (r) => r.daysSinceLastReport ?? "-" },
+];
+
 export function ComplianceAlert() {
   const { data: classes, isLoading: classesLoading } = useClasses();
   const { data: lessonPlans, isLoading: plansLoading } = useLessonPlans();
+  const { data: reports } = useAdminReports();
 
-  const { nonCompliant } = useMemo(() => {
-    if (!classes || !lessonPlans) return { nonCompliant: [] };
+  const { nonCompliant, allCompliance } = useMemo(() => {
+    if (!classes || !lessonPlans) return { nonCompliant: [], allCompliance: [] };
     const now = Date.now();
 
-    const bad: NonCompliantClass[] = classes
-      .map((c) => ({ c, status: getClassComplianceStatus(c.id, lessonPlans, now) }))
-      .filter(({ status }) => !status.isCompliant)
-      .map(({ c, status }) => ({
+    const all: LessonPlanComplianceRow[] = classes.map((c) => {
+      const status = getClassComplianceStatus(c.id, lessonPlans, now);
+      return {
         id: c.id,
         name: c.name,
         classType: c.classType,
@@ -45,11 +80,38 @@ export function ComplianceAlert() {
         teacherName: c.teacherName,
         latestDate: status.latestDate,
         daysLeft: status.daysLeft,
-      }));
+        isCompliant: status.isCompliant,
+      };
+    });
 
-    bad.sort((a, b) => a.daysLeft - b.daysLeft);
-    return { nonCompliant: bad };
+    const bad = all.filter((c) => !c.isCompliant).sort((a, b) => a.daysLeft - b.daysLeft);
+    return { nonCompliant: bad, allCompliance: all };
   }, [classes, lessonPlans]);
+
+  const reportCompliance = useMemo((): ReportComplianceRow[] => {
+    if (!classes) return [];
+    const now = Date.now();
+    const byClass = new Map<string, { count: number; latest: string | null }>();
+    (reports ?? []).forEach((r) => {
+      const cur = byClass.get(r.classId) ?? { count: 0, latest: null };
+      cur.count += 1;
+      if (!cur.latest || r.actualTeachingDate > cur.latest) cur.latest = r.actualTeachingDate;
+      byClass.set(r.classId, cur);
+    });
+
+    return classes.map((c) => {
+      const info = byClass.get(c.id) ?? { count: 0, latest: null };
+      const daysSince = info.latest ? Math.floor((now - new Date(info.latest).getTime()) / (24 * 60 * 60 * 1000)) : null;
+      return {
+        className: c.name,
+        schoolName: c.schoolName,
+        teacherName: c.teacherName,
+        totalReports: info.count,
+        latestReportDate: info.latest,
+        daysSinceLastReport: daysSince,
+      };
+    });
+  }, [classes, reports]);
 
   const isLoading = classesLoading || plansLoading;
 
@@ -64,6 +126,14 @@ export function ComplianceAlert() {
               {nonCompliant.length}/{classes?.length ?? 0} kelas perlu perhatian
             </span>
           )}
+          <ExportExcelButton
+            filename="kepatuhan-lesson-plan-report"
+            disabled={isLoading}
+            sheets={[
+              { name: "Kepatuhan Lesson Plan", columns: LP_COMPLIANCE_COLUMNS, rows: allCompliance },
+              { name: "Kepatuhan Daily Teaching Report", columns: REPORT_COMPLIANCE_COLUMNS, rows: reportCompliance },
+            ]}
+          />
         </CardTitle>
       </CardHeader>
       <CardContent>

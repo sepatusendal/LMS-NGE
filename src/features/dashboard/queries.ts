@@ -18,6 +18,72 @@ interface CheckInRow {
   teachers: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null;
 }
 
+interface CheckInDetailRow {
+  teacherId: string;
+  checkInTime: string;
+  isLate: boolean;
+  teachers: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null;
+  meetings:
+    | { assignedTeacherId: string; actualTeacherId: string | null }
+    | { assignedTeacherId: string; actualTeacherId: string | null }[]
+    | null;
+}
+
+export interface TeacherAttendanceDetailRow {
+  checkInDate: string;
+  teacherName: string;
+  isLate: boolean;
+  isSubstitute: boolean;
+  originalTeacherName: string | null;
+}
+
+export async function fetchTeacherAttendanceDetail(days: number): Promise<TeacherAttendanceDetailRow[]> {
+  const supabase = createClient();
+  const since = daysAgoStr(days);
+
+  const { data, error } = await supabase
+    .from("check_ins")
+    .select("teacherId, checkInTime, isLate, teachers(users(fullName)), meetings(assignedTeacherId, actualTeacherId)")
+    .gte("checkInTime", `${since}T00:00:00`)
+    .order("checkInTime", { ascending: false });
+  if (error) throw error;
+
+  const rows = data as unknown as CheckInDetailRow[];
+  const assignedTeacherIds = [
+    ...new Set(
+      rows
+        .map((r) => toOne(r.meetings)?.assignedTeacherId)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+
+  const { data: assignedTeachers, error: teacherErr } = await supabase
+    .from("teachers")
+    .select("id, users(fullName)")
+    .in("id", assignedTeacherIds.length > 0 ? assignedTeacherIds : ["00000000-0000-0000-0000-000000000000"]);
+  if (teacherErr) throw teacherErr;
+  const assignedNameById = new Map(
+    (assignedTeachers as unknown as { id: string; users: { fullName: string } | null }[]).map((t) => [
+      t.id,
+      t.users?.fullName ?? "-",
+    ]),
+  );
+
+  return rows.map((row) => {
+    const meeting = toOne(row.meetings);
+    const isSubstitute = Boolean(
+      meeting && meeting.actualTeacherId && meeting.actualTeacherId !== meeting.assignedTeacherId,
+    );
+    return {
+      checkInDate: row.checkInTime,
+      teacherName: toOne(row.teachers)?.users?.fullName ?? "-",
+      isLate: row.isLate,
+      isSubstitute,
+      originalTeacherName: isSubstitute ? (assignedNameById.get(meeting!.assignedTeacherId) ?? "-") : null,
+    };
+  });
+}
+
 export async function fetchTeacherAttendance(days: number): Promise<TeacherAttendanceRow[]> {
   const supabase = createClient();
   const since = daysAgoStr(days);

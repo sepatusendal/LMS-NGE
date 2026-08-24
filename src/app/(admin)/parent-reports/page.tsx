@@ -28,10 +28,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ExportExcelButton } from "@/components/shared/export-excel-button";
 import { useSchools } from "@/features/schools/use-schools";
 import { useStudents } from "@/features/students/use-students";
 import { useParentReports } from "@/features/parent-reports/use-parent-reports";
+import { fetchStudentPeriodData } from "@/features/parent-reports/queries";
 import { MONTH_LABEL } from "@/features/parent-reports/schema";
+import type { ParentReportListItem } from "@/features/parent-reports/schema";
+import type { ExcelColumn, ExcelSheet } from "@/lib/export-excel";
 
 const now = new Date();
 const CURRENT_MONTH = now.getMonth() + 1;
@@ -41,6 +45,119 @@ const YEAR_OPTIONS = [CURRENT_YEAR, CURRENT_YEAR - 1];
 function formatDate(dateStr: string | null) {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+}
+
+interface ParentReportSummaryRow {
+  studentName: string;
+  schoolName: string;
+  periodMonth: number;
+  periodYear: number;
+  status: string;
+  hadirPresent: number;
+  hadirTotal: number;
+  lessonsCompleted: number;
+  skillsCovered: string;
+}
+
+const SUMMARY_COLUMNS: ExcelColumn<ParentReportSummaryRow>[] = [
+  { header: "Siswa", key: "student", width: 24, value: (r) => r.studentName },
+  { header: "Sekolah", key: "school", width: 22, value: (r) => r.schoolName },
+  { header: "Periode", key: "period", width: 16, value: (r) => `${MONTH_LABEL[r.periodMonth]} ${r.periodYear}` },
+  { header: "Status", key: "status", width: 16, value: (r) => r.status },
+  { header: "Hadir", key: "attendance", width: 12, value: (r) => `${r.hadirPresent}/${r.hadirTotal}` },
+  { header: "Pertemuan Selesai", key: "lessons", width: 16, value: (r) => r.lessonsCompleted },
+  { header: "Skills Tercakup", key: "skills", width: 34, value: (r) => r.skillsCovered || "-" },
+];
+
+interface TeachingReportExportRow {
+  studentName: string;
+  date: string;
+  className: string;
+  meetingNumber: number;
+  topic: string;
+  skills: string;
+  objectivesAchieved: string;
+  whatWentWell: string;
+  whatNeedsImprovement: string;
+}
+
+const TEACHING_REPORT_COLUMNS: ExcelColumn<TeachingReportExportRow>[] = [
+  { header: "Siswa", key: "student", width: 24, value: (r) => r.studentName },
+  { header: "Tanggal", key: "date", width: 14, value: (r) => formatDate(r.date) },
+  { header: "Kelas", key: "class", width: 20, value: (r) => r.className },
+  { header: "Meeting", key: "meeting", width: 10, value: (r) => r.meetingNumber },
+  { header: "Topic", key: "topic", width: 28, value: (r) => r.topic },
+  { header: "Skills", key: "skills", width: 30, value: (r) => r.skills },
+  { header: "Tujuan Tercapai", key: "objectives", width: 16, value: (r) => r.objectivesAchieved },
+  { header: "What Went Well", key: "wentWell", width: 30, value: (r) => r.whatWentWell },
+  { header: "What Needs Improvement", key: "needsImprovement", width: 30, value: (r) => r.whatNeedsImprovement },
+];
+
+interface ProgressNoteExportRow {
+  studentName: string;
+  date: string;
+  skillArea: string;
+  note: string;
+}
+
+const PROGRESS_NOTE_COLUMNS: ExcelColumn<ProgressNoteExportRow>[] = [
+  { header: "Siswa", key: "student", width: 24, value: (r) => r.studentName },
+  { header: "Tanggal", key: "date", width: 14, value: (r) => formatDate(r.date) },
+  { header: "Skill Area", key: "skillArea", width: 20, value: (r) => r.skillArea },
+  { header: "Catatan", key: "note", width: 40, value: (r) => r.note },
+];
+
+const OBJECTIVES_LABEL_EXPORT: Record<string, string> = { YES: "Tercapai", PARTIALLY: "Sebagian", NO: "Belum Tercapai" };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function buildParentReportSheets(reports: ParentReportListItem[]): Promise<ExcelSheet<any>[]> {
+  const periodData = await Promise.all(
+    reports.map((r) => fetchStudentPeriodData(r.studentId, r.periodMonth, r.periodYear)),
+  );
+
+  const summaryRows: ParentReportSummaryRow[] = reports.map((r, i) => {
+    const d = periodData[i];
+    return {
+      studentName: r.studentName,
+      schoolName: r.schoolName,
+      periodMonth: r.periodMonth,
+      periodYear: r.periodYear,
+      status: r.status === "GENERATED" ? "Sudah Digenerate" : "Draft",
+      hadirPresent: d.attendance.present,
+      hadirTotal: d.attendance.total,
+      lessonsCompleted: d.lessonsCompleted,
+      skillsCovered: d.skillsCovered.join(", "),
+    };
+  });
+
+  const teachingReportRows: TeachingReportExportRow[] = periodData.flatMap((d) =>
+    d.teachingReports.map((t) => ({
+      studentName: d.studentName,
+      date: t.date,
+      className: t.className,
+      meetingNumber: t.meetingNumber,
+      topic: t.topic,
+      skills: t.skills.join(", "),
+      objectivesAchieved: t.objectivesAchieved ? OBJECTIVES_LABEL_EXPORT[t.objectivesAchieved] : "-",
+      whatWentWell: t.whatWentWell ?? "-",
+      whatNeedsImprovement: t.whatNeedsImprovement ?? "-",
+    })),
+  );
+
+  const progressNoteRows: ProgressNoteExportRow[] = periodData.flatMap((d) =>
+    d.progressNotes.map((p) => ({
+      studentName: d.studentName,
+      date: p.date,
+      skillArea: p.skillArea ?? "-",
+      note: p.note,
+    })),
+  );
+
+  return [
+    { name: "Ringkasan", columns: SUMMARY_COLUMNS, rows: summaryRows },
+    { name: "Detail Teaching Report", columns: TEACHING_REPORT_COLUMNS, rows: teachingReportRows },
+    { name: "Progress Notes", columns: PROGRESS_NOTE_COLUMNS, rows: progressNoteRows },
+  ];
 }
 
 export default function ParentReportsPage() {
@@ -76,7 +193,13 @@ export default function ParentReportsPage() {
             Generate laporan PDF per siswa dari data kehadiran, teaching report, dan progress — {reports?.length ?? 0} laporan tersimpan.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <div className="flex shrink-0 items-center gap-2">
+          <ExportExcelButton
+            filename="laporan-bulanan-orang-tua"
+            disabled={!reports || reports.length === 0}
+            getSheets={() => buildParentReportSheets(reports ?? [])}
+          />
+          <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger render={<Button />}>
             <Plus className="size-4" />
             Buat Laporan
@@ -171,7 +294,8 @@ export default function ParentReportsPage() {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       <div className="rounded-lg border">

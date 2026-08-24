@@ -5,8 +5,33 @@ import { AlertTriangle, ChevronDown, ChevronRight, Loader2, Search, UserX } from
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { ExportExcelButton } from "@/components/shared/export-excel-button";
+import type { ExcelColumn } from "@/lib/export-excel";
 import { useClassAttendanceSummary } from "./use-attendances";
-import type { StudentAttendanceSummary } from "./admin-queries";
+import type { StudentAbsence, StudentAttendanceSummary } from "./admin-queries";
+
+const SUMMARY_COLUMNS: ExcelColumn<StudentAttendanceSummary>[] = [
+  { header: "Siswa", key: "student", width: 24, value: (s) => s.studentName },
+  { header: "NIS", key: "nis", width: 14, value: (s) => s.nis ?? "-" },
+  { header: "Hadir", key: "present", width: 10, value: (s) => s.present },
+  { header: "Telat", key: "late", width: 10, value: (s) => s.late },
+  { header: "Izin", key: "excused", width: 10, value: (s) => s.excused },
+  { header: "Alpa", key: "absent", width: 10, value: (s) => s.absent },
+  { header: "Total Pertemuan", key: "total", width: 16, value: (s) => s.totalMeetings },
+  { header: "% Kehadiran", key: "rate", width: 14, value: (s) => Math.round(s.attendanceRate * 100) },
+];
+
+interface AbsenceExportRow extends StudentAbsence {
+  studentName: string;
+}
+
+const ABSENCE_COLUMNS: ExcelColumn<AbsenceExportRow>[] = [
+  { header: "Siswa", key: "student", width: 24, value: (a) => a.studentName },
+  { header: "Meeting", key: "meeting", width: 10, value: (a) => a.meetingNumber },
+  { header: "Topic", key: "topic", width: 26, value: (a) => a.topic },
+  { header: "Tanggal", key: "date", width: 14, value: (a) => new Date(a.scheduledDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) },
+  { header: "Status", key: "status", width: 12, value: (a) => (a.status === "ABSENT" ? "Alpa" : "Izin") },
+];
 
 // A student is flagged for attention once they've missed a quarter or more
 // of tracked meetings — arbitrary but gives admin/coordinator a quick signal
@@ -135,14 +160,27 @@ export function ClassAttendanceSummary({ classId }: { classId: string }) {
       <div className="flex items-center justify-between gap-2">
         <h2 className="font-medium">Kehadiran Siswa</h2>
         {!isLoading && data && data.length > 0 && (
-          <div className="relative">
-            <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari siswa..."
-              className="border-input h-8 rounded-md border bg-transparent py-1 pr-2 pl-8 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          <div className="flex items-center gap-2">
+            <ExportExcelButton
+              filename="absensi-siswa"
+              sheets={[
+                { name: "Ringkasan", columns: SUMMARY_COLUMNS, rows: data },
+                {
+                  name: "Detail Alpa Izin",
+                  columns: ABSENCE_COLUMNS,
+                  rows: data.flatMap((s) => s.absences.map((a) => ({ ...a, studentName: s.studentName }))),
+                },
+              ]}
             />
+            <div className="relative">
+              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari siswa..."
+                className="border-input h-8 rounded-md border bg-transparent py-1 pr-2 pl-8 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              />
+            </div>
           </div>
         )}
       </div>
