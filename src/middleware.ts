@@ -74,6 +74,10 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith("/parent-report")) return response;
     if (pathname.startsWith("/api/parent-report")) return response;
     if (pathname.startsWith("/api/parent-reports") && pathname.endsWith("/download")) return response;
+    // Vercel Cron hits this with no Supabase session — it authenticates via
+    // the Authorization: Bearer CRON_SECRET header instead, checked inside
+    // the route handler itself.
+    if (pathname.startsWith("/api/cron/")) return response;
     return redirectTo(request, response, "/login");
   }
 
