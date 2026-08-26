@@ -3,6 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminUser } from "@/features/auth/assert-admin";
 import { uploadFile, findOrCreateFolder, getRootFolderId } from "@/lib/google-drive/drive-client";
 import { getStudentPeriodData } from "@/features/parent-reports/period-data";
 import { ParentReportPdf } from "@/features/parent-reports/parent-report-pdf";
@@ -30,6 +31,10 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!(await isAdminUser(supabase, user.id))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { data: report, error: reportError } = await supabase

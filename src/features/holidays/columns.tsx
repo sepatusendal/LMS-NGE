@@ -3,6 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { parseLocalDate } from "@/lib/date";
 import type { Holiday } from "./schema";
 import { useDeleteHoliday } from "./use-holidays";
 
@@ -26,7 +27,7 @@ export function createHolidayColumns(): ColumnDef<Holiday>[] {
       accessorKey: "date",
       header: "Tanggal",
       cell: ({ row }) =>
-        new Date(row.original.date).toLocaleDateString("id-ID", {
+        parseLocalDate(row.original.date).toLocaleDateString("id-ID", {
           weekday: "long",
           day: "numeric",
           month: "long",

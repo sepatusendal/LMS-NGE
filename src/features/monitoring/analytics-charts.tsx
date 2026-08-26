@@ -10,10 +10,11 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { parseLocalDate } from "@/lib/date";
 import { useMonitoringAnalytics } from "./use-monitoring";
 
 function formatDateLabel(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+  return parseLocalDate(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
 }
 
 function latestValue(points: (number | null)[]): number | null {

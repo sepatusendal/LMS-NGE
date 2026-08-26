@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadFile } from "@/lib/google-drive/drive-client";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminUser } from "@/features/auth/assert-admin";
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -59,6 +60,10 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!(await isAdminUser(supabase, user.id))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const formData = await request.formData();

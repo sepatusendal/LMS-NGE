@@ -13,13 +13,10 @@ import {
 import { useSchools } from "@/features/schools/use-schools";
 import { useStatusBoard } from "@/features/monitoring/use-monitoring";
 import { TeacherDayList } from "@/features/substitutes/teacher-day-list";
-
-function todayStr() {
-  return new Date().toISOString().slice(0, 10);
-}
+import { todayLocalDateStr } from "@/lib/date";
 
 export default function SubstitutesPage() {
-  const [date, setDate] = useState(todayStr());
+  const [date, setDate] = useState(todayLocalDateStr());
   const [schoolId, setSchoolId] = useState("");
   const [search, setSearch] = useState("");
 

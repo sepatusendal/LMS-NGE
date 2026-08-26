@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { TrendingDown, TrendingUp, Minus, NotebookText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { parseLocalDate } from "@/lib/date";
 import { useReportStats } from "./use-dashboard";
 
 function DeltaBadge({ current, previous }: { current: number; previous: number }) {
@@ -28,7 +29,7 @@ function DeltaBadge({ current, previous }: { current: number; previous: number }
 }
 
 function formatDateLabel(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+  return parseLocalDate(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
 }
 
 const OBJECTIVES_COLOR: Record<string, string> = {

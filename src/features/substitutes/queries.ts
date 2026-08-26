@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import { parseLocalDate } from "@/lib/date";
+import { parseLocalDate, todayLocalDateStr } from "@/lib/date";
 import type { CurrentMeetingInfo, HandoverSummary } from "./schema";
 
 function toOne<T>(rel: T | T[] | null | undefined): T | null {
@@ -9,10 +9,6 @@ function toOne<T>(rel: T | T[] | null | undefined): T | null {
 
 function dayOfWeek(dateStr: string): number {
   return parseLocalDate(dateStr).getDay();
-}
-
-function todayDateStr(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 /** Remaps the DB trigger's raw exception (enforce_no_substitute_change_after_checkin,
@@ -101,7 +97,7 @@ export async function fetchCurrentMeetingInfo(classId: string): Promise<CurrentM
   if (!plan) return null;
 
   const supabase = createClient();
-  const effective = await resolveEffectiveTeacherForDate(classId, todayDateStr());
+  const effective = await resolveEffectiveTeacherForDate(classId, todayLocalDateStr());
 
   const { data: meeting, error } = await supabase
     .from("meetings")

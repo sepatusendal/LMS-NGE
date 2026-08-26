@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { fetchHolidaySchoolsForDate } from "@/features/holidays/queries";
+import { formatLocalDateStr } from "@/lib/date";
 import type { AnalyticsPoint, ClassStatusRow } from "./schema";
 
 const LATE_GRACE_MINUTES = 10;
@@ -213,7 +214,7 @@ export async function fetchAnalytics(days: number): Promise<AnalyticsPoint[]> {
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    dates.push(d.toISOString().slice(0, 10));
+    dates.push(formatLocalDateStr(d));
   }
 
   const { data: lessonPlans, error: lpErr } = await supabase

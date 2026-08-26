@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { ExportExcelButton } from "@/components/shared/export-excel-button";
 import type { ExcelColumn } from "@/lib/export-excel";
+import { parseLocalDate, todayLocalDateStr } from "@/lib/date";
 import { useSchools } from "@/features/schools/use-schools";
 import { useTeachers } from "@/features/teachers/use-teachers";
 import {
@@ -40,10 +41,6 @@ const STATUS_LABEL: Record<ClassStatusRow["meetingStatus"], { label: string; var
   checked_out: { label: "Sudah Check-out", variant: "outline" },
   report_submitted: { label: "Report Selesai", variant: "default" },
 };
-
-function todayStr() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 const EXPORT_COLUMNS: ExcelColumn<ClassStatusRow>[] = [
   { header: "Kelas", key: "class", width: 22, value: (r) => r.className },
@@ -68,7 +65,7 @@ const EXPORT_COLUMNS: ExcelColumn<ClassStatusRow>[] = [
 ];
 
 export function StatusBoard() {
-  const [date, setDate] = useState(todayStr());
+  const [date, setDate] = useState(todayLocalDateStr());
   const [schoolId, setSchoolId] = useState("");
   const [teacherId, setTeacherId] = useState("");
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
@@ -211,7 +208,7 @@ export function StatusBoard() {
         <CardHeader className="flex-row items-center justify-between pb-3">
           <CardTitle className="text-sm">
             Status Kelas —{" "}
-            {new Date(date).toLocaleDateString("id-ID", {
+            {parseLocalDate(date).toLocaleDateString("id-ID", {
               weekday: "long",
               day: "numeric",
               month: "long",

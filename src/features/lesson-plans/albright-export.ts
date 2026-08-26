@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { sanitizeSheetName } from "@/lib/export-excel";
 
 interface AlbrightSession {
   meetingNumber: number;
@@ -133,7 +134,7 @@ export async function downloadAlbrightTeachingRecords(
   workbook.creator = "NUFA Global Education";
   workbook.created = new Date();
 
-  const ws = workbook.addWorksheet(className.slice(0, 31), {
+  const ws = workbook.addWorksheet(sanitizeSheetName(className), {
     views: [{ showGridLines: false }],
   });
   ws.columns = [

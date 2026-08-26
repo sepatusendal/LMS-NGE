@@ -18,6 +18,7 @@ import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
 import { useAdminReports } from "@/features/reports/use-admin-reports";
 import { ExportExcelButton } from "@/components/shared/export-excel-button";
 import type { ExcelColumn } from "@/lib/export-excel";
+import { parseLocalDate } from "@/lib/date";
 import { getClassComplianceStatus } from "./compliance";
 
 interface NonCompliantClass {
@@ -25,6 +26,7 @@ interface NonCompliantClass {
   name: string;
   classType: "REGULAR" | "TEACHER_TRAINING";
   schoolName: string;
+  teacherId: string;
   teacherName: string;
   latestDate: string | null;
   daysLeft: number;
@@ -35,6 +37,7 @@ interface LessonPlanComplianceRow extends NonCompliantClass {
 }
 
 interface TeacherComplianceRow {
+  teacherId: string;
   teacherName: string;
   lateCount: number;
   worstClassName: string;
@@ -62,7 +65,7 @@ const LP_COMPLIANCE_COLUMNS: ExcelColumn<LessonPlanComplianceRow>[] = [
   { header: "Tipe Kelas", key: "type", width: 16, value: (r) => (r.classType === "TEACHER_TRAINING" ? "Guru & Staff" : "Reguler") },
   { header: "Sekolah", key: "school", width: 22, value: (r) => r.schoolName },
   { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
-  { header: "Lesson Plan Terjauh", key: "latestDate", width: 18, value: (r) => (r.latestDate ? new Date(r.latestDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "Belum ada") },
+  { header: "Lesson Plan Terjauh", key: "latestDate", width: 18, value: (r) => (r.latestDate ? parseLocalDate(r.latestDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "Belum ada") },
   { header: "Sisa Hari", key: "daysLeft", width: 12, value: (r) => r.daysLeft },
   { header: "Status", key: "status", width: 14, value: (r) => (r.isCompliant ? "Patuh" : "Perlu Perhatian") },
 ];
@@ -72,7 +75,7 @@ const REPORT_COMPLIANCE_COLUMNS: ExcelColumn<ReportComplianceRow>[] = [
   { header: "Sekolah", key: "school", width: 22, value: (r) => r.schoolName },
   { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
   { header: "Total Report", key: "total", width: 14, value: (r) => r.totalReports },
-  { header: "Report Terakhir", key: "latest", width: 18, value: (r) => (r.latestReportDate ? new Date(r.latestReportDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "Belum pernah") },
+  { header: "Report Terakhir", key: "latest", width: 18, value: (r) => (r.latestReportDate ? parseLocalDate(r.latestReportDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "Belum pernah") },
   { header: "Hari Sejak Report Terakhir", key: "daysSince", width: 20, value: (r) => r.daysSinceLastReport ?? "-" },
 ];
 
@@ -93,6 +96,7 @@ export function ComplianceAlert() {
         name: c.name,
         classType: c.classType,
         schoolName: c.schoolName,
+        teacherId: c.teacherId,
         teacherName: c.teacherName,
         latestDate: status.latestDate,
         daysLeft: status.daysLeft,
@@ -107,15 +111,16 @@ export function ComplianceAlert() {
   const byTeacher = useMemo((): TeacherComplianceRow[] => {
     const grouped = new Map<string, NonCompliantClass[]>();
     for (const c of nonCompliant) {
-      const list = grouped.get(c.teacherName) ?? [];
+      const list = grouped.get(c.teacherId) ?? [];
       list.push(c);
-      grouped.set(c.teacherName, list);
+      grouped.set(c.teacherId, list);
     }
     return Array.from(grouped.entries())
-      .map(([teacherName, list]) => {
+      .map(([teacherId, list]) => {
         const worst = list.reduce((a, b) => (a.daysLeft <= b.daysLeft ? a : b));
         return {
-          teacherName,
+          teacherId,
+          teacherName: list[0].teacherName,
           lateCount: list.length,
           worstClassName: worst.name,
           worstDaysLeft: worst.daysLeft,
@@ -137,7 +142,7 @@ export function ComplianceAlert() {
 
     return classes.map((c) => {
       const info = byClass.get(c.id) ?? { count: 0, latest: null };
-      const daysSince = info.latest ? Math.floor((now - new Date(info.latest).getTime()) / (24 * 60 * 60 * 1000)) : null;
+      const daysSince = info.latest ? Math.floor((now - parseLocalDate(info.latest).getTime()) / (24 * 60 * 60 * 1000)) : null;
       return {
         className: c.name,
         schoolName: c.schoolName,
@@ -254,7 +259,7 @@ export function ComplianceAlert() {
                   </TableHeader>
                   <TableBody>
                     {byTeacher.map((t) => (
-                      <TableRow key={t.teacherName}>
+                      <TableRow key={t.teacherId}>
                         <TableCell className="font-medium whitespace-nowrap">{t.teacherName}</TableCell>
                         <TableCell className="text-right">
                           <Badge variant={t.lateCount > 1 ? "destructive" : "secondary"} className="text-xs">

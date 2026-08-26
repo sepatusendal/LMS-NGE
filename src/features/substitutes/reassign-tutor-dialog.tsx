@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { parseLocalDate } from "@/lib/date";
 import {
   Select,
   SelectContent,
@@ -85,7 +86,7 @@ export function ReassignTutorDialog({
     onOpenChange(false);
   }
 
-  const dateLabel = new Date(target.scheduledDate).toLocaleDateString("id-ID", {
+  const dateLabel = parseLocalDate(target.scheduledDate).toLocaleDateString("id-ID", {
     weekday: "long",
     day: "numeric",
     month: "long",

@@ -10,10 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { parseLocalDate } from "@/lib/date";
 import { useReportNotes } from "./use-dashboard";
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+  return parseLocalDate(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
 }
 
 export function ReportNotesTable() {
