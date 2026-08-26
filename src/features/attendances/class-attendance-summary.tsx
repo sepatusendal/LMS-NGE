@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ExportExcelButton } from "@/components/shared/export-excel-button";
 import type { ExcelColumn } from "@/lib/export-excel";
+import { parseLocalDate } from "@/lib/date";
 import { useClassAttendanceSummary } from "./use-attendances";
 import type { StudentAbsence, StudentAttendanceSummary } from "./admin-queries";
 
@@ -29,7 +30,7 @@ const ABSENCE_COLUMNS: ExcelColumn<AbsenceExportRow>[] = [
   { header: "Siswa", key: "student", width: 24, value: (a) => a.studentName },
   { header: "Meeting", key: "meeting", width: 10, value: (a) => a.meetingNumber },
   { header: "Topic", key: "topic", width: 26, value: (a) => a.topic },
-  { header: "Tanggal", key: "date", width: 14, value: (a) => new Date(a.scheduledDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) },
+  { header: "Tanggal", key: "date", width: 14, value: (a) => parseLocalDate(a.scheduledDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) },
   { header: "Status", key: "status", width: 12, value: (a) => (a.status === "ABSENT" ? "Alpa" : "Izin") },
 ];
 
@@ -46,7 +47,7 @@ function initials(name: string): string {
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("id-ID", {
+  return parseLocalDate(dateStr).toLocaleDateString("id-ID", {
     day: "numeric",
     month: "short",
     year: "numeric",

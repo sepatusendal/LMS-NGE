@@ -165,6 +165,7 @@ export function TutorPayroll() {
                       { label: "Total Beban Gaji Tutor", value: data.totalExpense },
                       { label: "Total Kehadiran", value: data.totalAttended },
                       { label: "Tutor Belum Set Fee", value: data.unbilledCount },
+                      { label: "Check-in Tidak Terhitung", value: data.orphanedCheckInCount },
                     ]
                   : [],
               },
@@ -307,6 +308,11 @@ export function TutorPayroll() {
               {data.unbilledCount > 0 && (
                 <p className="text-muted-foreground text-xs">
                   {data.unbilledCount} tutor belum diset fee-nya — tidak tampil di chart.
+                </p>
+              )}
+              {data.orphanedCheckInCount > 0 && (
+                <p className="text-muted-foreground text-xs">
+                  {data.orphanedCheckInCount} check-in tidak terhitung — meeting terkait sudah tidak ada.
                 </p>
               )}
             </CardContent>

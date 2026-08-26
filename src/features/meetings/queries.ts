@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { isHoliday, fetchHolidaySchoolsForDate } from "@/features/holidays/queries";
+import { todayLocalDateStr } from "@/lib/date";
 import type { TodayClass, CheckInInput, CheckOutInput } from "./schema";
 
 function getTodayDayOfWeek(): number {
@@ -73,7 +74,7 @@ export async function startClass(
   const todaySlot = cls?.class_schedule_slots.find((s) => s.dayOfWeek === today);
 
   if (cls?.schoolId) {
-    const todayDateStr = new Date().toISOString().slice(0, 10);
+    const todayDateStr = todayLocalDateStr();
     if (await isHoliday(todayDateStr, cls.schoolId)) {
       throw new Error("Hari ini hari libur, tidak bisa mulai kelas");
     }
@@ -255,7 +256,7 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
   // *today's* specific lesson (context.md Section 6 — Admin marks the
   // original teacher absent and assigns a substitute for one meeting; this
   // is independent of the class's recurring day/teacher pattern above).
-  const todayDateStr = new Date().toISOString().slice(0, 10);
+  const todayDateStr = todayLocalDateStr();
   const { data: substituteMeetings, error: subErr } = await supabase
     .from("meetings")
     .select("lessonPlanId, lesson_plans!inner(classId, scheduledDate)")

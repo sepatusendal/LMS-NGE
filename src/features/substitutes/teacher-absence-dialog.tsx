@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTeachers } from "@/features/teachers/use-teachers";
+import { parseLocalDate } from "@/lib/date";
 import type { ClassStatusRow } from "@/features/monitoring/schema";
 import { useCancelSubstitute, useMarkTeacherAbsent } from "./use-substitutes";
 import { ABSENCE_REASONS, ABSENCE_REASON_LABEL } from "./schema";
@@ -123,7 +124,7 @@ export function TeacherAbsenceDialog({
   }, [open, teacherId, date]);
 
   const teacherOptions = (teachers ?? []).filter((t) => t.id !== teacherId);
-  const dateLabel = new Date(date).toLocaleDateString("id-ID", {
+  const dateLabel = parseLocalDate(date).toLocaleDateString("id-ID", {
     weekday: "long",
     day: "numeric",
     month: "long",

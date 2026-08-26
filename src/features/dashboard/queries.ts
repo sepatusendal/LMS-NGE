@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { formatLocalDateStr } from "@/lib/date";
 import type { FollowUpRow, ReportNoteRow, ReportStats, TeacherAttendanceRow } from "./schema";
 
 function toOne<T>(rel: T | T[] | null | undefined): T | null {
@@ -9,7 +10,19 @@ function toOne<T>(rel: T | T[] | null | undefined): T | null {
 function daysAgoStr(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
+  return formatLocalDateStr(d);
+}
+
+/** Local midnight N days ago, as a UTC instant — for filtering timestamptz
+ * columns (e.g. checkInTime). Unlike `daysAgoStr` + a naive "T00:00:00"
+ * suffix (which Postgres reads as UTC), this actually converts the local
+ * calendar boundary to the correct UTC instant, so a WIB (UTC+7) local
+ * midnight isn't off by the timezone offset. */
+function daysAgoLocalMidnightISO(days: number): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - days);
+  return d.toISOString();
 }
 
 interface CheckInRow {
@@ -39,12 +52,12 @@ export interface TeacherAttendanceDetailRow {
 
 export async function fetchTeacherAttendanceDetail(days: number): Promise<TeacherAttendanceDetailRow[]> {
   const supabase = createClient();
-  const since = daysAgoStr(days);
+  const since = daysAgoLocalMidnightISO(days);
 
   const { data, error } = await supabase
     .from("check_ins")
     .select("teacherId, checkInTime, isLate, teachers(users(fullName)), meetings(assignedTeacherId, actualTeacherId)")
-    .gte("checkInTime", `${since}T00:00:00`)
+    .gte("checkInTime", since)
     .order("checkInTime", { ascending: false });
   if (error) throw error;
 
@@ -86,12 +99,12 @@ export async function fetchTeacherAttendanceDetail(days: number): Promise<Teache
 
 export async function fetchTeacherAttendance(days: number): Promise<TeacherAttendanceRow[]> {
   const supabase = createClient();
-  const since = daysAgoStr(days);
+  const since = daysAgoLocalMidnightISO(days);
 
   const { data, error } = await supabase
     .from("check_ins")
     .select("teacherId, isLate, teachers(users(fullName))")
-    .gte("checkInTime", `${since}T00:00:00`);
+    .gte("checkInTime", since);
   if (error) throw error;
 
   const rows = data as unknown as CheckInRow[];
@@ -169,7 +182,7 @@ export async function fetchReportStats(days: number): Promise<ReportStats> {
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    dates.push(d.toISOString().slice(0, 10));
+    dates.push(formatLocalDateStr(d));
   }
 
   return {
@@ -347,6 +360,7 @@ export interface TutorPayroll {
   totalAttended: number;
   totalExpense: number;
   unbilledCount: number;
+  orphanedCheckInCount: number;
 }
 
 export async function fetchTutorPayroll(from?: string | null, to?: string | null): Promise<TutorPayroll> {
@@ -363,16 +377,24 @@ export async function fetchTutorPayroll(from?: string | null, to?: string | null
 
   const rows = data as unknown as PayrollCheckInRow[];
   const attendanceByTeacher = new Map<string, number>();
+  let orphanedCheckInCount = 0;
   rows.forEach((row) => {
     const meeting = toOne(row.meetings);
-    if (!meeting) return;
+    // A check-in whose joined meeting is null (e.g. the meeting was deleted
+    // after check-in) can't be attributed to any teacher — count it instead
+    // of silently dropping it, so payroll can flag "N check-in tidak
+    // terhitung" rather than quietly under-reporting attendance.
+    if (!meeting) {
+      orphanedCheckInCount += 1;
+      return;
+    }
     const teacherId = meeting.actualTeacherId ?? meeting.assignedTeacherId;
     attendanceByTeacher.set(teacherId, (attendanceByTeacher.get(teacherId) ?? 0) + 1);
   });
 
   const teacherIds = [...attendanceByTeacher.keys()];
   if (teacherIds.length === 0) {
-    return { rows: [], totalAttended: 0, totalExpense: 0, unbilledCount: 0 };
+    return { rows: [], totalAttended: 0, totalExpense: 0, unbilledCount: 0, orphanedCheckInCount };
   }
 
   const { data: teachers, error: teacherErr } = await supabase
@@ -407,5 +429,5 @@ export async function fetchTutorPayroll(from?: string | null, to?: string | null
   const totalExpense = list.reduce((sum, t) => sum + t.subtotal, 0);
   const unbilledCount = list.filter((t) => t.feePerMeeting == null).length;
 
-  return { rows: list, totalAttended, totalExpense, unbilledCount };
+  return { rows: list, totalAttended, totalExpense, unbilledCount, orphanedCheckInCount };
 }

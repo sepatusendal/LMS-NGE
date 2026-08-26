@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, CheckCircle, Clock, UserCheck, UserRoundCog, Settings2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { parseLocalDate } from "@/lib/date";
 import { useClassTimeline } from "@/features/meetings/use-timeline";
 import type { TimelineEntry } from "@/features/meetings/timeline-queries";
 import {
@@ -84,7 +85,7 @@ function TimelineItem({
         <p className="text-xs font-medium mt-0.5">{entry.topic}</p>
 
         <p className="text-muted-foreground text-xs mt-0.5">
-          {new Date(entry.scheduledDate).toLocaleDateString("id-ID", {
+          {parseLocalDate(entry.scheduledDate).toLocaleDateString("id-ID", {
             day: "numeric",
             month: "short",
             year: "numeric",

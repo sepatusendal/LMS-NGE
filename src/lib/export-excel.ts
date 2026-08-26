@@ -11,7 +11,7 @@ export interface ExcelSheet<T = unknown> {
   rows: T[];
 }
 
-function sanitizeSheetName(name: string): string {
+export function sanitizeSheetName(name: string): string {
   return name.replace(/[*?:/\\[\]]/g, " ").slice(0, 31);
 }
 
