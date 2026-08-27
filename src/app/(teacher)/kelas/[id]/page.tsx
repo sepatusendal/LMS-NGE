@@ -1,16 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ChevronLeft, Clock, GraduationCap, MapPin, Users } from "lucide-react";
+import { ChevronLeft, Clock, GraduationCap, MapPin, NotebookPen, Users, CalendarClock, ClipboardList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { ClassAvatar } from "@/components/shared/class-avatar";
 import { LoadingState } from "@/components/shared/loading-state";
+import { ModuleCoverBanner } from "@/components/shared/module-cover";
 import { useClass } from "@/features/classes/use-classes";
+import { useMyClasses } from "@/features/classes/use-my-classes";
 import { useClassRoster } from "@/features/classes/use-roster";
 import { formatScheduleSlots } from "@/features/classes/schema";
 import { ClassTimeline } from "@/features/meetings/class-timeline";
 import { ClassAttendanceSummary } from "@/features/attendances/class-attendance-summary";
+
+type TabKey = "roster" | "kehadiran" | "riwayat";
+
+const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+  { key: "roster", label: "Roster", icon: <Users className="size-4" /> },
+  { key: "kehadiran", label: "Kehadiran", icon: <ClipboardList className="size-4" /> },
+  { key: "riwayat", label: "Riwayat", icon: <CalendarClock className="size-4" /> },
+];
 
 function SectionCard({
   title,
@@ -35,9 +48,15 @@ function SectionCard({
 export default function TeacherClassDetailPage() {
   const params = useParams<{ id: string }>();
   const classId = params.id;
+  const [tab, setTab] = useState<TabKey>("roster");
 
   const { data: classItem, isLoading, isFetched } = useClass(classId);
   const { data: roster, isLoading: rosterLoading } = useClassRoster(classId);
+  // Module cover + "isPrimary" (who's allowed to write a lesson plan) aren't
+  // part of the shared admin `Class` shape — pull them from the teacher's
+  // own class list instead, which is already fetched/cached from /kelas.
+  const { data: myClasses } = useMyClasses();
+  const myClassInfo = myClasses?.find((c) => c.id === classId);
 
   if (isLoading) {
     return <LoadingState />;
@@ -109,33 +128,69 @@ export default function TeacherClassDetailPage() {
         </div>
       </div>
 
-      <SectionCard title="Roster Siswa" icon={<Users className="size-4" />}>
-        {rosterLoading ? (
-          <p className="text-muted-foreground text-sm">Memuat roster...</p>
-        ) : roster && roster.length > 0 ? (
-          <>
-            <p className="text-muted-foreground text-xs">{roster.length} siswa terdaftar</p>
-            <ul className="divide-y">
-              {roster.map((r) => (
-                <li key={r.enrollmentId} className="flex items-center justify-between py-2 text-sm">
-                  <span>{r.fullName}</span>
-                  {r.nis && <span className="text-muted-foreground text-xs">{r.nis}</span>}
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <p className="text-muted-foreground text-sm">Belum ada siswa di kelas ini.</p>
-        )}
-      </SectionCard>
+      {myClassInfo && (
+        <div className="space-y-3">
+          <ModuleCoverBanner module={myClassInfo.module} />
+          {myClassInfo.isPrimary && (
+            <Link
+              href="/lesson-plan/new"
+              className={cn(buttonVariants({ size: "sm", variant: "outline" }), "w-full")}
+            >
+              <NotebookPen className="size-4" />
+              Buat Lesson Plan
+            </Link>
+          )}
+        </div>
+      )}
 
-      <div className="space-y-3">
-        <ClassAttendanceSummary classId={classItem.id} />
+      <div className="flex gap-1.5 rounded-2xl bg-white p-1.5 shadow-sm">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            className={cn(
+              "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition-colors",
+              tab === t.key
+                ? "bg-[#4b60ac] text-white shadow-sm"
+                : "text-muted-foreground hover:bg-muted",
+            )}
+          >
+            {t.icon}
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      <SectionCard title="Riwayat Pertemuan">
-        <ClassTimeline classId={classItem.id} classDisplayName={classItem.name} canManage={false} />
-      </SectionCard>
+      {tab === "roster" && (
+        <SectionCard title="Roster Siswa" icon={<Users className="size-4" />}>
+          {rosterLoading ? (
+            <p className="text-muted-foreground text-sm">Memuat roster...</p>
+          ) : roster && roster.length > 0 ? (
+            <>
+              <p className="text-muted-foreground text-xs">{roster.length} siswa terdaftar</p>
+              <ul className="divide-y">
+                {roster.map((r) => (
+                  <li key={r.enrollmentId} className="flex items-center justify-between py-2 text-sm">
+                    <span>{r.fullName}</span>
+                    {r.nis && <span className="text-muted-foreground text-xs">{r.nis}</span>}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="text-muted-foreground text-sm">Belum ada siswa di kelas ini.</p>
+          )}
+        </SectionCard>
+      )}
+
+      {tab === "kehadiran" && <ClassAttendanceSummary classId={classItem.id} />}
+
+      {tab === "riwayat" && (
+        <SectionCard title="Riwayat Pertemuan">
+          <ClassTimeline classId={classItem.id} classDisplayName={classItem.name} canManage={false} />
+        </SectionCard>
+      )}
     </div>
   );
 }

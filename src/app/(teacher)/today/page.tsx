@@ -1,60 +1,30 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
-import { Loader2, MapPin, Clock, CheckCircle, AlertCircle, Play, LogOut, FileText, Users, Layers, Camera, ClipboardCheck } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
+import { Clock, AlertCircle, Users, Layers, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useTodayClasses, useStartClass, useCheckOut } from "@/features/meetings/use-today";
+import { useTodayClasses } from "@/features/meetings/use-today";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
 import { useTeacherStats } from "@/features/classes/use-teacher-stats";
-import { updateCheckInPhoto } from "@/features/meetings/queries";
-import { ReportForm } from "@/features/meetings/report-form";
-import { FileUpload } from "@/features/drive/file-upload";
+import { STATUS_CONFIG } from "@/features/meetings/class-workflow-card";
 import { ClassAvatar } from "@/components/shared/class-avatar";
 import { LoadingState } from "@/components/shared/loading-state";
-import { HandoverSummaryPanel } from "@/features/substitutes/handover-summary-panel";
-import { ABSENCE_REASON_LABEL } from "@/features/substitutes/schema";
 import { getTimeGreeting } from "@/lib/greeting";
 import { TimeOfDayIllustration } from "@/components/shared/time-of-day-illustration";
 import { useComplianceCount } from "@/features/lesson-plans/use-compliance-count";
 import { AlarmClockCheck } from "lucide-react";
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; variant: "default" | "secondary" | "destructive" | "outline"; accent: string; barColor: string }
-> = {
-  not_started: { label: "Belum Mulai", variant: "secondary", accent: "text-slate-500", barColor: "bg-slate-300" },
-  checked_in: { label: "Isi Absensi", variant: "outline", accent: "text-[#eda100]", barColor: "bg-[#eda100]" },
-  attendance_done: { label: "Check-out", variant: "outline", accent: "text-[#eda100]", barColor: "bg-[#eda100]" },
-  checked_out: { label: "Isi Report", variant: "outline", accent: "text-[#4b60ac]", barColor: "bg-[#4b60ac]" },
-  report_submitted: {
-    label: "Selesai",
-    variant: "outline",
-    accent: "border-transparent bg-[#1baf7a] px-2.5 py-1 text-[13px] font-semibold text-white",
-    barColor: "bg-[#1baf7a]",
-  },
-  course_completed: {
-    label: "Kelas Selesai",
-    variant: "outline",
-    accent: "border-transparent bg-[#1baf7a] px-2.5 py-1 text-[13px] font-semibold text-white",
-    barColor: "bg-[#1baf7a]",
-  },
-};
-
 const DONE_STATUSES = new Set(["report_submitted", "course_completed"]);
 
 export default function TodayPage() {
+  const router = useRouter();
   const { data: classes, isLoading, isError, error } = useTodayClasses();
   const { data: teacher } = useCurrentTeacher();
   const stats = useTeacherStats();
   const { count: lessonPlanDueCount } = useComplianceCount();
-  const startClass = useStartClass();
-  const checkOut = useCheckOut();
-  const [expandedClassId, setExpandedClassId] = useState<string | null>(null);
-  const [handoverClassId, setHandoverClassId] = useState<string | null>(null);
 
   const now = useMemo(() => new Date(), []);
   const greeting = useMemo(() => getTimeGreeting(now.getHours()), [now]);
@@ -71,10 +41,6 @@ export default function TodayPage() {
 
   const completedCount = classes?.filter((c) => DONE_STATUSES.has(c.meetingStatus)).length ?? 0;
   const totalCount = classes?.length ?? 0;
-
-  function toggleExpand(classId: string) {
-    setExpandedClassId((prev) => (prev === classId ? null : classId));
-  }
 
   return (
     <div className="space-y-7">
@@ -127,333 +93,48 @@ export default function TodayPage() {
 
       {!isLoading && !isError && (!classes || classes.length === 0) && <EmptyTodayState />}
 
-      {!isLoading &&
-        !isError &&
-        classes?.map((c) => {
-          const isExpanded = expandedClassId === c.classId;
-          const status = STATUS_CONFIG[c.meetingStatus] || STATUS_CONFIG.not_started;
-          const noLp = !c.lessonPlanId;
-
-          return (
-            <div key={c.classId} className="space-y-3.5">
-              <Card
-                className={cn(
-                  "overflow-hidden border-2 border-transparent py-0 shadow-sm transition-shadow",
-                  isExpanded && "border-[#4b60ac]/25 shadow-md",
-                )}
-              >
-                <div className={cn("h-1.5 w-full", status.barColor)} />
-                <CardContent className="pt-4 pb-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 flex-1 items-start gap-3">
-                      <ClassAvatar name={c.className} size="md" className="mt-0.5" />
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <h2 className="truncate text-base font-semibold">{c.className}</h2>
-                        <p className="text-muted-foreground text-xs">{c.schoolName}</p>
-                        <div className="text-muted-foreground flex items-center gap-3 text-xs">
-                          <span className="flex items-center gap-1">
-                            <Clock className="size-3" />
-                            {c.scheduleStartTime} - {c.scheduleEndTime}
-                          </span>
-                          {c.room && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="size-3" />
-                              {c.room}
-                            </span>
-                          )}
-                        </div>
-                        {c.topic ? (
-                          <p className="text-xs font-medium">
-                            Meeting {c.meetingNumber}: {c.topic}
-                          </p>
-                        ) : (
-                          <p className="text-destructive/80 text-xs">
-                            Belum ada lesson plan untuk meeting ini
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <Badge variant={status.variant} className={cn("ml-2 shrink-0", status.accent)}>
-                      {status.label}
-                    </Badge>
-                  </div>
-
-                  {c.isSubstitute && (
-                    <div className="bg-amber-50 text-amber-800 mt-3 rounded-md px-3 py-2 text-xs">
-                      Anda mengajar sebagai pengganti{" "}
-                      <span className="font-medium">{c.originalTeacherName}</span>
-                      {c.substituteReason && (
-                        <> — {ABSENCE_REASON_LABEL[c.substituteReason] ?? c.substituteReason}</>
-                      )}
-                    </div>
+      {!isLoading && !isError && classes && classes.length > 0 && (
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Kelas hari ini</h2>
+            {totalCount - completedCount > 0 && (
+              <Link href="/absensi" className="text-primary text-xs font-medium hover:underline">
+                Kerjakan di Absensi →
+              </Link>
+            )}
+          </div>
+          <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            {classes.map((c, i) => {
+              const status = STATUS_CONFIG[c.meetingStatus] || STATUS_CONFIG.not_started;
+              return (
+                <button
+                  key={c.classId}
+                  type="button"
+                  onClick={() => router.push("/absensi")}
+                  className={cn(
+                    "flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/50",
+                    i !== classes.length - 1 && "border-b",
                   )}
-
-                  {c.checkInTime && (
-                    <div className="mt-3 flex gap-4 text-xs">
-                      <span className="text-muted-foreground">
-                        Check-in:{" "}
-                        <span className="font-medium text-foreground">
-                          {new Date(c.checkInTime).toLocaleTimeString("id-ID", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </span>
-                      {c.checkOutTime && (
-                        <>
-                          <span className="text-muted-foreground">
-                            Check-out:{" "}
-                            <span className="font-medium text-foreground">
-                              {new Date(c.checkOutTime).toLocaleTimeString("id-ID", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </span>
-                          {c.durationMinutes && (
-                            <span className="text-muted-foreground">
-                              Durasi:{" "}
-                              <span className="font-medium text-foreground">
-                                {c.durationMinutes} mnt
-                              </span>
-                            </span>
-                          )}
-                        </>
-                      )}
-                      {c.isLate && (
-                        <Badge variant="destructive" className="text-[10px]">
-                          Terlambat
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-
-                  {c.isSubstitute && c.lessonPlanId && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="mt-2 w-full"
-                      onClick={() =>
-                        setHandoverClassId((prev) => (prev === c.classId ? null : c.classId))
-                      }
-                    >
-                      {handoverClassId === c.classId ? "Tutup Handover Summary" : "Lihat Handover Summary"}
-                    </Button>
-                  )}
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {noLp && (
-                      <Link
-                        href="/lesson-plan/new"
-                        className={cn(buttonVariants({ size: "sm", variant: "outline" }), "w-full")}
-                      >
-                        Buat Lesson Plan
-                      </Link>
-                    )}
-
-                    {!noLp && c.meetingStatus === "not_started" && (
-                      <Button
-                        size="sm"
-                        className="w-full bg-[#4b60ac] hover:bg-[#3d4f92]"
-                        disabled={startClass.isPending}
-                        onClick={() =>
-                          startClass.mutate(c.lessonPlanId!, {
-                            onSuccess: () => {
-                              setExpandedClassId(c.classId);
-                            },
-                          })
-                        }
-                      >
-                        {startClass.isPending ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <Play className="size-4" />
-                        )}
-                        <span className="ml-1.5">Mulai Kelas</span>
-                      </Button>
-                    )}
-
-                    {c.meetingStatus === "checked_in" && (
-                      <div className="w-full space-y-2">
-                        <Link
-                          href="/absensi"
-                          className={cn(
-                            buttonVariants({ size: "sm" }),
-                            "w-full bg-[#eda100] hover:bg-[#c98500]",
-                          )}
-                        >
-                          <ClipboardCheck className="size-4" />
-                          <span className="ml-1.5">Isi Absensi Siswa</span>
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => toggleExpand(c.classId)}
-                          className="text-muted-foreground flex w-full items-center justify-center gap-1.5 text-xs hover:text-foreground"
-                        >
-                          <Camera className="size-3.5" />
-                          {isExpanded ? "Tutup foto kelas" : "Tambah foto kelas (opsional)"}
-                        </button>
-                      </div>
-                    )}
-
-                    {c.meetingStatus === "attendance_done" && (
-                      <div className="flex w-full gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1"
-                          onClick={() => toggleExpand(c.classId)}
-                        >
-                          Lihat Lesson Plan
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="flex-1 bg-[#eda100] hover:bg-[#c98500]"
-                          disabled={checkOut.isPending}
-                          onClick={() => checkOut.mutate(c.meetingId!)}
-                        >
-                          {checkOut.isPending ? (
-                            <Loader2 className="size-4 animate-spin" />
-                          ) : (
-                            <LogOut className="size-4" />
-                          )}
-                          <span className="ml-1.5">Check-out</span>
-                        </Button>
-                      </div>
-                    )}
-
-                    {c.meetingStatus === "checked_out" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full border-[#4b60ac]/40 text-[#4b60ac] hover:bg-[#4b60ac]/10"
-                        onClick={() => toggleExpand(c.classId)}
-                      >
-                        {isExpanded ? (
-                          "Tutup"
-                        ) : (
-                          <>
-                            <FileText className="size-4" />
-                            <span className="ml-1.5">Isi Daily Teaching Report</span>
-                          </>
-                        )}
-                      </Button>
-                    )}
-
-                    {c.meetingStatus === "report_submitted" && (
-                      <div className="flex w-full items-center gap-2 rounded-md bg-[#1baf7a]/10 px-3 py-2 text-sm">
-                        <CheckCircle className="size-4 text-[#1baf7a]" />
-                        <span className="font-medium text-[#0e7a53]">Kelas selesai!</span>
-                      </div>
-                    )}
-
-                    {c.meetingStatus === "course_completed" && (
-                      <div className="flex w-full items-center gap-2 rounded-md bg-[#1baf7a]/10 px-3 py-2 text-sm">
-                        <CheckCircle className="size-4 text-[#1baf7a]" />
-                        <span className="font-medium text-[#0e7a53]">Semua pertemuan telah selesai</span>
-                      </div>
-                    )}
+                >
+                  <span className={cn("h-9 w-1 shrink-0 rounded-full", status.barColor)} />
+                  <ClassAvatar name={c.className} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{c.className}</p>
+                    <span className="text-muted-foreground flex items-center gap-1 text-xs">
+                      <Clock className="size-3 shrink-0" />
+                      {c.scheduleStartTime} - {c.scheduleEndTime}
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
-
-              {handoverClassId === c.classId && c.lessonPlanId && (
-                <Card>
-                  <CardContent className="pt-4">
-                    <h3 className="mb-3 text-sm font-medium">Handover Summary</h3>
-                    <HandoverSummaryPanel classId={c.classId} lessonPlanId={c.lessonPlanId} />
-                  </CardContent>
-                </Card>
-              )}
-
-              {isExpanded && c.meetingStatus === "checked_in" && c.meetingId && (
-                <Card className="overflow-hidden border-2 border-[#eda100]/20 py-0">
-                  <div className="flex items-center gap-2 bg-[#eda100]/10 px-4 py-2.5">
-                    <Camera className="size-4 text-[#a3730a]" />
-                    <h3 className="text-sm font-semibold text-[#a3730a]">Foto Kelas</h3>
-                  </div>
-                  <CardContent className="pt-4">
-                    <FileUpload
-                      onUploaded={(driveFileId, fileName) => {
-                        if (driveFileId) {
-                          updateCheckInPhoto(c.meetingId!, driveFileId, fileName);
-                        }
-                      }}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-
-              {isExpanded &&
-                c.meetingStatus === "attendance_done" &&
-                c.lessonPlanId && (
-                  <Card>
-                    <CardContent className="pt-4">
-                      <h3 className="mb-2 text-sm font-medium">Lesson Plan</h3>
-                      <div className="space-y-2 text-sm">
-                        <p>
-                          <span className="text-muted-foreground">Topic:</span>{" "}
-                          <span className="font-medium">{c.topic}</span>
-                        </p>
-                        {c.learningObjectives.length > 0 && (
-                          <div>
-                            <span className="text-muted-foreground">Objectives:</span>
-                            <ul className="list-disc space-y-0.5 pl-5">
-                              {c.learningObjectives.map((o, i) => (
-                                <li key={i}>{o}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {c.skills.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {c.skills.map((s) => (
-                              <Badge key={s} variant="secondary" className="text-xs">
-                                {s}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                        {c.moduleFileName && (
-                          <a
-                            href={`https://drive.google.com/file/d/${c.moduleDriveFileId}/view`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-primary flex items-center gap-1.5 text-xs hover:underline"
-                          >
-                            <FileText className="size-3.5" />
-                            {c.moduleFileName}
-                          </a>
-                        )}
-                        <Link
-                          href={`/lesson-plan/${c.lessonPlanId}`}
-                          className="text-primary inline-block text-xs hover:underline"
-                        >
-                          Lihat lengkap →
-                        </Link>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-              {isExpanded &&
-                c.meetingStatus === "checked_out" &&
-                c.meetingId && (
-                  <Card>
-                    <CardContent className="pt-4">
-                      <h3 className="mb-3 text-sm font-medium">Daily Teaching Report</h3>
-                      <ReportForm
-                        meetingId={c.meetingId}
-                        classId={c.classId}
-                        learningObjectives={c.learningObjectives}
-                        curriculumReportFormat={c.curriculumReportFormat}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-            </div>
-          );
-        })}
+                  <Badge variant={status.variant} className={cn("shrink-0 text-[11px] whitespace-nowrap", status.accent)}>
+                    {status.label}
+                  </Badge>
+                  <ChevronRight className="text-muted-foreground/50 size-4 shrink-0" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

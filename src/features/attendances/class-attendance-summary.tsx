@@ -158,10 +158,19 @@ export function ClassAttendanceSummary({ classId }: { classId: string }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-medium">Kehadiran Siswa</h2>
         {!isLoading && data && data.length > 0 && (
           <div className="flex items-center gap-2">
+            <div className="relative min-w-0 flex-1 sm:flex-initial">
+              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari siswa..."
+                className="border-input h-8 w-full rounded-md border bg-transparent py-1 pr-2 pl-8 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50 sm:w-40"
+              />
+            </div>
             <ExportExcelButton
               filename="absensi-siswa"
               sheets={[
@@ -173,15 +182,6 @@ export function ClassAttendanceSummary({ classId }: { classId: string }) {
                 },
               ]}
             />
-            <div className="relative">
-              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Cari siswa..."
-                className="border-input h-8 rounded-md border bg-transparent py-1 pr-2 pl-8 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-              />
-            </div>
           </div>
         )}
       </div>
