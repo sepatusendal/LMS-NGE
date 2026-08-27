@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ClassAvatar } from "@/components/shared/class-avatar";
 import { LoadingState } from "@/components/shared/loading-state";
+import { LessonPlanTabs } from "@/components/shared/lesson-plan-tabs";
 import { useMyClasses, type MyClass } from "@/features/classes/use-my-classes";
 import { DAY_OPTIONS } from "@/features/classes/schema";
 import { getCurriculumTheme } from "@/lib/curriculum-theme";
@@ -30,6 +31,7 @@ export default function JadwalPage() {
 
   return (
     <div className="space-y-6">
+      <LessonPlanTabs />
       <div>
         <h1 className="text-xl font-bold">Jadwal Mengajar</h1>
         <p className="text-muted-foreground text-sm">Jadwal mingguan semua kelasmu</p>
