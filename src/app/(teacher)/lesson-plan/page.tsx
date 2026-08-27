@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { ModuleBadge } from "@/components/shared/module-cover";
 import { ClassAvatar } from "@/components/shared/class-avatar";
 import { LoadingState } from "@/components/shared/loading-state";
+import { LessonPlanTabs } from "@/components/shared/lesson-plan-tabs";
 import { useMyClasses } from "@/features/classes/use-my-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
 import { formatScheduleSlots } from "@/features/classes/schema";
@@ -29,6 +30,7 @@ export default function LessonPlanPage() {
 
   return (
     <div className="space-y-8">
+      <LessonPlanTabs />
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">Lesson Plan</h1>
