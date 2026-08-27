@@ -1,20 +1,59 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Clock, MapPin, NotebookPen, Users } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { ChevronDown, ChevronRight, Clock, MapPin, School, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ModuleCoverBanner } from "@/components/shared/module-cover";
 import { ClassAvatar } from "@/components/shared/class-avatar";
 import { LoadingState } from "@/components/shared/loading-state";
-import { useMyClasses } from "@/features/classes/use-my-classes";
+import { useMyClasses, type MyClass } from "@/features/classes/use-my-classes";
 import { formatScheduleSlots } from "@/features/classes/schema";
+
+interface SchoolGroup {
+  schoolName: string;
+  classes: MyClass[];
+}
 
 export default function KelasPage() {
   const { data: classes, isLoading } = useMyClasses();
 
+  const groups = useMemo<SchoolGroup[]>(() => {
+    if (!classes) return [];
+    const bySchool = new Map<string, MyClass[]>();
+    for (const c of classes) {
+      const list = bySchool.get(c.schoolName) ?? [];
+      list.push(c);
+      bySchool.set(c.schoolName, list);
+    }
+    return [...bySchool.entries()]
+      .map(([schoolName, list]) => ({ schoolName, classes: list }))
+      .sort((a, b) => a.schoolName.localeCompare(b.schoolName));
+  }, [classes]);
+
+  // Every section starts open when there's just one school (the common
+  // case — no reason to make a teacher tap to see their only school's
+  // classes); only the first section starts open when there's more than
+  // one, so the list opens up manageable instead of a full wall of cards.
+  const [openSchools, setOpenSchools] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (groups.length === 0) return;
+    setOpenSchools(new Set([groups[0].schoolName]));
+  }, [groups]);
+
+  function toggleSection(schoolName: string) {
+    setOpenSchools((prev) => {
+      const next = new Set(prev);
+      if (next.has(schoolName)) {
+        next.delete(schoolName);
+      } else {
+        next.add(schoolName);
+      }
+      return next;
+    });
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight">Kelas Saya</h1>
         <p className="text-muted-foreground mt-0.5 text-sm">
@@ -24,7 +63,7 @@ export default function KelasPage() {
 
       {isLoading && <LoadingState />}
 
-      {!isLoading && (!classes || classes.length === 0) && (
+      {!isLoading && groups.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-3xl bg-white px-6 py-14 text-center shadow-sm">
           <Users className="text-muted-foreground mb-3 size-10" />
           <p className="text-muted-foreground text-sm">
@@ -33,62 +72,79 @@ export default function KelasPage() {
         </div>
       )}
 
-      <div className="space-y-4">
-        {classes?.map((c) => {
-          const themeKey = c.module?.curriculumName ?? c.name;
-          return (
-            <div
-              key={c.id}
-              className="space-y-4 rounded-3xl border border-black/5 bg-white p-4 shadow-[0_2px_12px_-4px_rgba(20,25,50,0.08)] transition-shadow hover:shadow-[0_4px_16px_-4px_rgba(20,25,50,0.14)] sm:p-5"
-            >
-              <Link
-                href={`/kelas/${c.id}`}
-                className="-m-1 flex items-start gap-3.5 rounded-2xl p-1 active:opacity-70"
-              >
-                <ClassAvatar name={c.name} themeKey={themeKey} size="lg" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-lg leading-tight font-bold">{c.name}</p>
-                  <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                    <span>{c.schoolName}</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="size-3" />
-                      {formatScheduleSlots(c.scheduleSlots)}
-                    </span>
-                    {c.room && (
-                      <span className="flex items-center gap-1">
-                        <MapPin className="size-3" />
-                        {c.room}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <ChevronRight className="text-muted-foreground/50 mt-1 size-5 shrink-0" />
-              </Link>
-
-              <ModuleCoverBanner module={c.module} />
-
-              <div className="flex gap-2">
-                <Link
-                  href={`/kelas/${c.id}`}
-                  className={cn(buttonVariants({ size: "sm", variant: "outline" }), "flex-1")}
-                >
-                  <Users className="size-4" />
-                  Detail Kelas
-                </Link>
-                {c.isPrimary && (
-                  <Link
-                    href="/lesson-plan/new"
-                    className={cn(buttonVariants({ size: "sm", variant: "outline" }), "flex-1")}
-                  >
-                    <NotebookPen className="size-4" />
-                    Buat Lesson Plan
-                  </Link>
-                )}
-              </div>
-            </div>
-          );
-        })}
+      <div className="space-y-5">
+        {groups.map((group) => (
+          <SchoolSection
+            key={group.schoolName}
+            group={group}
+            open={openSchools.has(group.schoolName)}
+            onToggle={() => toggleSection(group.schoolName)}
+          />
+        ))}
       </div>
+    </div>
+  );
+}
+
+function SchoolSection({
+  group,
+  open,
+  onToggle,
+}: {
+  group: SchoolGroup;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="space-y-2.5">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-2 px-1 py-1 text-left"
+      >
+        <ChevronDown
+          className={cn(
+            "text-muted-foreground size-4 shrink-0 transition-transform",
+            !open && "-rotate-90",
+          )}
+        />
+        <School className="text-muted-foreground size-4 shrink-0" />
+        <span className="text-sm font-bold">{group.schoolName}</span>
+        <span className="text-muted-foreground text-xs">({group.classes.length} kelas)</span>
+      </button>
+
+      {open && (
+        <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+          {group.classes.map((c, i) => (
+            <Link
+              key={c.id}
+              href={`/kelas/${c.id}`}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-muted/50 active:bg-muted",
+                i !== group.classes.length - 1 && "border-b",
+              )}
+            >
+              <ClassAvatar name={c.name} themeKey={c.module?.curriculumName ?? c.name} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold">{c.name}</p>
+                <div className="text-muted-foreground flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs">
+                  <span className="flex items-center gap-1">
+                    <Clock className="size-3" />
+                    {formatScheduleSlots(c.scheduleSlots)}
+                  </span>
+                  {c.room && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="size-3" />
+                      {c.room}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <ChevronRight className="text-muted-foreground/50 size-4 shrink-0" />
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
