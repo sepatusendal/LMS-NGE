@@ -3,15 +3,20 @@
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Combobox,
+  ComboboxClear,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxInputGroup,
+  ComboboxItem,
+  ComboboxLoadingIcon,
+  ComboboxStatus,
+} from "@/components/ui/combobox";
 import {
   Table,
   TableBody,
@@ -21,7 +26,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useClass } from "@/features/classes/use-classes";
-import { useStudents } from "@/features/students/use-students";
+import { useStudentSearch } from "@/features/students/use-students";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import {
   useClassRoster,
   useEnrollStudent,
@@ -43,18 +49,21 @@ export default function ClassDetailPage() {
   const rosterLabel = classItem?.classType === "TEACHER_TRAINING" ? "Roster Peserta" : "Roster Siswa";
 
   const { data: roster, isLoading: rosterLoading } = useClassRoster(classId);
-  const { data: allStudents } = useStudents();
   const enrollStudent = useEnrollStudent(classId);
   const unenrollStudent = useUnenrollStudent(classId);
-  const [selectedStudentId, setSelectedStudentId] = useState("");
 
-  const enrollableStudents = useMemo(() => {
-    if (!allStudents || !classItem) return [];
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput, 300);
+  const { data: searchResults, isFetching: searching } = useStudentSearch(
+    debouncedSearch,
+    classItem?.schoolId,
+  );
+
+  const enrollableResults = useMemo(() => {
+    if (!searchResults) return [];
     const enrolledIds = new Set((roster ?? []).map((r) => r.studentId));
-    return allStudents.filter(
-      (s) => s.schoolId === classItem.schoolId && !enrolledIds.has(s.id),
-    );
-  }, [allStudents, classItem, roster]);
+    return searchResults.filter((s) => !enrolledIds.has(s.id));
+  }, [searchResults, roster]);
 
   if (!classItem) {
     return (
@@ -97,36 +106,44 @@ export default function ClassDetailPage() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="font-medium">{rosterLabel}</h2>
-          <div className="flex gap-2">
-            <Select
-              items={enrollableStudents.map((s) => ({
-                value: s.id,
-                label: s.fullName,
-              }))}
-              value={selectedStudentId}
-              onValueChange={(value) => setSelectedStudentId(value ?? "")}
-            >
-              <SelectTrigger className="w-56">
-                <SelectValue placeholder="Pilih siswa" />
-              </SelectTrigger>
-              <SelectContent>
-                {enrollableStudents.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.fullName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              disabled={!selectedStudentId || enrollStudent.isPending}
-              onClick={() => {
-                enrollStudent.mutate(selectedStudentId);
-                setSelectedStudentId("");
-              }}
-            >
-              Tambahkan
-            </Button>
-          </div>
+          <Combobox
+            items={enrollableResults.map((s) => ({ value: s.id, label: s.fullName }))}
+            itemToStringLabel={(id: string) =>
+              enrollableResults.find((s) => s.id === id)?.fullName ?? ""
+            }
+            inputValue={searchInput}
+            onInputValueChange={setSearchInput}
+            filter={null}
+            onValueChange={(studentId) => {
+              if (typeof studentId !== "string") return;
+              enrollStudent.mutate(studentId);
+              setSearchInput("");
+            }}
+          >
+            <ComboboxInputGroup className="w-72">
+              <ComboboxInput placeholder="Cari nama siswa untuk ditambahkan..." />
+              <ComboboxLoadingIcon loading={searching || enrollStudent.isPending} />
+              <ComboboxClear />
+            </ComboboxInputGroup>
+            <ComboboxContent>
+              {searchInput.trim().length === 0 ? (
+                <ComboboxStatus>
+                  <UserPlus className="size-3.5" />
+                  Ketik nama siswa untuk mencari
+                </ComboboxStatus>
+              ) : (
+                <ComboboxEmpty>
+                  Tidak ada siswa dengan nama &quot;{searchInput}&quot;
+                </ComboboxEmpty>
+              )}
+              {enrollableResults.map((s) => (
+                <ComboboxItem key={s.id} value={s.id}>
+                  {s.fullName}
+                  {s.nis ? ` · ${s.nis}` : ""}
+                </ComboboxItem>
+              ))}
+            </ComboboxContent>
+          </Combobox>
         </div>
 
         <div className="rounded-lg border">

@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import {
   createStudent,
   fetchStudents,
+  searchStudents,
   setStudentActive,
   updateStudent,
 } from "./queries";
@@ -17,12 +18,26 @@ export function useStudents(schoolId?: string) {
   });
 }
 
+/** Search-as-you-type student lookup for pickers — pass the caller's own
+ * debounced query so keystrokes don't each fire a request. */
+export function useStudentSearch(query: string, schoolId?: string) {
+  const q = query.trim();
+  return useQuery({
+    queryKey: [...STUDENTS_KEY, "search", q, schoolId || "all"],
+    queryFn: () => searchStudents({ query: q, schoolId }),
+    enabled: q.length > 0,
+  });
+}
+
 export function useCreateStudent() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: StudentInput) => createStudent(input),
-    onSuccess: () => {
+    onSuccess: (_data, input) => {
       queryClient.invalidateQueries({ queryKey: STUDENTS_KEY });
+      if (input.classId) {
+        queryClient.invalidateQueries({ queryKey: ["class-roster", input.classId] });
+      }
       toast.success("Siswa berhasil ditambahkan");
     },
     onError: (error) =>

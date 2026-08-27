@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Clock, MapPin, NotebookPen, Users } from "lucide-react";
+import { ChevronRight, Clock, MapPin, NotebookPen, Users } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ModuleCoverBanner } from "@/components/shared/module-cover";
@@ -39,9 +39,12 @@ export default function KelasPage() {
           return (
             <div
               key={c.id}
-              className="space-y-4 rounded-3xl border border-black/5 bg-white p-4 shadow-[0_2px_12px_-4px_rgba(20,25,50,0.08)] sm:p-5"
+              className="space-y-4 rounded-3xl border border-black/5 bg-white p-4 shadow-[0_2px_12px_-4px_rgba(20,25,50,0.08)] transition-shadow hover:shadow-[0_4px_16px_-4px_rgba(20,25,50,0.14)] sm:p-5"
             >
-              <div className="flex items-start gap-3.5">
+              <Link
+                href={`/kelas/${c.id}`}
+                className="-m-1 flex items-start gap-3.5 rounded-2xl p-1 active:opacity-70"
+              >
                 <ClassAvatar name={c.name} themeKey={themeKey} size="lg" />
                 <div className="min-w-0 flex-1">
                   <p className="text-lg leading-tight font-bold">{c.name}</p>
@@ -59,19 +62,29 @@ export default function KelasPage() {
                     )}
                   </div>
                 </div>
-              </div>
+                <ChevronRight className="text-muted-foreground/50 mt-1 size-5 shrink-0" />
+              </Link>
 
               <ModuleCoverBanner module={c.module} />
 
-              {c.isPrimary && (
+              <div className="flex gap-2">
                 <Link
-                  href="/lesson-plan/new"
-                  className={cn(buttonVariants({ size: "sm", variant: "outline" }), "w-full")}
+                  href={`/kelas/${c.id}`}
+                  className={cn(buttonVariants({ size: "sm", variant: "outline" }), "flex-1")}
                 >
-                  <NotebookPen className="size-4" />
-                  Buat Lesson Plan
+                  <Users className="size-4" />
+                  Detail Kelas
                 </Link>
-              )}
+                {c.isPrimary && (
+                  <Link
+                    href="/lesson-plan/new"
+                    className={cn(buttonVariants({ size: "sm", variant: "outline" }), "flex-1")}
+                  >
+                    <NotebookPen className="size-4" />
+                    Buat Lesson Plan
+                  </Link>
+                )}
+              </div>
             </div>
           );
         })}
