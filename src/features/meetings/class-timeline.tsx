@@ -30,6 +30,7 @@ function TimelineItem({
   isLast,
   totalEnrolled,
   canReassign,
+  canManage,
   onReassign,
   onManageMeeting,
 }: {
@@ -37,6 +38,7 @@ function TimelineItem({
   isLast: boolean;
   totalEnrolled: number;
   canReassign: boolean;
+  canManage: boolean;
   onReassign: (entry: TimelineEntry) => void;
   onManageMeeting: (entry: TimelineEntry) => void;
 }) {
@@ -105,7 +107,7 @@ function TimelineItem({
                 Substitute
               </Badge>
             )}
-            {canReassign && (
+            {canManage && canReassign && (
               <Button
                 size="sm"
                 variant="ghost"
@@ -116,7 +118,7 @@ function TimelineItem({
                 {entry.isSubstitute ? "Kelola" : "Ganti Tutor"}
               </Button>
             )}
-            {hasMeeting && (
+            {canManage && hasMeeting && (
               <Button
                 size="sm"
                 variant="ghost"
@@ -209,9 +211,14 @@ function TimelineItem({
 export function ClassTimeline({
   classId,
   classDisplayName,
+  canManage = true,
 }: {
   classId: string;
   classDisplayName?: string;
+  /** Hides "Ganti Tutor" / "Kelola Meeting" actions for read-only viewers
+   * (e.g. a teacher looking at their own class) — defaults to on so the
+   * admin class detail page keeps its existing behavior. */
+  canManage?: boolean;
 }) {
   const { data, isLoading } = useClassTimeline(classId);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -281,20 +288,25 @@ export function ClassTimeline({
             isLast={i === data.timeline.length - 1}
             totalEnrolled={data.totalEnrolled}
             canReassign={canReassign}
+            canManage={canManage}
             onReassign={openReassignDialog}
             onManageMeeting={openManageDialog}
           />
         );
       })}
 
-      <ReassignTutorDialog open={dialogOpen} onOpenChange={setDialogOpen} target={target} />
-      <MeetingAdminDialog
-        open={manageOpen}
-        onOpenChange={setManageOpen}
-        meetingId={manageEntry?.meetingId ?? null}
-        classId={classId}
-        meetingLabel={manageEntry ? `Meeting ${manageEntry.meetingNumber} — ${manageEntry.topic}` : ""}
-      />
+      {canManage && (
+        <>
+          <ReassignTutorDialog open={dialogOpen} onOpenChange={setDialogOpen} target={target} />
+          <MeetingAdminDialog
+            open={manageOpen}
+            onOpenChange={setManageOpen}
+            meetingId={manageEntry?.meetingId ?? null}
+            classId={classId}
+            meetingLabel={manageEntry ? `Meeting ${manageEntry.meetingNumber} — ${manageEntry.topic}` : ""}
+          />
+        </>
+      )}
     </div>
   );
 }
