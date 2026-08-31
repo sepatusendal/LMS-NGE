@@ -57,11 +57,21 @@ langsung:
 
 ## 4. Reset password
 
-- **Teacher**: ada tombolnya di app — Admin → **Teacher** → **Edit** baris
-  teacher yang dimaksud → **Reset Password**. Password baru di-generate
-  otomatis dan ditampilkan **sekali** di dialog (`resetTeacherPassword` di
-  `src/features/teachers/actions.ts`, lewat `admin.auth.admin.updateUserById`)
-  — catat dan sampaikan langsung, tidak bisa dilihat ulang.
+- **Teacher (oleh diri sendiri)**: teacher bisa ganti password sendiri lewat
+  **Profil → Ganti Password** di aplikasi mobile-nya. Diminta masukin
+  password lama dulu (di-verifikasi lewat `signInWithPassword`, muncul error
+  "Password saat ini salah" kalau keliru), baru boleh set password baru lewat
+  `supabase.auth.updateUser`. Komponennya di
+  `src/features/auth/change-password-card.tsx`, dipasang di
+  `src/app/(teacher)/profile/page.tsx` — tidak butuh admin/server action
+  karena cuma mengubah sesi milik sendiri.
+- **Teacher (oleh Admin)**: ada tombolnya di app — Admin → **Teacher** →
+  **Edit** baris teacher yang dimaksud → **Reset Password**. Password baru
+  di-generate otomatis dan ditampilkan **sekali** di dialog
+  (`resetTeacherPassword` di `src/features/teachers/actions.ts`, lewat
+  `admin.auth.admin.updateUserById`) — catat dan sampaikan langsung, tidak
+  bisa dilihat ulang. Pakai ini kalau teacher lupa password lamanya (karena
+  cara self-service di atas butuh password lama).
 - **Admin/Coordinator**: belum ada tombolnya di app, reset lewat Supabase
   dashboard project yang sesuai → **Authentication → Users** → klik user →
   **Reset Password** (kirim email reset), atau **"..." menu → Reset Password**

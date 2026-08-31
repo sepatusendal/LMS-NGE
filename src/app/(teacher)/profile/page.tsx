@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
+import { ChangePasswordCard } from "@/features/auth/change-password-card";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -48,6 +49,8 @@ export default function ProfilePage() {
           )}
         </CardContent>
       </Card>
+
+      <ChangePasswordCard />
 
       <Button variant="outline" className="w-full" onClick={handleLogout}>
         <LogOut className="size-4" aria-hidden="true" />
