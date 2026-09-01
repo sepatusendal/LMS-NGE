@@ -90,6 +90,13 @@ together once the Supabase side is confirmed working locally.
   as a generic seeder) — don't run them against staging. Create test
   schools/classes/students through the app's own Admin UI instead, or ask for a
   dedicated staging seed script if you want a quick way to populate sample data.
-- Migrations are applied to staging manually (`npm run db:migrate:staging`) — they
-  are not automatically kept in sync with prod. Before testing a change, re-run that
-  command if new migrations were added.
+- Migrations are applied to each environment manually — staging via
+  `npm run db:migrate:staging`, prod via `npm run db:migrate:prod` — and are
+  **not** automatically kept in sync with each other. Before testing a change,
+  re-run the staging command if new migrations were added; **and don't forget
+  the prod command too**, once the change is verified on staging. Skipping the
+  prod run is exactly what caused a 2026-08-31 incident: prod silently fell 2
+  migrations behind staging, and every class-listing query broke app-wide
+  (missing `curriculums.reportFormat` column caused a SQL error on every
+  request). Always run both commands, one right after the other, whenever a
+  new migration file is added.

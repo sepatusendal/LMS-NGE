@@ -12,7 +12,9 @@
     "dev:staging": "dotenv -e .env.staging -- next dev --turbopack",
     "build:staging": "dotenv -e .env.staging -- next build --turbopack",
     "db:migrate:staging": "dotenv -e .env.staging -- prisma migrate deploy",
-    "db:studio:staging": "dotenv -e .env.staging -- prisma studio"
+    "db:studio:staging": "dotenv -e .env.staging -- prisma studio",
+    "db:migrate:prod": "dotenv -e .env -- prisma migrate deploy",
+    "db:studio:prod": "dotenv -e .env -- prisma studio"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
