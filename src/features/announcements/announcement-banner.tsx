@@ -6,19 +6,23 @@ import { Button } from "@/components/ui/button";
 import { useDismissAnnouncement, useMyAnnouncements } from "./use-announcements";
 import { ANNOUNCEMENT_THEME } from "./schema";
 
-/** Dismissible pengumuman banner — mounted once near the top of each
- * role's landing page (teacher "Hari Ini", admin Dashboard, coordinator
- * Monitoring). Renders nothing once the user has dismissed every active
- * announcement, so it never permanently reserves layout space. */
+/** Dismissible pengumuman banner for the "Banner" display mode — mounted
+ * once below each role's hero header (teacher "Hari Ini", admin Dashboard,
+ * coordinator Monitoring), never above it, so it reads as a secondary
+ * dashboard card rather than an ad interrupting the page. "Pop-up" mode
+ * announcements are handled separately by <AnnouncementPopup />. Renders
+ * nothing once the user has dismissed every active banner, so it never
+ * permanently reserves layout space. */
 export function AnnouncementBanner() {
   const { data: announcements, isLoading } = useMyAnnouncements();
   const dismiss = useDismissAnnouncement();
 
-  if (isLoading || !announcements || announcements.length === 0) return null;
+  const banners = (announcements ?? []).filter((a) => a.displayMode === "BANNER");
+  if (isLoading || banners.length === 0) return null;
 
   return (
     <div className="space-y-3">
-      {announcements.map((a) => {
+      {banners.map((a) => {
         const theme = ANNOUNCEMENT_THEME[a.type];
         const Illustration = theme.Illustration;
         return (
@@ -39,7 +43,7 @@ export function AnnouncementBanner() {
                   {a.body}
                 </p>
               </div>
-              <Illustration className="hidden h-20 w-20 shrink-0 sm:block" />
+              <Illustration className="hidden h-20 w-20 shrink-0 sm:block" uid={`banner-${a.id}`} />
             </div>
 
             <Button

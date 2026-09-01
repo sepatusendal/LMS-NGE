@@ -81,6 +81,9 @@ function AnnouncementRow({ announcement: a, expired }: { announcement: Announcem
             >
               {theme.label}
             </Badge>
+            <Badge variant="secondary" className="text-[10px]">
+              {a.displayMode === "POPUP" ? "Pop-up" : "Banner"}
+            </Badge>
             {expired && (
               <Badge variant="secondary" className="text-[10px]">
                 Kadaluarsa

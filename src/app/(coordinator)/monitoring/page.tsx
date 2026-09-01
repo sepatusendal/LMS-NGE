@@ -2,10 +2,13 @@ import { ComplianceAlert } from "@/features/lesson-plans/compliance-alert";
 import { StatusBoard } from "@/features/monitoring/status-board";
 import { AnalyticsCharts } from "@/features/monitoring/analytics-charts";
 import { AnnouncementBanner } from "@/features/announcements/announcement-banner";
+import { AnnouncementPopup } from "@/features/announcements/announcement-popup";
 
 export default function MonitoringPage() {
   return (
     <div className="space-y-6">
+      <AnnouncementPopup />
+
       <div>
         <h1 className="text-xl font-semibold">Monitoring</h1>
         <p className="text-muted-foreground text-sm">

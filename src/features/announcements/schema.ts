@@ -9,10 +9,14 @@ import {
 export const ANNOUNCEMENT_TYPES = ["INFO", "SUCCESS", "CELEBRATION", "MAINTENANCE"] as const;
 export type AnnouncementType = (typeof ANNOUNCEMENT_TYPES)[number];
 
+export const ANNOUNCEMENT_DISPLAY_MODES = ["BANNER", "POPUP"] as const;
+export type AnnouncementDisplayMode = (typeof ANNOUNCEMENT_DISPLAY_MODES)[number];
+
 export const announcementSchema = z.object({
   title: z.string().min(1, "Judul wajib diisi").max(80, "Judul maksimal 80 karakter"),
   body: z.string().min(1, "Isi pengumuman wajib diisi").max(500, "Isi maksimal 500 karakter"),
   type: z.enum(ANNOUNCEMENT_TYPES),
+  displayMode: z.enum(ANNOUNCEMENT_DISPLAY_MODES),
   expiresAt: z.string().nullable(),
 });
 export type AnnouncementInput = z.infer<typeof announcementSchema>;
@@ -22,15 +26,27 @@ export interface Announcement {
   title: string;
   body: string;
   type: AnnouncementType;
+  displayMode: AnnouncementDisplayMode;
   isActive: boolean;
   createdByName: string;
   expiresAt: string | null;
   createdAt: string;
 }
 
+export const DISPLAY_MODE_INFO: Record<AnnouncementDisplayMode, { label: string; description: string }> = {
+  BANNER: {
+    label: "Banner",
+    description: "Kartu di dashboard, gak mengganggu — bisa dilihat kapan saja.",
+  },
+  POPUP: {
+    label: "Pop-up",
+    description: "Jendela yang langsung muncul saat dibuka — buat info penting yang wajib dibaca.",
+  },
+};
+
 interface AnnouncementTheme {
   label: string;
-  Illustration: (props: { className?: string }) => React.JSX.Element;
+  Illustration: (props: { className?: string; uid?: string }) => React.JSX.Element;
   /** Soft tinted card background/border, matching the existing
    * `bg-[color]/10 border-[color]/20` pattern used for the lesson-plan
    * due banner on the teacher dashboard. */

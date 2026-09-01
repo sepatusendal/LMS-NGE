@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/client";
-import type { Announcement, AnnouncementInput, AnnouncementType } from "./schema";
+import type { Announcement, AnnouncementDisplayMode, AnnouncementInput, AnnouncementType } from "./schema";
 
 interface AnnouncementRow {
   id: string;
   title: string;
   body: string;
   type: AnnouncementType;
+  displayMode: AnnouncementDisplayMode;
   isActive: boolean;
   expiresAt: string | null;
   createdAt: string;
@@ -23,6 +24,7 @@ function mapRow(row: AnnouncementRow): Announcement {
     title: row.title,
     body: row.body,
     type: row.type,
+    displayMode: row.displayMode,
     isActive: row.isActive,
     createdByName: toOne(row.users)?.fullName ?? "-",
     expiresAt: row.expiresAt,
@@ -30,7 +32,7 @@ function mapRow(row: AnnouncementRow): Announcement {
   };
 }
 
-const SELECT = "id, title, body, type, isActive, expiresAt, createdAt, users(fullName)";
+const SELECT = "id, title, body, type, displayMode, isActive, expiresAt, createdAt, users(fullName)";
 
 /** Full list for the admin management page — every announcement regardless
  * of active/expired state. */
@@ -85,6 +87,7 @@ export async function createAnnouncement(input: AnnouncementInput): Promise<void
     title: input.title,
     body: input.body,
     type: input.type,
+    displayMode: input.displayMode,
     expiresAt: input.expiresAt || null,
     createdByUserId: user.id,
   });

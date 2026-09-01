@@ -50,6 +50,11 @@ enum AnnouncementType {
   MAINTENANCE
 }
 
+enum AnnouncementDisplayMode {
+  BANNER
+  POPUP
+}
+
 // ─────────────────────────────────────────────────────────────
 // Identity
 // ─────────────────────────────────────────────────────────────
@@ -550,7 +555,8 @@ model Announcement {
   id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title           String
   body            String
-  type            AnnouncementType @default(INFO)
+  type            AnnouncementType        @default(INFO)
+  displayMode     AnnouncementDisplayMode @default(BANNER)
   isActive        Boolean          @default(true)
   createdByUserId String           @db.Uuid
   expiresAt       DateTime?        @db.Timestamptz(3)
