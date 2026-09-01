@@ -16,6 +16,7 @@ import { getTimeGreeting } from "@/lib/greeting";
 import { TimeOfDayIllustration } from "@/components/shared/time-of-day-illustration";
 import { useComplianceCount } from "@/features/lesson-plans/use-compliance-count";
 import { AnnouncementBanner } from "@/features/announcements/announcement-banner";
+import { AnnouncementPopup } from "@/features/announcements/announcement-popup";
 import { AlarmClockCheck } from "lucide-react";
 
 const DONE_STATUSES = new Set(["report_submitted", "course_completed"]);
@@ -45,7 +46,7 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-7">
-      <AnnouncementBanner />
+      <AnnouncementPopup />
 
       <TodayHero
         greeting={greeting}
@@ -55,6 +56,8 @@ export default function TodayPage() {
         totalCount={totalCount}
         hour={now.getHours()}
       />
+
+      <AnnouncementBanner />
 
       <div className="grid grid-cols-2 gap-3">
         <StatCard icon={Layers} label="Kelas diampu" value={stats.classCount} loading={stats.isLoading} />

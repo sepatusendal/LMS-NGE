@@ -1,112 +1,223 @@
-/** Small brand-matched illustrations for each announcement type — same
- * organic-blob + flat-shape language as the login page and the teacher
- * "Hari Ini" empty state (see WelcomeIllustration / RelaxIllustration),
- * so a pengumuman card reads as part of the product, not a bolted-on
- * banner ad. */
+/** Brand-matched illustrations for each announcement type — same organic-
+ * blob + flat-shape language as the login page and the teacher "Hari Ini"
+ * empty state (WelcomeIllustration / RelaxIllustration), dialed up with
+ * gradients + soft shadow so a pengumuman reads as a designed product
+ * moment, not a bolted-on banner ad. Each ships a `<defs>` block, so every
+ * instance on a page needs a unique id suffix — pass `uid` when more than
+ * one of the same type could render at once (banner list + popup). */
 
-export function InfoIllustration({ className }: { className?: string }) {
+function useIds(uid: string) {
+  return {
+    blob: `blob-${uid}`,
+    badge: `badge-${uid}`,
+    shadow: `shadow-${uid}`,
+    ring: `ring-${uid}`,
+  };
+}
+
+export function InfoIllustration({ className, uid = "info" }: { className?: string; uid?: string }) {
+  const id = useIds(uid);
   return (
-    <svg className={className} viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg className={className} viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id={id.blob} cx="50%" cy="42%" r="65%">
+          <stop offset="0%" stopColor="#6b83c9" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#4b60ac" stopOpacity="0.05" />
+        </radialGradient>
+        <linearGradient id={id.badge} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#6b83c9" />
+          <stop offset="100%" stopColor="#3d4f92" />
+        </linearGradient>
+        <filter id={id.shadow} x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="6" stdDeviation="7" floodColor="#4b60ac" floodOpacity="0.22" />
+        </filter>
+      </defs>
+
       <path
-        fill="#4b60ac"
-        fillOpacity="0.12"
-        d="M79.5,-33.4C93.5,-15.3,93.7,17.3,78.6,39.6C63.5,61.9,33.1,73.9,4.6,71.8C-23.9,69.7,-50.5,53.5,-64.9,29.6C-79.3,5.7,-81.5,-25.9,-67.3,-45.9C-53.1,-65.9,-22.5,-74.3,4.2,-76.4C30.9,-78.5,65.5,-51.5,79.5,-33.4Z"
-        transform="translate(70 70)"
+        fill={`url(#${id.blob})`}
+        d="M84.5,-38.4C103.5,-15.3,103.7,20.3,86.6,45.6C69.5,70.9,35.1,85.9,3.6,83.8C-27.9,81.7,-56.5,62.5,-72.9,35.6C-89.3,8.7,-93.5,-25.9,-77.3,-49.9C-61.1,-73.9,-24.5,-87.3,7.2,-88.4C38.9,-89.5,65.5,-61.5,84.5,-38.4Z"
+        transform="translate(80 78) scale(0.72)"
       />
-      <rect x="34" y="40" width="62" height="48" rx="12" fill="#ffffff" />
-      <rect x="34" y="40" width="62" height="48" rx="12" stroke="#4b60ac" strokeOpacity="0.15" strokeWidth="2" />
-      <circle cx="65" cy="60" r="9" fill="#4b60ac" />
-      <path d="M65 55.5 v6 M65 65.2 v0.4" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" />
-      <rect x="42" y="76" width="28" height="4" rx="2" fill="#4b60ac" fillOpacity="0.18" />
-      <rect x="42" y="83" width="18" height="4" rx="2" fill="#4b60ac" fillOpacity="0.18" />
-      <path d="M96 52 L106 45" stroke="#4b60ac" strokeOpacity="0.3" strokeWidth="3" strokeLinecap="round" />
+
+      <g filter={`url(#${id.shadow})`}>
+        <rect x="42" y="48" width="76" height="56" rx="16" fill="#ffffff" />
+      </g>
+      <rect x="42" y="48" width="76" height="56" rx="16" fill="none" stroke="#4b60ac" strokeOpacity="0.12" />
+
+      <circle cx="80" cy="72" r="13" fill={`url(#${id.badge})`} />
+      <path d="M80 66 v9 M80 79.5 v0.6" stroke="#ffffff" strokeWidth="2.6" strokeLinecap="round" />
+
+      <rect x="54" y="90" width="34" height="4.5" rx="2.25" fill="#4b60ac" fillOpacity="0.16" />
+      <rect x="54" y="98" width="22" height="4.5" rx="2.25" fill="#4b60ac" fillOpacity="0.16" />
+
+      <path d="M118 62 L131 52" stroke="#4b60ac" strokeOpacity="0.25" strokeWidth="3.5" strokeLinecap="round" />
+      <path d="M28 108 L18 116" stroke="#eda100" strokeOpacity="0.4" strokeWidth="3" strokeLinecap="round" />
+
       <g fill="#eda100">
-        <circle cx="104" cy="34" r="3" />
-        <circle cx="30" cy="94" r="2.4" />
+        <circle cx="126" cy="38" r="3.4" />
+        <circle cx="30" cy="46" r="2.4" />
+      </g>
+      <g fill="#f15c5d">
+        <circle cx="122" cy="112" r="2.6" />
       </g>
     </svg>
   );
 }
 
-export function SuccessIllustration({ className }: { className?: string }) {
+export function SuccessIllustration({ className, uid = "success" }: { className?: string; uid?: string }) {
+  const id = useIds(uid);
   return (
-    <svg className={className} viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg className={className} viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id={id.blob} cx="50%" cy="42%" r="65%">
+          <stop offset="0%" stopColor="#2fd39a" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#1baf7a" stopOpacity="0.05" />
+        </radialGradient>
+        <linearGradient id={id.badge} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#2fd39a" />
+          <stop offset="100%" stopColor="#149463" />
+        </linearGradient>
+        <filter id={id.shadow} x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="7" stdDeviation="8" floodColor="#1baf7a" floodOpacity="0.3" />
+        </filter>
+      </defs>
+
       <path
-        fill="#1baf7a"
-        fillOpacity="0.12"
-        d="M76.6,-30.5C88.9,-11.8,86.5,17.4,71.2,37.9C55.9,58.4,27.9,70.2,1.6,68.9C-24.8,67.6,-49.6,53.2,-63.4,31.7C-77.3,10.2,-80.2,-18.4,-67.5,-38.1C-54.8,-57.8,-27.4,-68.5,-0.9,-67.9C25.6,-67.4,64.3,-49.2,76.6,-30.5Z"
-        transform="translate(70 70)"
+        fill={`url(#${id.blob})`}
+        d="M81.6,-34.5C100.9,-13.8,98.5,20.4,80.2,42.9C61.9,65.4,27.9,76.2,-4.4,74.9C-36.8,73.6,-67.6,60.2,-80.4,35.7C-93.3,11.2,-88.2,-24.4,-70.5,-47.1C-52.8,-69.8,-22.4,-79.5,4.1,-79.9C30.6,-80.4,62.3,-55.2,81.6,-34.5Z"
+        transform="translate(80 78) scale(0.72)"
       />
-      <circle cx="70" cy="64" r="27" fill="#1baf7a" />
+
+      <circle cx="80" cy="70" r="7" fill="none" stroke="#1baf7a" strokeOpacity="0.15" strokeWidth="14" />
+
+      <g filter={`url(#${id.shadow})`}>
+        <circle cx="80" cy="70" r="30" fill={`url(#${id.badge})`} />
+      </g>
       <path
-        d="M58 64 L67 73 L84 54"
+        d="M67 70 L76 79 L94 59"
         stroke="#ffffff"
-        strokeWidth="5"
+        strokeWidth="5.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
       />
-      <path d="M55 88 L46 104 L60 99 L70 110 L80 99 L94 104 L85 88 Z" fill="#1baf7a" fillOpacity="0.35" />
+
+      <path d="M64 96 L54 114 L69 108 L80 120 L91 108 L106 114 L96 96 Z" fill="#1baf7a" fillOpacity="0.28" />
+
       <g fill="#eda100">
-        <circle cx="108" cy="46" r="3" />
-        <circle cx="26" cy="52" r="2.4" />
-        <circle cx="100" cy="96" r="2.4" />
+        <circle cx="122" cy="46" r="3.6" />
+        <circle cx="24" cy="56" r="2.6" />
+        <circle cx="114" cy="106" r="2.6" />
       </g>
       <g fill="#f15c5d">
-        <circle cx="32" cy="90" r="2.6" />
+        <circle cx="30" cy="98" r="3" />
+      </g>
+      <g fill="#4b60ac">
+        <circle cx="118" cy="86" r="2.2" />
       </g>
     </svg>
   );
 }
 
-export function CelebrationIllustration({ className }: { className?: string }) {
+export function CelebrationIllustration({ className, uid = "celebration" }: { className?: string; uid?: string }) {
+  const id = useIds(uid);
   return (
-    <svg className={className} viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg className={className} viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id={id.blob} cx="50%" cy="40%" r="65%">
+          <stop offset="0%" stopColor="#f68789" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#f15c5d" stopOpacity="0.05" />
+        </radialGradient>
+        <linearGradient id={id.badge} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#f68789" />
+          <stop offset="100%" stopColor="#e14446" />
+        </linearGradient>
+        <linearGradient id={id.ring} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ffc94d" />
+          <stop offset="100%" stopColor="#eda100" />
+        </linearGradient>
+        <filter id={id.shadow} x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="7" stdDeviation="7" floodColor="#c94647" floodOpacity="0.25" />
+        </filter>
+      </defs>
+
       <path
-        fill="#f15c5d"
-        fillOpacity="0.12"
-        d="M74.9,-27.9C92.7,-8.4,99.6,21.6,87.4,42.9C75.2,64.2,43.9,76.8,13.6,76.3C-16.7,75.9,-46,62.4,-61.9,39.6C-77.9,16.8,-80.5,-15.3,-67.1,-36.5C-53.7,-57.7,-24.4,-68.1,1.8,-68.8C28,-69.6,57.1,-47.4,74.9,-27.9Z"
-        transform="translate(70 70)"
+        fill={`url(#${id.blob})`}
+        d="M79.4,-31.2C101.9,-9.9,113.6,24.6,99.9,49C86.1,73.4,47,87.7,7.9,86.1C-31.1,84.5,-70.2,66.9,-84.9,37.4C-99.6,7.9,-89.9,-33.6,-65.5,-56.1C-41.1,-78.6,-2,-82.1,25.5,-70.9C53,-59.7,56.9,-52.5,79.4,-31.2Z"
+        transform="translate(80 80) scale(0.72)"
       />
-      <rect x="52" y="68" width="36" height="32" rx="4" fill="#f15c5d" />
-      <rect x="46" y="58" width="48" height="14" rx="4" fill="#eda100" />
-      <rect x="66" y="58" width="8" height="42" fill="#ffffff" fillOpacity="0.55" />
-      <path d="M70 58 C58 46 58 34 70 28 C64 40 66 50 70 58 Z" fill="#eda100" />
+
+      <g filter={`url(#${id.shadow})`}>
+        <rect x="56" y="78" width="40" height="34" rx="5" fill={`url(#${id.badge})`} />
+      </g>
+      <rect x="48" y="66" width="56" height="16" rx="5" fill={`url(#${id.ring})`} />
+      <rect x="72" y="66" width="10" height="46" fill="#ffffff" fillOpacity="0.4" />
+      <path
+        d="M76 66 C60 52 62 36 76 28 C68 42 70 54 76 66 Z"
+        fill={`url(#${id.ring})`}
+      />
+
       <g strokeLinecap="round">
-        <rect x="26" y="34" width="6" height="6" rx="1.5" fill="#4b60ac" transform="rotate(18 29 37)" />
-        <rect x="102" y="30" width="6" height="6" rx="1.5" fill="#1baf7a" transform="rotate(-12 105 33)" />
-        <circle cx="34" cy="60" r="3.2" fill="#eda100" />
-        <circle cx="108" cy="58" r="3" fill="#4b60ac" />
-        <rect x="96" y="78" width="5" height="5" rx="1.2" fill="#f15c5d" transform="rotate(24 98 80)" />
-        <circle cx="24" cy="86" r="2.6" fill="#1baf7a" />
+        <rect x="24" y="36" width="7" height="7" rx="1.6" fill="#4b60ac" transform="rotate(18 27.5 39.5)" />
+        <rect x="116" y="30" width="7" height="7" rx="1.6" fill="#1baf7a" transform="rotate(-12 119.5 33.5)" />
+        <circle cx="34" cy="66" r="3.6" fill="#eda100" />
+        <circle cx="122" cy="62" r="3.4" fill="#4b60ac" />
+        <rect x="108" y="88" width="6" height="6" rx="1.4" fill="#f15c5d" transform="rotate(24 111 91)" />
+        <circle cx="24" cy="94" r="3" fill="#1baf7a" />
+        <path d="M40 108 q4 6 10 4" stroke="#eda100" strokeWidth="2.4" fill="none" />
+        <path d="M120 104 q-4 6 -10 5" stroke="#4b60ac" strokeWidth="2.4" fill="none" opacity="0.6" />
       </g>
     </svg>
   );
 }
 
-export function MaintenanceIllustration({ className }: { className?: string }) {
+export function MaintenanceIllustration({ className, uid = "maintenance" }: { className?: string; uid?: string }) {
+  const id = useIds(uid);
   return (
-    <svg className={className} viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg className={className} viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id={id.blob} cx="50%" cy="42%" r="65%">
+          <stop offset="0%" stopColor="#ffc94d" stopOpacity="0.24" />
+          <stop offset="100%" stopColor="#eda100" stopOpacity="0.06" />
+        </radialGradient>
+        <linearGradient id={id.badge} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#ffc94d" />
+          <stop offset="100%" stopColor="#c97f00" />
+        </linearGradient>
+        <filter id={id.shadow} x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="6" stdDeviation="7" floodColor="#a3730a" floodOpacity="0.25" />
+        </filter>
+      </defs>
+
       <path
-        fill="#eda100"
-        fillOpacity="0.14"
-        d="M78.3,-32.6C90.9,-13.3,90.9,17.6,76.4,38.6C61.9,59.6,32.9,70.7,4.7,68.9C-23.5,67.1,-47,52.4,-61.8,30.7C-76.6,9,-82.7,-19.7,-71.4,-40.1C-60.1,-60.5,-31.5,-72.6,-3,-72.1C25.5,-71.6,65.7,-51.9,78.3,-32.6Z"
-        transform="translate(70 70)"
+        fill={`url(#${id.blob})`}
+        d="M83.4,-36.3C104.6,-15.7,110.6,20.9,94.9,47.4C79.2,73.9,41.8,90.3,4.7,88.4C-32.4,86.5,-64.7,66.3,-79.7,36.2C-94.6,6.1,-92.1,-33.9,-70.9,-58.1C-49.7,-82.3,-9.7,-90.6,20.9,-84.6C51.5,-78.6,62.2,-56.9,83.4,-36.3Z"
+        transform="translate(80 80) scale(0.72)"
       />
-      <circle cx="55" cy="80" r="16" fill="none" stroke="#eda100" strokeWidth="7" />
-      <circle cx="55" cy="80" r="4" fill="#eda100" />
-      <rect x="51" y="56" width="8" height="14" rx="2" fill="#eda100" />
-      <rect x="43" y="60" width="6" height="8" rx="2" fill="#eda100" transform="rotate(-30 46 64)" />
-      <rect x="61" y="60" width="6" height="8" rx="2" fill="#eda100" transform="rotate(30 64 64)" />
-      <path
-        d="M92 44 c6 -6 16 -6 22 0 l-7 3 l4 4 l-3 7 l-4 -4 l-3 7 c-6 -6 -6 -16 0 -22 Z"
-        fill="#4b60ac"
-        transform="translate(-5 24) rotate(20 92 60)"
-      />
-      <g stroke="#eda100" strokeWidth="2.5" strokeLinecap="round">
-        <path d="M100 30 l6 -6" />
-        <path d="M108 40 l8 -2" />
-        <path d="M100 50 l7 5" />
+
+      <g filter={`url(#${id.shadow})`}>
+        <circle cx="62" cy="90" r="19" fill="none" stroke={`url(#${id.badge})`} strokeWidth="8" />
+      </g>
+      <circle cx="62" cy="90" r="4.5" fill="#eda100" />
+      <rect x="57" y="60" width="10" height="17" rx="2.5" fill={`url(#${id.badge})`} />
+      <rect x="46" y="65" width="8" height="9" rx="2" fill={`url(#${id.badge})`} transform="rotate(-30 50 69.5)" />
+      <rect x="70" y="65" width="8" height="9" rx="2" fill={`url(#${id.badge})`} transform="rotate(30 74 69.5)" />
+
+      <g transform="translate(88 42) rotate(18)">
+        <path
+          d="M0 12 c7 -8 20 -8 27 0 l-9 3.5 l5 5 l-3.5 9 l-5 -5 l-3.5 9 c-7 -8 -7 -20 0 -27 Z"
+          fill="#4b60ac"
+          fillOpacity="0.85"
+        />
+      </g>
+
+      <g stroke="#eda100" strokeWidth="2.8" strokeLinecap="round">
+        <path d="M114 36 l7 -7" />
+        <path d="M124 48 l9 -2.5" />
+        <path d="M114 60 l8 6" />
+      </g>
+      <g fill="#f15c5d">
+        <circle cx="30" cy="52" r="2.8" />
       </g>
     </svg>
   );
