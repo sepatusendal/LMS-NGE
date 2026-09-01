@@ -15,6 +15,7 @@ import {
   ShieldUser,
   UserRoundX,
   Presentation,
+  Megaphone,
 } from "lucide-react";
 import { AppSidebar, type NavItem } from "@/components/shared/app-sidebar";
 import { MobileTopbar } from "@/components/shared/mobile-topbar";
@@ -43,6 +44,7 @@ function buildAdminNavItems(lessonPlanBadge: number): NavItem[] {
     { href: "/teachers", label: "Teacher", icon: GraduationCap },
     { href: "/users", label: "Admin & Coordinator", icon: ShieldUser },
     { href: "/curriculum", label: "Kurikulum", icon: ListChecks },
+    { href: "/announcements", label: "Pengumuman", icon: Megaphone },
     { href: "/settings", label: "Pengaturan", icon: Settings },
   ];
 }

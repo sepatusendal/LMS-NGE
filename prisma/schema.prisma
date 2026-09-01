@@ -43,6 +43,13 @@ enum ObjectivesAchieved {
   NO
 }
 
+enum AnnouncementType {
+  INFO
+  SUCCESS
+  CELEBRATION
+  MAINTENANCE
+}
+
 // ─────────────────────────────────────────────────────────────
 // Identity
 // ─────────────────────────────────────────────────────────────
@@ -58,8 +65,10 @@ model User {
   updatedAt DateTime  @updatedAt @db.Timestamptz(3)
   deletedAt DateTime? @db.Timestamptz(3)
 
-  teacher              Teacher?
-  parentReportsCreated ParentReport[] @relation("ParentReportGeneratedBy")
+  teacher                 Teacher?
+  parentReportsCreated    ParentReport[]     @relation("ParentReportGeneratedBy")
+  announcementsAuthored   Announcement[]
+  announcementReads       AnnouncementRead[]
 
   @@map("users")
 }
@@ -531,4 +540,39 @@ model ParentReport {
 
   @@unique([studentId, periodMonth, periodYear])
   @@map("parent_reports")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Announcements (admin-authored, dismissible banner for all roles)
+// ─────────────────────────────────────────────────────────────
+
+model Announcement {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title           String
+  body            String
+  type            AnnouncementType @default(INFO)
+  isActive        Boolean          @default(true)
+  createdByUserId String           @db.Uuid
+  expiresAt       DateTime?        @db.Timestamptz(3)
+  createdAt       DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(3)
+
+  createdBy User               @relation(fields: [createdByUserId], references: [id])
+  reads     AnnouncementRead[]
+
+  @@index([isActive])
+  @@map("announcements")
+}
+
+model AnnouncementRead {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  announcementId String   @db.Uuid
+  userId         String   @db.Uuid
+  readAt         DateTime @default(now()) @db.Timestamptz(3)
+
+  announcement Announcement @relation(fields: [announcementId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([announcementId, userId])
+  @@map("announcement_reads")
 }

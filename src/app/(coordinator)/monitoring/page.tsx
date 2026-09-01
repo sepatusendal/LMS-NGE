@@ -1,6 +1,7 @@
 import { ComplianceAlert } from "@/features/lesson-plans/compliance-alert";
 import { StatusBoard } from "@/features/monitoring/status-board";
 import { AnalyticsCharts } from "@/features/monitoring/analytics-charts";
+import { AnnouncementBanner } from "@/features/announcements/announcement-banner";
 
 export default function MonitoringPage() {
   return (
@@ -11,6 +12,8 @@ export default function MonitoringPage() {
           Pantau kepatuhan lesson plan dan kualitas pengajaran.
         </p>
       </div>
+
+      <AnnouncementBanner />
 
       <StatusBoard />
       <AnalyticsCharts />

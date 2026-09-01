@@ -14,6 +14,7 @@ import { ScheduleChart } from "@/features/dashboard/schedule-chart";
 import { FollowUpsTable } from "@/features/dashboard/followups-table";
 import { ReportNotesTable } from "@/features/dashboard/report-notes-table";
 import { useCurrentUser } from "@/features/auth/use-current-user";
+import { AnnouncementBanner } from "@/features/announcements/announcement-banner";
 import { getTimeGreeting } from "@/lib/greeting";
 import { TimeOfDayIllustration } from "@/components/shared/time-of-day-illustration";
 import { SectionHeading } from "@/components/shared/section-heading";
@@ -52,6 +53,8 @@ export default function AdminDashboardPage() {
         dateLabel={dateLabel}
         hour={now?.getHours() ?? 9}
       />
+
+      <AnnouncementBanner />
 
       {/* 1 — KPI metrics row */}
       <OverviewStats />

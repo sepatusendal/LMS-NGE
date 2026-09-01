@@ -15,6 +15,7 @@ import { LoadingState } from "@/components/shared/loading-state";
 import { getTimeGreeting } from "@/lib/greeting";
 import { TimeOfDayIllustration } from "@/components/shared/time-of-day-illustration";
 import { useComplianceCount } from "@/features/lesson-plans/use-compliance-count";
+import { AnnouncementBanner } from "@/features/announcements/announcement-banner";
 import { AlarmClockCheck } from "lucide-react";
 
 const DONE_STATUSES = new Set(["report_submitted", "course_completed"]);
@@ -44,6 +45,8 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-7">
+      <AnnouncementBanner />
+
       <TodayHero
         greeting={greeting}
         firstName={firstName}
