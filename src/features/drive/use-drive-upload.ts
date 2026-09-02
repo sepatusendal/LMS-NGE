@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface UploadResult {
   driveFileId: string;
@@ -8,7 +9,8 @@ interface UploadResult {
 
 async function uploadToDrive(
   file: File,
-  folder?: string,
+  folder: string | undefined,
+  fallbackErrorMessage: string,
 ): Promise<UploadResult> {
   const formData = new FormData();
   formData.append("file", file);
@@ -21,20 +23,21 @@ async function uploadToDrive(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || "Upload gagal");
+    throw new Error(err.error || fallbackErrorMessage);
   }
 
   return res.json();
 }
 
 export function useDriveUpload() {
+  const t = useTranslations("fileUpload.toasts");
   return useMutation({
     mutationFn: ({ file, folder }: { file: File; folder?: string }) =>
-      uploadToDrive(file, folder),
+      uploadToDrive(file, folder, t("uploadFailed")),
     onSuccess: () => {
-      toast.success("File berhasil diupload");
+      toast.success(t("uploadSuccess"));
     },
     onError: (error) =>
-      toast.error("Gagal upload file", { description: error.message }),
+      toast.error(t("uploadError"), { description: error.message }),
   });
 }

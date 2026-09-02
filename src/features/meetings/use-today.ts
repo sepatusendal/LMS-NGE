@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
 import { fetchTodayClasses, startClass, doCheckOut } from "./queries";
 import type { TodayClass } from "./schema";
@@ -27,38 +28,44 @@ export function useTodayClasses(): {
   };
 }
 
+const START_CLASS_ERROR_MESSAGES = new Set(["HOLIDAY_NO_CLASS", "ALREADY_CHECKED_IN"]);
+
 export function useStartClass() {
   const queryClient = useQueryClient();
   const { data: teacher } = useCurrentTeacher();
+  const t = useTranslations("workflow.toasts");
 
   return useMutation({
     mutationFn: async (lessonPlanId: string) => {
-      if (!teacher?.teacherId) throw new Error("Profil belum siap");
+      if (!teacher?.teacherId) throw new Error(t("profileNotReady"));
       return startClass(lessonPlanId, teacher.teacherId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TODAY_KEY });
-      toast.success("Kelas dimulai! Check-in berhasil");
+      toast.success(t("classStarted"));
     },
     onError: (error) =>
-      toast.error("Gagal memulai kelas", { description: error.message }),
+      toast.error(t("startClassError"), {
+        description: START_CLASS_ERROR_MESSAGES.has(error.message) ? t(error.message) : error.message,
+      }),
   });
 }
 
 export function useCheckOut() {
   const queryClient = useQueryClient();
   const { data: teacher } = useCurrentTeacher();
+  const t = useTranslations("workflow.toasts");
 
   return useMutation({
     mutationFn: async (meetingId: string) => {
-      if (!teacher?.teacherId) throw new Error("Profil belum siap");
+      if (!teacher?.teacherId) throw new Error(t("profileNotReady"));
       await doCheckOut({ meetingId, teacherId: teacher.teacherId });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TODAY_KEY });
-      toast.success("Check-out berhasil");
+      toast.success(t("checkOutSuccess"));
     },
     onError: (error) =>
-      toast.error("Gagal check-out", { description: error.message }),
+      toast.error(t("checkOutError"), { description: error.message }),
   });
 }

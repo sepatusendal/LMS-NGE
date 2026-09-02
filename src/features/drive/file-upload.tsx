@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { FileText, Loader2, Upload, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useDriveUpload } from "@/features/drive/use-drive-upload";
 
@@ -16,10 +17,12 @@ export function FileUpload({
   onUploaded,
   currentFile,
   accept = "image/*",
-  label = "Upload Foto",
+  label,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const upload = useDriveUpload();
+  const t = useTranslations("fileUpload");
+  const resolvedLabel = label ?? t("uploadPhoto");
   const [preview, setPreview] = useState<{ url: string; isImage: boolean; name: string } | null>(null);
 
   // Revoke the previous blob URL whenever it's replaced or the component
@@ -100,7 +103,7 @@ export function FileUpload({
             <Upload className="size-4" />
           )}
           <span className="ml-1.5">
-            {upload.isPending ? "Mengupload..." : label}
+            {upload.isPending ? t("uploading") : resolvedLabel}
           </span>
         </Button>
       )}

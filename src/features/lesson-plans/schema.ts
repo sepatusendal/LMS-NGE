@@ -51,29 +51,31 @@ export function emptyLearningObjectives(): string[] {
   return Array(DEFAULT_LEARNING_OBJECTIVES_COUNT).fill("");
 }
 
-export const lessonPlanSchema = z.object({
-  classId: z.string().min(1, "Kelas wajib dipilih"),
-  meetingNumber: z.coerce.number().int().min(1, "Meeting number wajib diisi"),
-  week: z.coerce.number().int().min(1, "Minggu wajib diisi"),
-  scheduledDate: z.string().min(1, "Tanggal wajib diisi"),
-  level: z.string().optional(),
-  topic: z.string().min(1, "Topic wajib diisi"),
-  learningObjectives: z.array(z.string()),
-  skills: z.array(z.string()),
-  method: z.string().optional(),
-  procedure: z.string().optional(),
-  materialsRequired: z.array(z.string()),
-  vocabularyFocus: z.string().optional(),
-  stages: z.array(stageEntrySchema),
-  questionsToAsk: z.string().optional(),
-  differentiationSupport: z.string().optional(),
-  differentiationExtension: z.string().optional(),
-  differentiationHomework: z.string().optional(),
-  moduleDriveFileId: z.string().optional(),
-  moduleFileName: z.string().optional(),
-});
+export function buildLessonPlanSchema(t: (key: string) => string) {
+  return z.object({
+    classId: z.string().min(1, t("validation.classRequired")),
+    meetingNumber: z.coerce.number().int().min(1, t("validation.meetingNumberRequired")),
+    week: z.coerce.number().int().min(1, t("validation.weekRequired")),
+    scheduledDate: z.string().min(1, t("validation.dateRequired")),
+    level: z.string().optional(),
+    topic: z.string().min(1, t("validation.topicRequired")),
+    learningObjectives: z.array(z.string()),
+    skills: z.array(z.string()),
+    method: z.string().optional(),
+    procedure: z.string().optional(),
+    materialsRequired: z.array(z.string()),
+    vocabularyFocus: z.string().optional(),
+    stages: z.array(stageEntrySchema),
+    questionsToAsk: z.string().optional(),
+    differentiationSupport: z.string().optional(),
+    differentiationExtension: z.string().optional(),
+    differentiationHomework: z.string().optional(),
+    moduleDriveFileId: z.string().optional(),
+    moduleFileName: z.string().optional(),
+  });
+}
 
-export type LessonPlanInput = z.infer<typeof lessonPlanSchema>;
+export type LessonPlanInput = z.infer<ReturnType<typeof buildLessonPlanSchema>>;
 
 export interface LessonPlan {
   id: string;

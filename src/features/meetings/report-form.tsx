@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,14 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { X } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useCreateReport } from "@/features/reports/use-reports";
 import { useClassRoster } from "@/features/classes/use-roster";
 import { FileUpload } from "@/features/drive/file-upload";
 import {
-  reportSchema,
+  buildReportSchema,
   SKILL_OPTIONS,
-  OBJECTIVES_LABEL,
+  OBJECTIVES_KEY,
   type ObjectivesAchieved,
   type ReportInput,
 } from "@/features/reports/schema";
@@ -51,6 +52,8 @@ interface Props {
 
 export function ReportForm({ meetingId, classId, learningObjectives, curriculumReportFormat = "STANDARD" }: Props) {
   const isAlbright = curriculumReportFormat === "ALBRIGHT";
+  const t = useTranslations("reportForm");
+  const reportSchema = useMemo(() => buildReportSchema(t), [t]);
   const createReport = useCreateReport(meetingId);
   const { data: roster, refetch: refetchRoster } = useClassRoster(classId);
   const [followUps, setFollowUps] = useState<{ studentId: string; studentName: string; note: string }[]>([]);
@@ -98,8 +101,8 @@ export function ReportForm({ meetingId, classId, learningObjectives, curriculumR
       const { data: freshRoster } = await refetchRoster();
       const student = freshRoster?.find((s) => s.studentId === selectedStudentId);
       if (!student) {
-        toast.error("Siswa tidak lagi terdaftar di kelas ini", {
-          description: "Daftar siswa telah diperbarui. Silakan pilih siswa lain.",
+        toast.error(t("studentNoLongerEnrolled"), {
+          description: t("rosterUpdatedNotice"),
         });
         setSelectedStudentId("");
         return;
@@ -144,33 +147,27 @@ export function ReportForm({ meetingId, classId, learningObjectives, curriculumR
       {isAlbright ? (
         <>
           <div className="space-y-2">
-            <Label htmlFor="languageSkillsFocus">Language &amp; Skills Focus</Label>
-            <p className="text-muted-foreground text-xs">
-              Contoh: &quot;Grammar: to be, Listening&quot; atau &quot;Vocabulary: Jobs, Speaking&quot;
-            </p>
+            <Label htmlFor="languageSkillsFocus">{t("albright.languageSkillsFocus")}</Label>
+            <p className="text-muted-foreground text-xs">{t("albright.languageSkillsFocusHint")}</p>
             <Textarea id="languageSkillsFocus" rows={2} {...register("languageSkillsFocus")} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="activitiesLog">Activities</Label>
-            <p className="text-muted-foreground text-xs">
-              Rangkaian kegiatan yang dilakukan di kelas hari ini.
-            </p>
+            <Label htmlFor="activitiesLog">{t("albright.activities")}</Label>
+            <p className="text-muted-foreground text-xs">{t("albright.activitiesHint")}</p>
             <Textarea id="activitiesLog" rows={5} {...register("activitiesLog")} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="resourcesUsed">Resources</Label>
-            <p className="text-muted-foreground text-xs">
-              Contoh: &quot;Bright Book p. 14-15&quot;
-            </p>
+            <Label htmlFor="resourcesUsed">{t("albright.resources")}</Label>
+            <p className="text-muted-foreground text-xs">{t("albright.resourcesHint")}</p>
             <Textarea id="resourcesUsed" rows={2} {...register("resourcesUsed")} />
           </div>
         </>
       ) : (
         <>
           <div className="space-y-2">
-            <Label>Skill yang Diajarkan</Label>
+            <Label>{t("skillsTaught")}</Label>
             <div className="grid grid-cols-2 gap-2">
               {SKILL_OPTIONS.map((skill) => (
                 <label key={skill} className="flex items-center gap-2 text-sm">
@@ -189,16 +186,14 @@ export function ReportForm({ meetingId, classId, learningObjectives, curriculumR
           {objectives.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <Label>Tujuan Pembelajaran Tercapai?</Label>
+                <Label>{t("objectivesAchieved")}</Label>
                 {derivedStatus && (
                   <Badge variant={OBJECTIVES_BADGE_VARIANT[derivedStatus]} className="text-[10px]">
-                    {OBJECTIVES_LABEL[derivedStatus]}
+                    {t(`objectivesStatus.${OBJECTIVES_KEY[derivedStatus]}`)}
                   </Badge>
                 )}
               </div>
-              <p className="text-muted-foreground text-xs">
-                Semua objective dianggap tercapai secara default — uncheck yang belum tercapai.
-              </p>
+              <p className="text-muted-foreground text-xs">{t("objectivesDefaultHint")}</p>
               <div className="divide-y rounded-lg border">
                 {objectives.map((o, i) => (
                   <label key={i} className="flex items-start gap-2.5 px-3 py-2.5 text-sm">
@@ -215,23 +210,21 @@ export function ReportForm({ meetingId, classId, learningObjectives, curriculumR
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="whatWentWell">Hal Positif Hari Ini</Label>
+            <Label htmlFor="whatWentWell">{t("whatWentWell")}</Label>
             <Textarea id="whatWentWell" rows={2} {...register("whatWentWell")} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="whatNeedsImprovement">Yang Perlu Ditingkatkan</Label>
+            <Label htmlFor="whatNeedsImprovement">{t("whatNeedsImprovement")}</Label>
             <Textarea id="whatNeedsImprovement" rows={2} {...register("whatNeedsImprovement")} />
           </div>
 
           {showActionPlan && (
             <div className="space-y-2">
               <Label htmlFor="actionPlan">
-                Action Plan <span className="text-destructive">*</span>
+                {t("actionPlan")} <span className="text-destructive">*</span>
               </Label>
-              <p className="text-muted-foreground text-xs">
-                Gimana caranya ini bakal dilatih/diperbaiki di sesi mengajar berikutnya?
-              </p>
+              <p className="text-muted-foreground text-xs">{t("actionPlanHint")}</p>
               <Textarea id="actionPlan" rows={2} {...register("actionPlan")} aria-invalid={Boolean(errors.actionPlan)} />
               {errors.actionPlan && (
                 <p className="text-destructive text-xs">{errors.actionPlan.message}</p>
@@ -240,19 +233,19 @@ export function ReportForm({ meetingId, classId, learningObjectives, curriculumR
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="nextLessonNotes">Catatan untuk Pertemuan Selanjutnya (materi/bab yang perlu dilanjutkan)</Label>
+            <Label htmlFor="nextLessonNotes">{t("nextLessonNotes")}</Label>
             <Textarea id="nextLessonNotes" rows={2} {...register("nextLessonNotes")} />
           </div>
         </>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="homeworkAssigned">{isAlbright ? "Homework (opsional)" : "PR / Tugas (opsional)"}</Label>
+        <Label htmlFor="homeworkAssigned">{isAlbright ? t("albright.homework") : t("homework")}</Label>
         <Textarea id="homeworkAssigned" rows={2} {...register("homeworkAssigned")} />
       </div>
 
       <div className="space-y-2">
-        <Label>Siswa yang Perlu Follow-up</Label>
+        <Label>{t("followUpStudents")}</Label>
         <div className="flex gap-2">
           <Select
             items={roster?.filter((s) => !followUps.some((f) => f.studentId === s.studentId)).map((s) => ({ value: s.studentId, label: s.fullName })) ?? []}
@@ -260,7 +253,7 @@ export function ReportForm({ meetingId, classId, learningObjectives, curriculumR
             onValueChange={(v) => v && setSelectedStudentId(v)}
           >
             <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Pilih siswa" />
+              <SelectValue placeholder={t("selectStudent")} />
             </SelectTrigger>
             <SelectContent>
               {roster
@@ -274,7 +267,7 @@ export function ReportForm({ meetingId, classId, learningObjectives, curriculumR
           </Select>
           <input
             className="border-input flex-1 rounded-md border bg-transparent px-3 py-2 text-sm"
-            placeholder="Catatan..."
+            placeholder={t("notePlaceholder")}
             value={followUpNote}
             onChange={(e) => setFollowUpNote(e.target.value)}
           />
@@ -297,9 +290,9 @@ export function ReportForm({ meetingId, classId, learningObjectives, curriculumR
       </div>
 
       <div className="space-y-2">
-        <Label>Foto Aktivitas (opsional)</Label>
+        <Label>{t("activityPhoto")}</Label>
         <FileUpload
-          label="Upload Foto Kegiatan"
+          label={t("uploadActivityPhoto")}
           currentFile={photoFileName || null}
           onUploaded={(id, name) => {
             setPhotoDriveFileId(id);
@@ -309,7 +302,7 @@ export function ReportForm({ meetingId, classId, learningObjectives, curriculumR
       </div>
 
       <Button type="submit" className="w-full" disabled={createReport.isPending}>
-        {createReport.isPending ? "Menyimpan..." : "Submit Daily Teaching Report"}
+        {createReport.isPending ? t("submitting") : t("submit")}
       </Button>
     </form>
   );

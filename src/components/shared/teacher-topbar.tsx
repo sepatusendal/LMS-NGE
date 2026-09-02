@@ -5,8 +5,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import { LogOut } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/shared/language-switcher";
 import { cn } from "@/lib/utils";
 
 interface TeacherNavItem {
@@ -18,6 +20,7 @@ interface TeacherNavItem {
 export function TeacherTopbar({ navItems }: { navItems: TeacherNavItem[] }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslations("common");
 
   async function handleLogout() {
     const supabase = createClient();
@@ -52,13 +55,14 @@ export function TeacherTopbar({ navItems }: { navItems: TeacherNavItem[] }) {
               );
             })}
           </div>
+          <LanguageSwitcher className="h-7 w-auto px-2" />
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={handleLogout}
           >
             <LogOut className="size-4" />
-            <span className="sr-only">Keluar</span>
+            <span className="sr-only">{t("logout")}</span>
           </Button>
         </div>
       </div>

@@ -1,13 +1,14 @@
 "use client";
 
 import { Clock, MapPin, CalendarDays } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ClassAvatar } from "@/components/shared/class-avatar";
 import { LoadingState } from "@/components/shared/loading-state";
 import { LessonPlanTabs } from "@/components/shared/lesson-plan-tabs";
 import { useMyClasses, type MyClass } from "@/features/classes/use-my-classes";
-import { DAY_OPTIONS } from "@/features/classes/schema";
+import { DAY_OPTIONS, DAY_KEY } from "@/features/classes/schema";
 import { getCurriculumTheme } from "@/lib/curriculum-theme";
 
 // DAY_OPTIONS is Senin-first with Minggu last (value "0") — today's actual
@@ -17,6 +18,7 @@ const TODAY_VALUE = String(new Date().getDay());
 
 export default function JadwalPage() {
   const { data: classes, isLoading } = useMyClasses();
+  const t = useTranslations("jadwal");
 
   const byDay = new Map<string, Array<{ cls: MyClass; startTime: string; endTime: string }>>();
   for (const day of DAY_OPTIONS) byDay.set(day.value, []);
@@ -33,16 +35,14 @@ export default function JadwalPage() {
     <div className="space-y-6">
       <LessonPlanTabs />
       <div>
-        <h1 className="text-xl font-bold">Jadwal Mengajar</h1>
-        <p className="text-muted-foreground text-sm">Jadwal mingguan semua kelasmu</p>
+        <h1 className="text-xl font-bold">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </div>
 
       {isLoading && <LoadingState />}
 
       {!isLoading && (!classes || classes.length === 0) && (
-        <p className="text-muted-foreground text-sm">
-          Belum ada kelas yang ditugaskan ke Anda.
-        </p>
+        <p className="text-muted-foreground text-sm">{t("noClassesAssigned")}</p>
       )}
 
       {DAY_OPTIONS.map((day) => {
@@ -59,11 +59,11 @@ export default function JadwalPage() {
                   isToday ? "text-primary" : "text-foreground",
                 )}
               >
-                {day.label}
+                {t(`day.${DAY_KEY[day.value]}`)}
               </h2>
               {isToday && (
                 <span className="bg-primary/10 text-primary rounded-full px-2 py-0.5 text-[10px] font-semibold">
-                  Hari ini
+                  {t("today")}
                 </span>
               )}
             </div>
@@ -105,7 +105,7 @@ export default function JadwalPage() {
       {!isLoading && classes && classes.length > 0 && [...byDay.values()].every((v) => v.length === 0) && (
         <div className="flex flex-col items-center justify-center rounded-3xl bg-white px-6 py-14 text-center shadow-sm">
           <CalendarDays className="text-muted-foreground mb-3 size-10" />
-          <p className="text-muted-foreground text-sm">Belum ada jadwal terjadwal.</p>
+          <p className="text-muted-foreground text-sm">{t("noneScheduled")}</p>
         </div>
       )}
     </div>

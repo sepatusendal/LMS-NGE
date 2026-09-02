@@ -148,7 +148,7 @@ async function assertNotHoliday(classId: string, scheduledDate: string) {
 
   const schoolId = (cls as { schoolId: string }).schoolId;
   if (await isHoliday(scheduledDate, schoolId)) {
-    throw new Error("Tanggal ini adalah hari libur, tidak bisa membuat lesson plan");
+    throw new Error("HOLIDAY_NO_LESSON_PLAN");
   }
 }
 
@@ -157,7 +157,7 @@ async function assertNotHoliday(classId: string, scheduledDate: string) {
 function duplicateMeetingNumberError(error: { code?: string; message: string }): Error {
   if (error.code === "23505") {
     return new Error(
-      "Meeting number ini sudah dipakai lesson plan lain di kelas ini. Ubah nomor meeting-nya.",
+      "DUPLICATE_MEETING_NUMBER",
     );
   }
   return error instanceof Error ? error : new Error(error.message);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, CheckCircle, Clock, UserCheck, UserRoundCog, Settings2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { parseLocalDate } from "@/lib/date";
@@ -13,16 +14,16 @@ import {
 } from "@/features/substitutes/reassign-tutor-dialog";
 import { MeetingAdminDialog } from "@/features/meetings/meeting-admin-dialog";
 
-const STATUS_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  COMPLETED: { label: "Selesai", variant: "default" },
-  SCHEDULED: { label: "Terjadwal", variant: "outline" },
-  CANCELLED: { label: "Dibatalkan", variant: "destructive" },
+const STATUS_BADGE: Record<string, { labelKey: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  COMPLETED: { labelKey: "completed", variant: "default" },
+  SCHEDULED: { labelKey: "scheduled", variant: "outline" },
+  CANCELLED: { labelKey: "cancelled", variant: "destructive" },
 };
 
-const OBJECTIVES_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  YES: { label: "Tercapai", variant: "default" },
-  PARTIALLY: { label: "Sebagian", variant: "secondary" },
-  NO: { label: "Belum", variant: "destructive" },
+const OBJECTIVES_BADGE: Record<string, { labelKey: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  YES: { labelKey: "achieved", variant: "default" },
+  PARTIALLY: { labelKey: "partial", variant: "secondary" },
+  NO: { labelKey: "notYet", variant: "destructive" },
 };
 
 function TimelineItem({
@@ -33,6 +34,8 @@ function TimelineItem({
   canManage,
   onReassign,
   onManageMeeting,
+  t,
+  dtLocale,
 }: {
   entry: TimelineEntry;
   isLast: boolean;
@@ -41,6 +44,8 @@ function TimelineItem({
   canManage: boolean;
   onReassign: (entry: TimelineEntry) => void;
   onManageMeeting: (entry: TimelineEntry) => void;
+  t: ReturnType<typeof useTranslations>;
+  dtLocale: string;
 }) {
   const hasMeeting = Boolean(entry.meetingId);
   const isCompleted = entry.meetingStatus === "COMPLETED";
@@ -77,17 +82,17 @@ function TimelineItem({
       <div className={`flex-1 pb-4 ${isLast ? "" : ""}`}>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium">
-            Meeting {entry.meetingNumber}
+            {t("meeting", { number: entry.meetingNumber })}
           </p>
           <Badge variant={status.variant} className="text-xs">
-            {status.label}
+            {t(`status.${status.labelKey}`)}
           </Badge>
         </div>
 
         <p className="text-xs font-medium mt-0.5">{entry.topic}</p>
 
         <p className="text-muted-foreground text-xs mt-0.5">
-          {parseLocalDate(entry.scheduledDate).toLocaleDateString("id-ID", {
+          {parseLocalDate(entry.scheduledDate).toLocaleDateString(dtLocale, {
             day: "numeric",
             month: "short",
             year: "numeric",
@@ -97,14 +102,14 @@ function TimelineItem({
         <div className="mt-1 space-y-0.5">
           <div className="flex flex-wrap items-center gap-1.5">
             <p className="text-muted-foreground text-xs">
-              Teacher:{" "}
+              {t("teacher")}:{" "}
               <span className="font-medium text-foreground">
                 {entry.actualTeacherName || entry.assignedTeacherName}
               </span>
             </p>
             {entry.isSubstitute && (
               <Badge variant="outline" className="text-[10px]">
-                Substitute
+                {t("substitute")}
               </Badge>
             )}
             {canManage && canReassign && (
@@ -115,7 +120,7 @@ function TimelineItem({
                 onClick={() => onReassign(entry)}
               >
                 <UserRoundCog className="size-3" />
-                {entry.isSubstitute ? "Kelola" : "Ganti Tutor"}
+                {entry.isSubstitute ? t("manage") : t("changeTutor")}
               </Button>
             )}
             {canManage && hasMeeting && (
@@ -126,7 +131,7 @@ function TimelineItem({
                 onClick={() => onManageMeeting(entry)}
               >
                 <Settings2 className="size-3" />
-                Kelola Meeting
+                {t("manageMeeting")}
               </Button>
             )}
           </div>
@@ -135,25 +140,25 @@ function TimelineItem({
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
               {entry.checkInTime && (
                 <span className="text-muted-foreground">
-                  Check-in:{" "}
+                  {t("checkIn")}:{" "}
                   <span className="font-medium text-foreground">
-                    {new Date(entry.checkInTime).toLocaleTimeString("id-ID", {
+                    {new Date(entry.checkInTime).toLocaleTimeString(dtLocale, {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
                   </span>
                   {entry.isLate && (
                     <Badge variant="destructive" className="ml-1 text-[10px]">
-                      Terlambat
+                      {t("late")}
                     </Badge>
                   )}
                 </span>
               )}
               {entry.checkOutTime && (
                 <span className="text-muted-foreground">
-                  Check-out:{" "}
+                  {t("checkOut")}:{" "}
                   <span className="font-medium text-foreground">
-                    {new Date(entry.checkOutTime).toLocaleTimeString("id-ID", {
+                    {new Date(entry.checkOutTime).toLocaleTimeString(dtLocale, {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
@@ -162,7 +167,7 @@ function TimelineItem({
               )}
               {entry.durationMinutes && (
                 <span className="text-muted-foreground">
-                  {entry.durationMinutes} mnt
+                  {t("durationMinutes", { minutes: entry.durationMinutes })}
                 </span>
               )}
             </div>
@@ -172,14 +177,14 @@ function TimelineItem({
             <p className="flex items-center gap-1 text-xs mt-1">
               <UserCheck className="size-3 text-emerald-600" />
               <span className="text-muted-foreground">
-                Hadir:{" "}
+                {t("present")}:{" "}
                 <span className="font-medium text-foreground">
                   {entry.attendancePresent}
                 </span>
                 /{entry.attendanceTotal}
                 {totalEnrolled > entry.attendanceTotal && (
                   <span className="text-muted-foreground ml-0.5">
-                    ({totalEnrolled} terdaftar)
+                    {t("enrolledCount", { count: totalEnrolled })}
                   </span>
                 )}
               </span>
@@ -192,14 +197,14 @@ function TimelineItem({
                 variant={OBJECTIVES_BADGE[entry.objectivesAchieved]?.variant || "outline"}
                 className="text-[10px]"
               >
-                Tujuan: {OBJECTIVES_BADGE[entry.objectivesAchieved]?.label}
+                {t("objectives")}: {t(`objectivesStatus.${OBJECTIVES_BADGE[entry.objectivesAchieved]?.labelKey}`)}
               </Badge>
             </div>
           )}
 
           {entry.substituteReason && (
             <p className="text-muted-foreground text-[11px] mt-0.5 italic">
-              Alasan: {entry.substituteReason}
+              {t("reason")}: {entry.substituteReason}
             </p>
           )}
         </div>
@@ -225,6 +230,9 @@ export function ClassTimeline({
   const [target, setTarget] = useState<ReassignTutorTarget | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
   const [manageEntry, setManageEntry] = useState<TimelineEntry | null>(null);
+  const t = useTranslations("classTimeline");
+  const locale = useLocale();
+  const dtLocale = locale === "en" ? "en-US" : "id-ID";
 
   function openManageDialog(entry: TimelineEntry) {
     setManageEntry(entry);
@@ -237,7 +245,7 @@ export function ClassTimeline({
       lessonPlanId: entry.lessonPlanId,
       scheduledDate: entry.scheduledDate,
       meetingId: entry.meetingId,
-      className: classDisplayName ?? "Kelas ini",
+      className: classDisplayName ?? t("thisClass"),
       contextLabel: entry.topic,
       currentTeacherId: entry.assignedTeacherId,
       currentTeacherName: entry.assignedTeacherName,
@@ -252,7 +260,7 @@ export function ClassTimeline({
     return (
       <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin" />
-        Memuat timeline...
+        {t("loading")}
       </div>
     );
   }
@@ -263,9 +271,7 @@ export function ClassTimeline({
         <div className="bg-muted mb-3 flex size-12 items-center justify-center rounded-full">
           <Clock className="text-muted-foreground size-5" />
         </div>
-        <p className="text-muted-foreground text-sm">
-          Belum ada lesson plan untuk kelas ini.
-        </p>
+        <p className="text-muted-foreground text-sm">{t("empty")}</p>
       </div>
     );
   }
@@ -273,7 +279,7 @@ export function ClassTimeline({
   return (
     <div className="space-y-1 pt-2">
       <p className="text-muted-foreground mb-3 text-xs">
-        Total {data.totalEnrolled} siswa terdaftar · {data.timeline.length} lesson plan
+        {t("summary", { enrolled: data.totalEnrolled, lessonPlans: data.timeline.length })}
       </p>
       {data.timeline.map((entry, i) => {
         // Reassignment is only sensible before the meeting has actually
@@ -291,6 +297,8 @@ export function ClassTimeline({
             canManage={canManage}
             onReassign={openReassignDialog}
             onManageMeeting={openManageDialog}
+            t={t}
+            dtLocale={dtLocale}
           />
         );
       })}
@@ -303,7 +311,7 @@ export function ClassTimeline({
             onOpenChange={setManageOpen}
             meetingId={manageEntry?.meetingId ?? null}
             classId={classId}
-            meetingLabel={manageEntry ? `Meeting ${manageEntry.meetingNumber} — ${manageEntry.topic}` : ""}
+            meetingLabel={manageEntry ? t("meeting", { number: manageEntry.meetingNumber }) + ` — ${manageEntry.topic}` : ""}
           />
         </>
       )}

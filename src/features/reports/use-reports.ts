@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { fetchReport, createReport } from "./queries";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
 import type { ReportObjectiveInput } from "./schema";
@@ -17,6 +18,7 @@ export function useReport(meetingId: string) {
 export function useCreateReport(meetingId: string) {
   const queryClient = useQueryClient();
   const { data: teacher } = useCurrentTeacher();
+  const t = useTranslations("reportForm.toasts");
 
   return useMutation({
     mutationFn: (input: {
@@ -34,7 +36,7 @@ export function useCreateReport(meetingId: string) {
       photoFileName?: string;
       followUps: { studentId: string; note: string }[];
     }) => {
-      if (!teacher?.teacherId) throw new Error("Profil belum siap");
+      if (!teacher?.teacherId) throw new Error(t("profileNotReady"));
       return createReport({
         meetingId,
         originalTeacherId: teacher.teacherId,
@@ -44,9 +46,9 @@ export function useCreateReport(meetingId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...REPORT_KEY, meetingId] });
       queryClient.invalidateQueries({ queryKey: ["today-classes"] });
-      toast.success("Daily Teaching Report berhasil disimpan");
+      toast.success(t("saveSuccess"));
     },
     onError: (error) =>
-      toast.error("Gagal menyimpan report", { description: error.message }),
+      toast.error(t("saveError"), { description: error.message }),
   });
 }

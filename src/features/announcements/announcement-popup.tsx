@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,7 @@ import { ANNOUNCEMENT_THEME } from "./schema";
 export function AnnouncementPopup() {
   const { data: announcements } = useMyAnnouncements();
   const dismiss = useDismissAnnouncement();
+  const t = useTranslations("common.announcements");
 
   const popups = (announcements ?? []).filter((a) => a.displayMode === "POPUP");
   const current = popups[popups.length - 1];
@@ -44,11 +46,11 @@ export function AnnouncementPopup() {
             onClick={() => dismiss.mutate(current.id)}
             style={{ backgroundColor: theme.swatch }}
           >
-            Mengerti
+            {t("gotIt")}
           </Button>
           {popups.length > 1 && (
             <p className="text-muted-foreground/70 mt-2.5 text-center text-xs">
-              {popups.length - 1} pengumuman lain menunggu
+              {t("othersWaiting", { count: popups.length - 1 })}
             </p>
           )}
         </div>

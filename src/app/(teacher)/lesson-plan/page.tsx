@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Plus, Clock, MapPin, ChevronRight, CheckCircle2, AlarmClockCheck, NotebookPen } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ModuleBadge } from "@/components/shared/module-cover";
@@ -20,6 +21,11 @@ export default function LessonPlanPage() {
   const { data: classes, isLoading: classesLoading } = useMyClasses();
   const { data: lessonPlans, isLoading: plansLoading } = useLessonPlans();
   const isLoading = classesLoading || plansLoading;
+  const t = useTranslations("lessonPlanList");
+  const tCommon = useTranslations("common");
+  const dayLabels = tCommon.raw("daysShort") as Record<string, string>;
+  const locale = useLocale();
+  const dtLocale = locale === "en" ? "en-US" : "id-ID";
 
   const now = Date.now();
   const classesNeedingPlan = (classes ?? []).filter((c) => {
@@ -33,24 +39,22 @@ export default function LessonPlanPage() {
       <LessonPlanTabs />
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Lesson Plan</h1>
-          <p className="text-muted-foreground mt-0.5 text-sm">
-            Rencana pembelajaran untuk semua kelasmu
-          </p>
+          <h1 className="text-2xl font-extrabold tracking-tight">{tCommon("nav.lessonPlan")}</h1>
+          <p className="text-muted-foreground mt-0.5 text-sm">{t("subtitle")}</p>
           {!isLoading && classes && classes.length > 0 && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold">
-                {classes.length} kelas
+                {t("classCount", { count: classes.length })}
               </span>
               {classesNeedingPlan > 0 ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eda100]/12 px-3 py-1 text-xs font-semibold text-[#a3730a]">
                   <AlarmClockCheck className="size-3.5" />
-                  {classesNeedingPlan} perlu lesson plan
+                  {t("classesNeedPlan", { count: classesNeedingPlan })}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1baf7a]/12 px-3 py-1 text-xs font-semibold text-[#0e7a53]">
                   <CheckCircle2 className="size-3.5" />
-                  Semua kelas aman
+                  {t("allClassesSafe")}
                 </span>
               )}
             </div>
@@ -61,7 +65,7 @@ export default function LessonPlanPage() {
           className={cn(buttonVariants({ size: "sm" }), "shrink-0 shadow-sm")}
         >
           <Plus className="size-4" aria-hidden="true" />
-          Tambah
+          {t("add")}
         </Link>
       </div>
 
@@ -88,12 +92,12 @@ export default function LessonPlanPage() {
                     {isCompliant ? (
                       <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#1baf7a]/12 px-2.5 py-1 text-[11px] font-bold text-[#0e7a53]">
                         <CheckCircle2 className="size-3" />
-                        Aman
+                        {t("safe")}
                       </span>
                     ) : (
                       <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#eda100]/15 px-2.5 py-1 text-[11px] font-bold text-[#a3730a]">
                         <AlarmClockCheck className="size-3" />
-                        Perlu Lesson Plan
+                        {t("needsLessonPlan")}
                       </span>
                     )}
                   </div>
@@ -101,7 +105,7 @@ export default function LessonPlanPage() {
                     <span>{classItem.schoolName}</span>
                     <span className="flex items-center gap-1">
                       <Clock className="size-3" />
-                      {formatScheduleSlots(classItem.scheduleSlots)}
+                      {formatScheduleSlots(classItem.scheduleSlots, dayLabels)}
                     </span>
                     {classItem.room && (
                       <span className="flex items-center gap-1">
@@ -117,9 +121,7 @@ export default function LessonPlanPage() {
               {classPlans.length === 0 ? (
                 <div className="border-border/60 flex flex-col items-center gap-2 rounded-2xl border border-dashed py-8 text-center">
                   <NotebookPen className="text-muted-foreground/60 size-6" />
-                  <p className="text-muted-foreground text-sm">
-                    Belum ada lesson plan untuk kelas ini.
-                  </p>
+                  <p className="text-muted-foreground text-sm">{t("noPlansForClass")}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -137,9 +139,9 @@ export default function LessonPlanPage() {
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold">{plan.topic}</p>
                           <p className="text-muted-foreground text-xs">
-                            Minggu {plan.week} ·{" "}
+                            {t("week", { week: plan.week })} ·{" "}
                             {new Date(plan.scheduledDate).toLocaleDateString(
-                              "id-ID",
+                              dtLocale,
                               { day: "numeric", month: "short", year: "numeric" },
                             )}
                           </p>
@@ -157,9 +159,7 @@ export default function LessonPlanPage() {
       {!isLoading && (!classes || classes.length === 0) && (
         <div className="flex flex-col items-center justify-center rounded-3xl bg-white px-6 py-14 text-center shadow-sm">
           <NotebookPen className="text-muted-foreground mb-3 size-10" />
-          <p className="text-muted-foreground text-sm">
-            Belum ada kelas yang ditugaskan ke Anda.
-          </p>
+          <p className="text-muted-foreground text-sm">{t("noClassesAssigned")}</p>
         </div>
       )}
     </div>

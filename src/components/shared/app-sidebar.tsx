@@ -6,8 +6,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/shared/language-switcher";
 import { cn } from "@/lib/utils";
 
 export interface NavChild {
@@ -129,12 +131,15 @@ function NavSection({
 export function AppSidebar({
   roleLabel,
   navItems,
+  showLanguageSwitcher = false,
 }: {
   roleLabel: string;
   navItems: NavItem[];
+  showLanguageSwitcher?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslations("common");
 
   async function handleLogout() {
     const supabase = createClient();
@@ -163,9 +168,12 @@ export function AppSidebar({
           ))}
         </nav>
       </div>
-      <Button variant="outline" size="sm" onClick={handleLogout}>
-        Keluar
-      </Button>
+      <div className="space-y-2">
+        {showLanguageSwitcher && <LanguageSwitcher className="w-full" />}
+        <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
+          {t("logout")}
+        </Button>
+      </div>
     </aside>
   );
 }

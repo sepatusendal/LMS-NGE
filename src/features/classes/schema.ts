@@ -18,6 +18,17 @@ export const DAY_LABEL_SHORT: Record<string, string> = Object.fromEntries(
   DAY_OPTIONS.map((d) => [d.value, d.label.slice(0, 3)]),
 );
 
+// value -> translation key, for teacher-facing i18n displays (e.g. Jadwal).
+export const DAY_KEY: Record<string, string> = {
+  "1": "monday",
+  "2": "tuesday",
+  "3": "wednesday",
+  "4": "thursday",
+  "5": "friday",
+  "6": "saturday",
+  "0": "sunday",
+};
+
 export interface ScheduleSlot {
   dayOfWeek: number;
   startTime: string;
@@ -77,10 +88,10 @@ export function getSlotForDay(slots: ScheduleSlot[], dayOfWeek: number): Schedul
 }
 
 /** Human-readable "Sen 08:00-09:00, Kam 15:00-16:00" for lists/tables. */
-export function formatScheduleSlots(slots: ScheduleSlot[]): string {
+export function formatScheduleSlots(slots: ScheduleSlot[], dayLabels: Record<string, string> = DAY_LABEL_SHORT): string {
   if (slots.length === 0) return "-";
   return [...slots]
     .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
-    .map((s) => `${DAY_LABEL_SHORT[String(s.dayOfWeek)]} ${s.startTime}-${s.endTime}`)
+    .map((s) => `${dayLabels[String(s.dayOfWeek)]} ${s.startTime}-${s.endTime}`)
     .join(", ");
 }

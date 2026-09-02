@@ -1,27 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { changePasswordSchema, type ChangePasswordInput } from "./change-password-schema";
+import { buildChangePasswordSchema, type ChangePasswordInput } from "./change-password-schema";
 
 function PasswordInput({
   id,
   name,
   autoComplete,
   register,
+  showLabel,
+  hideLabel,
 }: {
   id: string;
   name: keyof ChangePasswordInput;
   autoComplete: string;
   register: ReturnType<typeof useForm<ChangePasswordInput>>["register"];
+  showLabel: string;
+  hideLabel: string;
 }) {
   const [show, setShow] = useState(false);
 
@@ -41,7 +46,7 @@ function PasswordInput({
         tabIndex={-1}
       >
         {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-        <span className="sr-only">{show ? "Sembunyikan" : "Tampilkan"} password</span>
+        <span className="sr-only">{show ? hideLabel : showLabel}</span>
       </button>
     </div>
   );
@@ -49,6 +54,9 @@ function PasswordInput({
 
 export function ChangePasswordCard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const t = useTranslations("changePassword");
+
+  const changePasswordSchema = useMemo(() => buildChangePasswordSchema(t), [t]);
 
   const {
     register,
@@ -69,7 +77,7 @@ export function ChangePasswordCard() {
     } = await supabase.auth.getUser();
 
     if (!user?.email) {
-      toast.error("Gagal ganti password", { description: "Sesi tidak ditemukan, silakan login ulang." });
+      toast.error(t("errorTitle"), { description: t("errorNoSession") });
       setIsSubmitting(false);
       return;
     }
@@ -80,7 +88,7 @@ export function ChangePasswordCard() {
     });
 
     if (reauthError) {
-      setError("currentPassword", { message: "Password saat ini salah" });
+      setError("currentPassword", { message: t("errorWrongCurrentPassword") });
       setIsSubmitting(false);
       return;
     }
@@ -92,11 +100,11 @@ export function ChangePasswordCard() {
     setIsSubmitting(false);
 
     if (updateError) {
-      toast.error("Gagal ganti password", { description: updateError.message });
+      toast.error(t("errorTitle"), { description: updateError.message });
       return;
     }
 
-    toast.success("Password berhasil diubah");
+    toast.success(t("success"));
     reset({ currentPassword: "", newPassword: "", confirmPassword: "" });
   }
 
@@ -105,44 +113,55 @@ export function ChangePasswordCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <KeyRound className="size-4" aria-hidden="true" />
-          Ganti Password
+          {t("title")}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="currentPassword">Password Saat Ini</Label>
+            <Label htmlFor="currentPassword">{t("currentPassword")}</Label>
             <PasswordInput
               id="currentPassword"
               name="currentPassword"
               autoComplete="current-password"
               register={register}
+              showLabel={t("showPassword")}
+              hideLabel={t("hidePassword")}
             />
             {errors.currentPassword && (
               <p className="text-destructive text-sm">{errors.currentPassword.message}</p>
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="newPassword">Password Baru</Label>
-            <PasswordInput id="newPassword" name="newPassword" autoComplete="new-password" register={register} />
+            <Label htmlFor="newPassword">{t("newPassword")}</Label>
+            <PasswordInput
+              id="newPassword"
+              name="newPassword"
+              autoComplete="new-password"
+              register={register}
+              showLabel={t("showPassword")}
+              hideLabel={t("hidePassword")}
+            />
             {errors.newPassword && (
               <p className="text-destructive text-sm">{errors.newPassword.message}</p>
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Konfirmasi Password Baru</Label>
+            <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
             <PasswordInput
               id="confirmPassword"
               name="confirmPassword"
               autoComplete="new-password"
               register={register}
+              showLabel={t("showPassword")}
+              hideLabel={t("hidePassword")}
             />
             {errors.confirmPassword && (
               <p className="text-destructive text-sm">{errors.confirmPassword.message}</p>
             )}
           </div>
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Menyimpan..." : "Simpan Password"}
+            {isSubmitting ? t("submitting") : t("submit")}
           </Button>
         </form>
       </CardContent>

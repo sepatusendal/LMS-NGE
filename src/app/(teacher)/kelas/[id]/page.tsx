@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChevronLeft, Clock, GraduationCap, MapPin, NotebookPen, Users, CalendarClock, ClipboardList } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,12 +19,6 @@ import { ClassTimeline } from "@/features/meetings/class-timeline";
 import { ClassAttendanceSummary } from "@/features/attendances/class-attendance-summary";
 
 type TabKey = "roster" | "kehadiran" | "riwayat";
-
-const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-  { key: "roster", label: "Roster", icon: <Users className="size-4" /> },
-  { key: "kehadiran", label: "Kehadiran", icon: <ClipboardList className="size-4" /> },
-  { key: "riwayat", label: "Riwayat", icon: <CalendarClock className="size-4" /> },
-];
 
 function SectionCard({
   title,
@@ -49,6 +44,14 @@ export default function TeacherClassDetailPage() {
   const params = useParams<{ id: string }>();
   const classId = params.id;
   const [tab, setTab] = useState<TabKey>("roster");
+  const t = useTranslations("kelasDetail");
+  const dayLabels = useTranslations("common").raw("daysShort") as Record<string, string>;
+
+  const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+    { key: "roster", label: t("tabs.roster"), icon: <Users className="size-4" /> },
+    { key: "kehadiran", label: t("tabs.attendance"), icon: <ClipboardList className="size-4" /> },
+    { key: "riwayat", label: t("tabs.history"), icon: <CalendarClock className="size-4" /> },
+  ];
 
   const { data: classItem, isLoading, isFetched } = useClass(classId);
   const { data: roster, isLoading: rosterLoading } = useClassRoster(classId);
@@ -69,13 +72,11 @@ export default function TeacherClassDetailPage() {
       <div className="flex flex-col items-center justify-center gap-3 rounded-3xl bg-white px-6 py-14 text-center shadow-sm">
         <Users className="text-muted-foreground size-10" />
         <div>
-          <p className="font-medium">Kelas tidak ditemukan</p>
-          <p className="text-muted-foreground text-sm">
-            Kelas ini mungkin bukan kelas Anda, atau sudah tidak aktif.
-          </p>
+          <p className="font-medium">{t("notFound.title")}</p>
+          <p className="text-muted-foreground text-sm">{t("notFound.description")}</p>
         </div>
         <Link href="/kelas" className="text-primary text-sm font-medium hover:underline">
-          ← Kembali ke Kelas Saya
+          {t("notFound.back")}
         </Link>
       </div>
     );
@@ -92,7 +93,7 @@ export default function TeacherClassDetailPage() {
         className="text-muted-foreground inline-flex items-center gap-1 text-sm hover:underline"
       >
         <ChevronLeft className="size-4" />
-        Kelas Saya
+        {t("myClasses")}
       </Link>
 
       <div className="rounded-3xl border border-black/5 bg-white p-4 shadow-[0_2px_12px_-4px_rgba(20,25,50,0.08)] sm:p-5">
@@ -102,19 +103,19 @@ export default function TeacherClassDetailPage() {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-lg leading-tight font-bold">{classItem.name}</h1>
               <Badge variant={classItem.classType === "TEACHER_TRAINING" ? "secondary" : "outline"}>
-                {classItem.classType === "TEACHER_TRAINING" ? "Kelas Guru & Staff" : "Kelas Reguler"}
+                {classItem.classType === "TEACHER_TRAINING" ? t("classType.teacherTraining") : t("classType.regular")}
               </Badge>
             </div>
             <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
               <span>{classItem.schoolName}</span>
               <span className="flex items-center gap-1">
                 <Clock className="size-3" />
-                {formatScheduleSlots(classItem.scheduleSlots)}
+                {formatScheduleSlots(classItem.scheduleSlots, dayLabels)}
               </span>
               {classItem.room && (
                 <span className="flex items-center gap-1">
                   <MapPin className="size-3" />
-                  Ruang {classItem.room}
+                  {t("room", { room: classItem.room })}
                 </span>
               )}
               {classItem.curriculumName && (
@@ -137,38 +138,38 @@ export default function TeacherClassDetailPage() {
               className={cn(buttonVariants({ size: "sm", variant: "outline" }), "w-full")}
             >
               <NotebookPen className="size-4" />
-              Buat Lesson Plan
+              {t("createLessonPlan")}
             </Link>
           )}
         </div>
       )}
 
       <div className="flex gap-1.5 rounded-2xl bg-white p-1.5 shadow-sm">
-        {TABS.map((t) => (
+        {TABS.map((tabItem) => (
           <button
-            key={t.key}
+            key={tabItem.key}
             type="button"
-            onClick={() => setTab(t.key)}
+            onClick={() => setTab(tabItem.key)}
             className={cn(
               "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition-colors",
-              tab === t.key
+              tab === tabItem.key
                 ? "bg-[#4b60ac] text-white shadow-sm"
                 : "text-muted-foreground hover:bg-muted",
             )}
           >
-            {t.icon}
-            {t.label}
+            {tabItem.icon}
+            {tabItem.label}
           </button>
         ))}
       </div>
 
       {tab === "roster" && (
-        <SectionCard title="Roster Siswa" icon={<Users className="size-4" />}>
+        <SectionCard title={t("studentRoster")} icon={<Users className="size-4" />}>
           {rosterLoading ? (
-            <p className="text-muted-foreground text-sm">Memuat roster...</p>
+            <p className="text-muted-foreground text-sm">{t("loadingRoster")}</p>
           ) : roster && roster.length > 0 ? (
             <>
-              <p className="text-muted-foreground text-xs">{roster.length} siswa terdaftar</p>
+              <p className="text-muted-foreground text-xs">{t("studentsEnrolled", { count: roster.length })}</p>
               <ul className="divide-y">
                 {roster.map((r) => (
                   <li key={r.enrollmentId} className="flex items-center justify-between py-2 text-sm">
@@ -179,7 +180,7 @@ export default function TeacherClassDetailPage() {
               </ul>
             </>
           ) : (
-            <p className="text-muted-foreground text-sm">Belum ada siswa di kelas ini.</p>
+            <p className="text-muted-foreground text-sm">{t("noStudents")}</p>
           )}
         </SectionCard>
       )}
@@ -187,7 +188,7 @@ export default function TeacherClassDetailPage() {
       {tab === "kehadiran" && <ClassAttendanceSummary classId={classItem.id} />}
 
       {tab === "riwayat" && (
-        <SectionCard title="Riwayat Pertemuan">
+        <SectionCard title={t("meetingHistory")}>
           <ClassTimeline classId={classItem.id} classDisplayName={classItem.name} canManage={false} />
         </SectionCard>
       )}
