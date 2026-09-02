@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useDismissAnnouncement, useMyAnnouncements } from "./use-announcements";
@@ -16,6 +17,7 @@ import { ANNOUNCEMENT_THEME } from "./schema";
 export function AnnouncementBanner() {
   const { data: announcements, isLoading } = useMyAnnouncements();
   const dismiss = useDismissAnnouncement();
+  const t = useTranslations("common.announcements");
 
   const banners = (announcements ?? []).filter((a) => a.displayMode === "BANNER");
   if (isLoading || banners.length === 0) return null;
@@ -54,7 +56,7 @@ export function AnnouncementBanner() {
               onClick={() => dismiss.mutate(a.id)}
             >
               <X className="size-4" />
-              <span className="sr-only">Tutup pengumuman</span>
+              <span className="sr-only">{t("dismiss")}</span>
             </Button>
           </div>
         );

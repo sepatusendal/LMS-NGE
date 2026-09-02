@@ -1,0 +1,414 @@
+{
+  "common": {
+    "nav": {
+      "today": "Today",
+      "absensi": "Attendance",
+      "lessonPlan": "Lesson Plan",
+      "lessonPlanShort": "Plan",
+      "jadwal": "Schedule",
+      "kelas": "Classes",
+      "profile": "Profile"
+    },
+    "logout": "Log out",
+    "language": "Language",
+    "languageIndonesian": "Indonesian",
+    "languageEnglish": "English",
+    "loading": "Loading...",
+    "loadingData": "Loading data...",
+    "error": "Something went wrong",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "empty": "No data yet",
+    "announcements": {
+      "dismiss": "Dismiss announcement",
+      "gotIt": "Got it",
+      "othersWaiting": "{count, plural, one {# more announcement waiting} other {# more announcements waiting}}"
+    },
+    "daysShort": {
+      "0": "Sun",
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "name": "Name",
+    "email": "Email",
+    "tutorId": "Tutor ID",
+    "phone": "Phone"
+  },
+  "today": {
+    "heroTitle": "Today's Classes",
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening",
+      "night": "Good evening"
+    },
+    "progress": "{completed}/{total} done",
+    "stats": {
+      "classCount": "Classes taught",
+      "studentCount": "Total students"
+    },
+    "lessonPlanDue": "{count, plural, one {# class needs a lesson plan} other {# classes need a lesson plan}}",
+    "lessonPlanDueHint": "Prepare lesson plans at least 2 weeks ahead so a substitute can catch up quickly.",
+    "loadError": {
+      "title": "Couldn't Load Data",
+      "description": "Something went wrong. Try refreshing the page."
+    },
+    "todaysClasses": "Today's classes",
+    "goToAbsensi": "Go to Attendance →",
+    "empty": {
+      "title": "No Classes Today",
+      "description": "Enjoy the break! You have no teaching schedule for today."
+    }
+  },
+  "absensi": {
+    "title": "Attendance",
+    "subtitle": "Complete check-in, attendance, check-out, and the daily teaching report for each class —",
+    "classesDone": "{completed}/{total} classes done",
+    "loadError": "Something went wrong. Try refreshing the page.",
+    "empty": "No classes today."
+  },
+  "jadwal": {
+    "title": "Teaching Schedule",
+    "subtitle": "Weekly schedule for all your classes",
+    "noClassesAssigned": "No classes have been assigned to you yet.",
+    "today": "Today",
+    "noneScheduled": "No schedule yet.",
+    "day": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    }
+  },
+  "kelas": {
+    "title": "My Classes",
+    "subtitle": "Schedule and reference module for each of your classes",
+    "noClassesAssigned": "No classes have been assigned to you yet.",
+    "classCount": "{count, plural, one {# class} other {# classes}}"
+  },
+  "kelasDetail": {
+    "myClasses": "My Classes",
+    "notFound": {
+      "title": "Class not found",
+      "description": "This class may not belong to you, or it's no longer active.",
+      "back": "← Back to My Classes"
+    },
+    "classType": {
+      "teacherTraining": "Teacher & Staff Class",
+      "regular": "Regular Class"
+    },
+    "room": "Room {room}",
+    "createLessonPlan": "Create Lesson Plan",
+    "tabs": {
+      "roster": "Roster",
+      "attendance": "Attendance",
+      "history": "History"
+    },
+    "studentRoster": "Student Roster",
+    "loadingRoster": "Loading roster...",
+    "studentsEnrolled": "{count, plural, one {# student enrolled} other {# students enrolled}}",
+    "noStudents": "No students in this class yet.",
+    "meetingHistory": "Meeting History"
+  },
+  "classAttendanceSummary": {
+    "title": "Student Attendance",
+    "searchPlaceholder": "Search students...",
+    "flaggedCount": "{count, plural, one {# student} other {# students}} with attendance below {threshold}%",
+    "loading": "Loading attendance data...",
+    "empty": "No attendance data for this class yet.",
+    "noSearchResults": "No students named \"{search}\".",
+    "needsAttention": "Needs attention",
+    "present": "Present",
+    "late": "Late",
+    "excused": "Excused",
+    "absentLabel": "Absent",
+    "outOfMeetings": "out of {count, plural, one {# meeting} other {# meetings}}",
+    "meetingLine": "Meeting {number} — {topic} · {date}",
+    "absentShort": "Absent",
+    "excusedShort": "Excused"
+  },
+  "classTimeline": {
+    "status": {
+      "completed": "Completed",
+      "scheduled": "Scheduled",
+      "cancelled": "Cancelled"
+    },
+    "objectivesStatus": {
+      "achieved": "Achieved",
+      "partial": "Partial",
+      "notYet": "Not yet"
+    },
+    "meeting": "Meeting {number}",
+    "teacher": "Teacher",
+    "substitute": "Substitute",
+    "manage": "Manage",
+    "changeTutor": "Change Tutor",
+    "manageMeeting": "Manage Meeting",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "late": "Late",
+    "durationMinutes": "{minutes} min",
+    "present": "Present",
+    "enrolledCount": " ({count} enrolled)",
+    "objectives": "Objectives",
+    "reason": "Reason",
+    "thisClass": "This class",
+    "loading": "Loading timeline...",
+    "empty": "No lesson plan for this class yet.",
+    "summary": "Total {enrolled} students enrolled · {lessonPlans} lesson plans"
+  },
+  "lessonPlanList": {
+    "subtitle": "Lesson plans for all your classes",
+    "classCount": "{count, plural, one {# class} other {# classes}}",
+    "classesNeedPlan": "{count, plural, one {# needs a lesson plan} other {# need a lesson plan}}",
+    "allClassesSafe": "All classes are up to date",
+    "add": "Add",
+    "safe": "Up to date",
+    "needsLessonPlan": "Needs Lesson Plan",
+    "noPlansForClass": "No lesson plan for this class yet.",
+    "week": "Week {week}",
+    "noClassesAssigned": "No classes have been assigned to you yet."
+  },
+  "lessonPlanForm": {
+    "backToLessonPlan": "← Back to Lesson Plan",
+    "addTitle": "Add Lesson Plan",
+    "addSubtitle": "Fill in each section to prepare the meeting plan.",
+    "editTitle": "Edit Lesson Plan",
+    "viewTitle": "View Lesson Plan",
+    "delete": "Delete",
+    "deleteConfirm": "Delete lesson plan \"{topic}\" (Meeting {meetingNumber})? This action cannot be undone.",
+    "loadError": "Couldn't load lesson plan",
+    "tryRefresh": "Try refreshing the page.",
+    "validation": {
+      "classRequired": "Class is required",
+      "meetingNumberRequired": "Meeting number is required",
+      "weekRequired": "Week is required",
+      "dateRequired": "Date is required",
+      "topicRequired": "Topic is required"
+    },
+    "readOnlyNotice": "You can only view this lesson plan. Only the teacher assigned to this class can edit it.",
+    "sections": {
+      "basicInfo": { "title": "Basic Info", "description": "Class, schedule, and learning level" },
+      "objectives": { "title": "Learning Objectives & Skills", "description": "What students achieve by the end of the meeting" },
+      "materials": { "title": "Materials", "description": "Teaching aids used" },
+      "stages": { "title": "Stage-by-Stage", "description": "Sequence of activities from start to end of class" },
+      "differentiation": { "title": "Differentiation", "description": "Adjustments in teaching activities" },
+      "module": { "title": "Learning Module", "description": "Attach a PDF resource for this meeting" }
+    },
+    "fields": {
+      "class": "Class",
+      "classPlaceholder": "Select a class",
+      "meetingNumber": "Meeting No.",
+      "week": "Week No.",
+      "date": "Date",
+      "level": "Level",
+      "levelPlaceholder": "Select a level",
+      "unitAndTopic": "Unit & Topic",
+      "unitAndTopicPlaceholder": "e.g. Unit 1: Welcome",
+      "topic": "Topic",
+      "learningObjectives": "Learning Objectives",
+      "learningObjectivePlaceholder": "By the end of this lesson, students will be able to...",
+      "addObjective": "Add Point",
+      "skill": "Skill",
+      "materialsRequired": "Materials Required",
+      "vocabularyFocus": "Vocabulary / Language Focus",
+      "stageFallback": "Stage {number}",
+      "stageActivityPlaceholder": "Tutor & student activity for this stage",
+      "stageMediaPlaceholder": "Media (optional)",
+      "stageAssessmentPlaceholder": "Assessment (optional)",
+      "differentiationSupport": "Approach/Strategy for Learners Needing Extra Support",
+      "differentiationExtension": "Approach/Strategy for Fast Learners",
+      "differentiationHomework": "Homework (optional)",
+      "module": "Module (PDF)",
+      "noModuleUploaded": "No module uploaded yet.",
+      "uploadModule": "Upload Module (PDF)"
+    },
+    "albrightNotice": "Albright curriculum — Activities, Resources, and Language Focus details are filled in after class, in the Daily Teaching Report.",
+    "submitting": "Saving...",
+    "submit": "Save Lesson Plan",
+    "toasts": {
+      "teacherProfileNotReady": "Teacher profile isn't ready yet",
+      "createSuccess": "Lesson plan saved successfully",
+      "createError": "Couldn't save lesson plan",
+      "updateSuccess": "Lesson plan updated successfully",
+      "updateError": "Couldn't update lesson plan",
+      "deleteSuccess": "Lesson plan deleted successfully",
+      "deleteError": "Couldn't delete lesson plan",
+      "HOLIDAY_NO_LESSON_PLAN": "This date is a holiday, a lesson plan can't be created for it",
+      "DUPLICATE_MEETING_NUMBER": "This meeting number is already used by another lesson plan in this class. Change the meeting number."
+    }
+  },
+  "attendanceForm": {
+    "loadingRoster": "Loading roster...",
+    "noStudentsNotice": "This class has no students yet. Please continue to the next step.",
+    "continue": "Continue",
+    "present": "Present",
+    "saved": "Saved",
+    "markAllPresent": "Mark all present",
+    "saveAttendance": "Save Attendance",
+    "status": {
+      "present": "Present",
+      "absent": "Absent",
+      "excused": "Excused",
+      "late": "Late"
+    },
+    "toasts": {
+      "saveError": "Couldn't save attendance",
+      "saveSuccess": "Attendance saved successfully"
+    }
+  },
+  "reportForm": {
+    "studentNoLongerEnrolled": "Student is no longer enrolled in this class",
+    "rosterUpdatedNotice": "The student list has been updated. Please pick another student.",
+    "albright": {
+      "languageSkillsFocus": "Language & Skills Focus",
+      "languageSkillsFocusHint": "e.g. \"Grammar: to be, Listening\" or \"Vocabulary: Jobs, Speaking\"",
+      "activities": "Activities",
+      "activitiesHint": "The sequence of activities done in class today.",
+      "resources": "Resources",
+      "resourcesHint": "e.g. \"Bright Book p. 14-15\"",
+      "homework": "Homework (optional)"
+    },
+    "skillsTaught": "Skills Taught",
+    "objectivesAchieved": "Learning Objectives Achieved?",
+    "objectivesStatus": {
+      "achieved": "Achieved",
+      "partial": "Partial",
+      "notAchieved": "Not Achieved"
+    },
+    "objectivesDefaultHint": "Every objective is assumed achieved by default — uncheck the ones that weren't met.",
+    "whatWentWell": "What Went Well Today",
+    "whatNeedsImprovement": "What Needs Improvement",
+    "actionPlan": "Action Plan",
+    "actionPlanHint": "How will this be practiced or improved in the next teaching session?",
+    "nextLessonNotes": "Notes for the Next Meeting (material/chapter to continue)",
+    "homework": "Homework (optional)",
+    "followUpStudents": "Students Needing Follow-up",
+    "selectStudent": "Select a student",
+    "notePlaceholder": "Note...",
+    "activityPhoto": "Activity Photo (optional)",
+    "uploadActivityPhoto": "Upload Activity Photo",
+    "submitting": "Saving...",
+    "submit": "Submit Daily Teaching Report",
+    "validation": {
+      "followUpNoteRequired": "Note is required",
+      "actionPlanRequired": "Action plan is required when there's a note about what needs improvement"
+    },
+    "toasts": {
+      "profileNotReady": "Profile isn't ready yet",
+      "saveSuccess": "Daily Teaching Report saved successfully",
+      "saveError": "Couldn't save report"
+    }
+  },
+  "fileUpload": {
+    "uploadPhoto": "Upload Photo",
+    "uploading": "Uploading...",
+    "toasts": {
+      "uploadSuccess": "File uploaded successfully",
+      "uploadError": "Couldn't upload file",
+      "uploadFailed": "Upload failed"
+    }
+  },
+  "moduleCover": {
+    "moduleName": "{name} Module",
+    "noModule": "No reference module for this class yet.",
+    "learningModule": "Learning Module"
+  },
+  "handoverSummary": {
+    "loading": "Loading handover summary...",
+    "originalTeacher": "Original Teacher",
+    "previousLesson": "Previous Lesson (Meeting {number})",
+    "whatWentWell": "What went well",
+    "whatNeedsImprovement": "Needs improvement",
+    "nextLessonNotes": "Notes for this meeting",
+    "previousHomework": "Previous homework",
+    "followUpStudents": "Students Needing Follow-up",
+    "currentLesson": "Current Lesson (Meeting {number})",
+    "nextLesson": "Next Lesson (Meeting {number})"
+  },
+  "workflow": {
+    "status": {
+      "notStarted": "Not Started",
+      "fillAttendance": "Fill Attendance",
+      "checkOut": "Check-out",
+      "fillReport": "Fill Report",
+      "done": "Done",
+      "courseCompleted": "Course Completed"
+    },
+    "meetingTopic": "Meeting {number}: {topic}",
+    "noLessonPlanForMeeting": "No lesson plan for this meeting yet",
+    "teachingAsSubstitute": "You're teaching as a substitute for",
+    "checkIn": "Check-in",
+    "duration": "Duration",
+    "durationMinutes": "{minutes} min",
+    "late": "Late",
+    "closeHandoverSummary": "Close Handover Summary",
+    "viewHandoverSummary": "View Handover Summary",
+    "createLessonPlan": "Create Lesson Plan",
+    "startClass": "Start Class",
+    "closeAttendance": "Close Attendance",
+    "fillStudentAttendance": "Fill Student Attendance",
+    "viewLessonPlan": "View Lesson Plan",
+    "close": "Close",
+    "fillDailyReport": "Fill Daily Teaching Report",
+    "classDone": "Class done!",
+    "courseAllDone": "All meetings completed",
+    "handoverSummary": "Handover Summary",
+    "studentAttendance": "Student Attendance",
+    "closeClassPhoto": "Close class photo",
+    "addClassPhoto": "Add class photo (optional)",
+    "uploadClassPhoto": "Upload class photo",
+    "lessonPlan": "Lesson Plan",
+    "topic": "Topic",
+    "objectives": "Objectives",
+    "viewFull": "View full →",
+    "dailyTeachingReport": "Daily Teaching Report",
+    "absenceReason": {
+      "sickLeave": "Sick",
+      "emergency": "Emergency",
+      "personalLeave": "Personal Leave",
+      "officialDuty": "Official Duty",
+      "scheduleConflict": "Schedule Conflict"
+    },
+    "toasts": {
+      "profileNotReady": "Profile isn't ready yet",
+      "classStarted": "Class started! Checked in successfully",
+      "startClassError": "Couldn't start class",
+      "checkOutSuccess": "Checked out successfully",
+      "checkOutError": "Couldn't check out",
+      "HOLIDAY_NO_CLASS": "Today is a holiday, class can't be started",
+      "ALREADY_CHECKED_IN": "This class has already been checked in"
+    }
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "submit": "Save Password",
+    "submitting": "Saving...",
+    "errorTitle": "Couldn't change password",
+    "errorNoSession": "Session not found, please log in again.",
+    "errorWrongCurrentPassword": "Current password is incorrect",
+    "success": "Password changed successfully",
+    "validation": {
+      "currentPasswordRequired": "Current password is required",
+      "newPasswordMin": "New password must be at least 6 characters",
+      "confirmPasswordRequired": "Please confirm your new password",
+      "confirmPasswordMismatch": "Passwords don't match"
+    }
+  }
+}

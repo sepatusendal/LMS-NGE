@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Clock, AlertCircle, Users, Layers, ChevronRight } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useTodayClasses } from "@/features/meetings/use-today";
@@ -27,19 +28,22 @@ export default function TodayPage() {
   const { data: teacher } = useCurrentTeacher();
   const stats = useTeacherStats();
   const { count: lessonPlanDueCount } = useComplianceCount();
+  const t = useTranslations("today");
+  const tStatus = useTranslations("workflow.status");
+  const locale = useLocale();
 
   const now = useMemo(() => new Date(), []);
   const greeting = useMemo(() => getTimeGreeting(now.getHours()), [now]);
   const firstName = teacher?.fullName?.split(" ")[0] ?? "";
 
   const todayDate = useMemo(() => {
-    return now.toLocaleDateString("id-ID", {
+    return now.toLocaleDateString(locale === "en" ? "en-US" : "id-ID", {
       weekday: "long",
       day: "numeric",
       month: "long",
       year: "numeric",
     });
-  }, [now]);
+  }, [now, locale]);
 
   const completedCount = classes?.filter((c) => DONE_STATUSES.has(c.meetingStatus)).length ?? 0;
   const totalCount = classes?.length ?? 0;
@@ -55,13 +59,14 @@ export default function TodayPage() {
         completedCount={completedCount}
         totalCount={totalCount}
         hour={now.getHours()}
+        t={t}
       />
 
       <AnnouncementBanner />
 
       <div className="grid grid-cols-2 gap-3">
-        <StatCard icon={Layers} label="Kelas diampu" value={stats.classCount} loading={stats.isLoading} />
-        <StatCard icon={Users} label="Total siswa" value={stats.studentCount} loading={stats.isLoading} />
+        <StatCard icon={Layers} label={t("stats.classCount")} value={stats.classCount} loading={stats.isLoading} />
+        <StatCard icon={Users} label={t("stats.studentCount")} value={stats.studentCount} loading={stats.isLoading} />
       </div>
 
       {lessonPlanDueCount > 0 && (
@@ -74,10 +79,10 @@ export default function TodayPage() {
           </span>
           <span className="min-w-0 flex-1">
             <span className="font-semibold text-[#a3730a]">
-              {lessonPlanDueCount} kelas perlu lesson plan
+              {t("lessonPlanDue", { count: lessonPlanDueCount })}
             </span>
             <span className="text-muted-foreground block text-xs">
-              Siapkan lesson plan minimal 2 minggu ke depan biar pengganti bisa langsung catch-up.
+              {t("lessonPlanDueHint")}
             </span>
           </span>
         </Link>
@@ -90,22 +95,22 @@ export default function TodayPage() {
           <div className="bg-destructive/10 mb-4 flex size-14 items-center justify-center rounded-full">
             <AlertCircle className="text-destructive size-6" />
           </div>
-          <h1 className="text-lg font-semibold">Gagal Memuat Data</h1>
+          <h1 className="text-lg font-semibold">{t("loadError.title")}</h1>
           <p className="text-muted-foreground mt-1 text-center text-sm">
-            {error?.message || "Terjadi kesalahan. Coba refresh halaman."}
+            {error?.message || t("loadError.description")}
           </p>
         </div>
       )}
 
-      {!isLoading && !isError && (!classes || classes.length === 0) && <EmptyTodayState />}
+      {!isLoading && !isError && (!classes || classes.length === 0) && <EmptyTodayState t={t} />}
 
       {!isLoading && !isError && classes && classes.length > 0 && (
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Kelas hari ini</h2>
+            <h2 className="text-sm font-semibold">{t("todaysClasses")}</h2>
             {totalCount - completedCount > 0 && (
               <Link href="/absensi" className="text-primary text-xs font-medium hover:underline">
-                Kerjakan di Absensi →
+                {t("goToAbsensi")}
               </Link>
             )}
           </div>
@@ -132,7 +137,7 @@ export default function TodayPage() {
                     </span>
                   </div>
                   <Badge variant={status.variant} className={cn("shrink-0 text-[11px] whitespace-nowrap", status.accent)}>
-                    {status.label}
+                    {tStatus(status.labelKey)}
                   </Badge>
                   <ChevronRight className="text-muted-foreground/50 size-4 shrink-0" />
                 </button>
@@ -152,13 +157,15 @@ function TodayHero({
   completedCount,
   totalCount,
   hour,
+  t,
 }: {
-  greeting: { text: string; emoji: string };
+  greeting: { key: import("@/lib/greeting").GreetingKey; emoji: string };
   firstName: string;
   dateLabel: string;
   completedCount: number;
   totalCount: number;
   hour: number;
+  t: ReturnType<typeof useTranslations>;
 }) {
   const isNight = hour >= 18 || hour < 4;
 
@@ -191,10 +198,10 @@ function TodayHero({
       <div className="relative flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="text-sm font-medium text-white/80">
-            {greeting.text}
+            {t(`greeting.${greeting.key}`)}
             {firstName ? `, ${firstName}` : ""} {greeting.emoji}
           </p>
-          <h1 className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">Kelas Hari Ini</h1>
+          <h1 className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">{t("heroTitle")}</h1>
           <p className="mt-0.5 text-xs text-white/70 sm:text-sm">{dateLabel}</p>
 
           {totalCount > 0 && (
@@ -206,7 +213,7 @@ function TodayHero({
                 />
               </div>
               <span className="text-xs font-medium text-white/85">
-                {completedCount}/{totalCount} selesai
+                {t("progress", { completed: completedCount, total: totalCount })}
               </span>
             </div>
           )}
@@ -218,14 +225,12 @@ function TodayHero({
   );
 }
 
-function EmptyTodayState() {
+function EmptyTodayState({ t }: { t: ReturnType<typeof useTranslations> }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-3xl bg-white px-6 py-14 text-center shadow-sm">
       <RelaxIllustration className="mb-5 h-auto w-48" />
-      <h1 className="text-lg font-semibold text-[#1e3a5f]">Tidak Ada Kelas Hari Ini</h1>
-      <p className="text-muted-foreground mt-1 max-w-xs text-sm">
-        Nikmati waktu istirahatmu! Belum ada jadwal mengajar untuk hari ini.
-      </p>
+      <h1 className="text-lg font-semibold text-[#1e3a5f]">{t("empty.title")}</h1>
+      <p className="text-muted-foreground mt-1 max-w-xs text-sm">{t("empty.description")}</p>
     </div>
   );
 }

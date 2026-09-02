@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Loader2, MapPin, Clock, CheckCircle, Play, LogOut, FileText, Camera, ClipboardCheck } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,25 +15,25 @@ import { ReportForm } from "@/features/meetings/report-form";
 import { FileUpload } from "@/features/drive/file-upload";
 import { ClassAvatar } from "@/components/shared/class-avatar";
 import { HandoverSummaryPanel } from "@/features/substitutes/handover-summary-panel";
-import { ABSENCE_REASON_LABEL } from "@/features/substitutes/schema";
+import { ABSENCE_REASON_LABEL, ABSENCE_REASON_KEY } from "@/features/substitutes/schema";
 import type { TodayClass } from "@/features/meetings/schema";
 
 export const STATUS_CONFIG: Record<
   string,
-  { label: string; variant: "default" | "secondary" | "destructive" | "outline"; accent: string; barColor: string }
+  { labelKey: string; variant: "default" | "secondary" | "destructive" | "outline"; accent: string; barColor: string }
 > = {
-  not_started: { label: "Belum Mulai", variant: "secondary", accent: "text-slate-500", barColor: "bg-slate-300" },
-  checked_in: { label: "Isi Absensi", variant: "outline", accent: "text-[#eda100]", barColor: "bg-[#eda100]" },
-  attendance_done: { label: "Check-out", variant: "outline", accent: "text-[#eda100]", barColor: "bg-[#eda100]" },
-  checked_out: { label: "Isi Report", variant: "outline", accent: "text-[#4b60ac]", barColor: "bg-[#4b60ac]" },
+  not_started: { labelKey: "notStarted", variant: "secondary", accent: "text-slate-500", barColor: "bg-slate-300" },
+  checked_in: { labelKey: "fillAttendance", variant: "outline", accent: "text-[#eda100]", barColor: "bg-[#eda100]" },
+  attendance_done: { labelKey: "checkOut", variant: "outline", accent: "text-[#eda100]", barColor: "bg-[#eda100]" },
+  checked_out: { labelKey: "fillReport", variant: "outline", accent: "text-[#4b60ac]", barColor: "bg-[#4b60ac]" },
   report_submitted: {
-    label: "Selesai",
+    labelKey: "done",
     variant: "outline",
     accent: "border-transparent bg-[#1baf7a] px-2.5 py-1 text-[13px] font-semibold text-white",
     barColor: "bg-[#1baf7a]",
   },
   course_completed: {
-    label: "Kelas Selesai",
+    labelKey: "courseCompleted",
     variant: "outline",
     accent: "border-transparent bg-[#1baf7a] px-2.5 py-1 text-[13px] font-semibold text-white",
     barColor: "bg-[#1baf7a]",
@@ -50,6 +51,10 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
   const [expanded, setExpanded] = useState(false);
   const [showHandover, setShowHandover] = useState(false);
   const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+  const t = useTranslations("workflow");
+  const tStatus = useTranslations("workflow.status");
+  const locale = useLocale();
+  const dtLocale = locale === "en" ? "en-US" : "id-ID";
 
   const status = STATUS_CONFIG[c.meetingStatus] || STATUS_CONFIG.not_started;
   const noLp = !c.lessonPlanId;
@@ -84,51 +89,59 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
                 </div>
                 {c.topic ? (
                   <p className="text-xs font-medium">
-                    Meeting {c.meetingNumber}: {c.topic}
+                    {t("meetingTopic", { number: c.meetingNumber, topic: c.topic })}
                   </p>
                 ) : (
-                  <p className="text-destructive/80 text-xs">Belum ada lesson plan untuk meeting ini</p>
+                  <p className="text-destructive/80 text-xs">{t("noLessonPlanForMeeting")}</p>
                 )}
               </div>
             </div>
             <Badge variant={status.variant} className={cn("ml-2 shrink-0", status.accent)}>
-              {status.label}
+              {tStatus(status.labelKey)}
             </Badge>
           </div>
 
           {c.isSubstitute && (
             <div className="bg-amber-50 text-amber-800 mt-3 rounded-md px-3 py-2 text-xs">
-              Anda mengajar sebagai pengganti <span className="font-medium">{c.originalTeacherName}</span>
-              {c.substituteReason && <> — {ABSENCE_REASON_LABEL[c.substituteReason] ?? c.substituteReason}</>}
+              {t("teachingAsSubstitute")} <span className="font-medium">{c.originalTeacherName}</span>
+              {c.substituteReason && (
+                <>
+                  {" — "}
+                  {ABSENCE_REASON_KEY[c.substituteReason]
+                    ? t(`absenceReason.${ABSENCE_REASON_KEY[c.substituteReason]}`)
+                    : (ABSENCE_REASON_LABEL[c.substituteReason] ?? c.substituteReason)}
+                </>
+              )}
             </div>
           )}
 
           {c.checkInTime && (
             <div className="mt-3 flex gap-4 text-xs">
               <span className="text-muted-foreground">
-                Check-in:{" "}
+                {t("checkIn")}:{" "}
                 <span className="font-medium text-foreground">
-                  {new Date(c.checkInTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                  {new Date(c.checkInTime).toLocaleTimeString(dtLocale, { hour: "2-digit", minute: "2-digit" })}
                 </span>
               </span>
               {c.checkOutTime && (
                 <>
                   <span className="text-muted-foreground">
-                    Check-out:{" "}
+                    {t("checkOut")}:{" "}
                     <span className="font-medium text-foreground">
-                      {new Date(c.checkOutTime).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                      {new Date(c.checkOutTime).toLocaleTimeString(dtLocale, { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </span>
                   {c.durationMinutes && (
                     <span className="text-muted-foreground">
-                      Durasi: <span className="font-medium text-foreground">{c.durationMinutes} mnt</span>
+                      {t("duration")}:{" "}
+                      <span className="font-medium text-foreground">{t("durationMinutes", { minutes: c.durationMinutes })}</span>
                     </span>
                   )}
                 </>
               )}
               {c.isLate && (
                 <Badge variant="destructive" className="text-[10px]">
-                  Terlambat
+                  {t("late")}
                 </Badge>
               )}
             </div>
@@ -141,14 +154,14 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
               className="mt-2 w-full"
               onClick={() => setShowHandover((prev) => !prev)}
             >
-              {showHandover ? "Tutup Handover Summary" : "Lihat Handover Summary"}
+              {showHandover ? t("closeHandoverSummary") : t("viewHandoverSummary")}
             </Button>
           )}
 
           <div className="mt-3 flex flex-wrap gap-2">
             {noLp && (
               <Link href="/lesson-plan/new" className={cn(buttonVariants({ size: "sm", variant: "outline" }), "w-full")}>
-                Buat Lesson Plan
+                {t("createLessonPlan")}
               </Link>
             )}
 
@@ -164,7 +177,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
                 }
               >
                 {startClass.isPending ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-                <span className="ml-1.5">Mulai Kelas</span>
+                <span className="ml-1.5">{t("startClass")}</span>
               </Button>
             )}
 
@@ -176,7 +189,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
                   onClick={() => setExpanded((prev) => !prev)}
                 >
                   <ClipboardCheck className="size-4" />
-                  <span className="ml-1.5">{expanded ? "Tutup Absensi" : "Isi Absensi Siswa"}</span>
+                  <span className="ml-1.5">{expanded ? t("closeAttendance") : t("fillStudentAttendance")}</span>
                 </Button>
               </div>
             )}
@@ -184,7 +197,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
             {c.meetingStatus === "attendance_done" && (
               <div className="flex w-full gap-2">
                 <Button size="sm" variant="outline" className="flex-1" onClick={() => setExpanded((prev) => !prev)}>
-                  Lihat Lesson Plan
+                  {t("viewLessonPlan")}
                 </Button>
                 <Button
                   size="sm"
@@ -193,7 +206,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
                   onClick={() => checkOut.mutate(c.meetingId!)}
                 >
                   {checkOut.isPending ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />}
-                  <span className="ml-1.5">Check-out</span>
+                  <span className="ml-1.5">{t("checkOut")}</span>
                 </Button>
               </div>
             )}
@@ -206,11 +219,11 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
                 onClick={() => setExpanded((prev) => !prev)}
               >
                 {expanded ? (
-                  "Tutup"
+                  t("close")
                 ) : (
                   <>
                     <FileText className="size-4" />
-                    <span className="ml-1.5">Isi Daily Teaching Report</span>
+                    <span className="ml-1.5">{t("fillDailyReport")}</span>
                   </>
                 )}
               </Button>
@@ -219,14 +232,14 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
             {c.meetingStatus === "report_submitted" && (
               <div className="flex w-full items-center gap-2 rounded-md bg-[#1baf7a]/10 px-3 py-2 text-sm">
                 <CheckCircle className="size-4 text-[#1baf7a]" />
-                <span className="font-medium text-[#0e7a53]">Kelas selesai!</span>
+                <span className="font-medium text-[#0e7a53]">{t("classDone")}</span>
               </div>
             )}
 
             {c.meetingStatus === "course_completed" && (
               <div className="flex w-full items-center gap-2 rounded-md bg-[#1baf7a]/10 px-3 py-2 text-sm">
                 <CheckCircle className="size-4 text-[#1baf7a]" />
-                <span className="font-medium text-[#0e7a53]">Semua pertemuan telah selesai</span>
+                <span className="font-medium text-[#0e7a53]">{t("courseAllDone")}</span>
               </div>
             )}
           </div>
@@ -236,7 +249,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
       {showHandover && c.lessonPlanId && (
         <Card>
           <CardContent className="pt-4">
-            <h3 className="mb-3 text-sm font-medium">Handover Summary</h3>
+            <h3 className="mb-3 text-sm font-medium">{t("handoverSummary")}</h3>
             <HandoverSummaryPanel classId={c.classId} lessonPlanId={c.lessonPlanId} />
           </CardContent>
         </Card>
@@ -245,7 +258,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
       {expanded && c.meetingStatus === "checked_in" && c.meetingId && (
         <Card className="overflow-hidden py-0">
           <CardContent className="pt-4 pb-4">
-            <h3 className="mb-3 text-sm font-medium">Absensi Siswa</h3>
+            <h3 className="mb-3 text-sm font-medium">{t("studentAttendance")}</h3>
             <AttendanceForm meetingId={c.meetingId} classId={c.classId} onDone={() => setExpanded(false)} />
           </CardContent>
           <div className="border-t px-4 py-3">
@@ -255,12 +268,13 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
               className="text-muted-foreground flex w-full items-center justify-center gap-1.5 text-xs hover:text-foreground"
             >
               <Camera className="size-3.5" />
-              {showPhotoUpload ? "Tutup foto kelas" : "Tambah foto kelas (opsional)"}
+              {showPhotoUpload ? t("closeClassPhoto") : t("addClassPhoto")}
             </button>
           </div>
           {showPhotoUpload && (
             <div className="border-t bg-[#eda100]/5 px-4 py-4">
               <FileUpload
+                label={t("uploadClassPhoto")}
                 onUploaded={(driveFileId, fileName) => {
                   if (driveFileId) {
                     updateCheckInPhoto(c.meetingId!, driveFileId, fileName);
@@ -275,14 +289,14 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
       {expanded && c.meetingStatus === "attendance_done" && c.lessonPlanId && (
         <Card>
           <CardContent className="pt-4">
-            <h3 className="mb-2 text-sm font-medium">Lesson Plan</h3>
+            <h3 className="mb-2 text-sm font-medium">{t("lessonPlan")}</h3>
             <div className="space-y-2 text-sm">
               <p>
-                <span className="text-muted-foreground">Topic:</span> <span className="font-medium">{c.topic}</span>
+                <span className="text-muted-foreground">{t("topic")}:</span> <span className="font-medium">{c.topic}</span>
               </p>
               {c.learningObjectives.length > 0 && (
                 <div>
-                  <span className="text-muted-foreground">Objectives:</span>
+                  <span className="text-muted-foreground">{t("objectives")}:</span>
                   <ul className="list-disc space-y-0.5 pl-5">
                     {c.learningObjectives.map((o, i) => (
                       <li key={i}>{o}</li>
@@ -311,7 +325,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
                 </a>
               )}
               <Link href={`/lesson-plan/${c.lessonPlanId}`} className="text-primary inline-block text-xs hover:underline">
-                Lihat lengkap →
+                {t("viewFull")}
               </Link>
             </div>
           </CardContent>
@@ -321,7 +335,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
       {expanded && c.meetingStatus === "checked_out" && c.meetingId && (
         <Card>
           <CardContent className="pt-4">
-            <h3 className="mb-3 text-sm font-medium">Daily Teaching Report</h3>
+            <h3 className="mb-3 text-sm font-medium">{t("dailyTeachingReport")}</h3>
             <ReportForm
               meetingId={c.meetingId}
               classId={c.classId}

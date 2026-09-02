@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Clock, MapPin, School, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { ClassAvatar } from "@/components/shared/class-avatar";
 import { LoadingState } from "@/components/shared/loading-state";
@@ -16,6 +17,9 @@ interface SchoolGroup {
 
 export default function KelasPage() {
   const { data: classes, isLoading } = useMyClasses();
+  const t = useTranslations("kelas");
+  const tCommon = useTranslations("common");
+  const dayLabels = tCommon.raw("daysShort") as Record<string, string>;
 
   const groups = useMemo<SchoolGroup[]>(() => {
     if (!classes) return [];
@@ -55,10 +59,8 @@ export default function KelasPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight">Kelas Saya</h1>
-        <p className="text-muted-foreground mt-0.5 text-sm">
-          Jadwal dan modul acuan untuk setiap kelasmu
-        </p>
+        <h1 className="text-2xl font-extrabold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground mt-0.5 text-sm">{t("subtitle")}</p>
       </div>
 
       {isLoading && <LoadingState />}
@@ -66,9 +68,7 @@ export default function KelasPage() {
       {!isLoading && groups.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-3xl bg-white px-6 py-14 text-center shadow-sm">
           <Users className="text-muted-foreground mb-3 size-10" />
-          <p className="text-muted-foreground text-sm">
-            Belum ada kelas yang ditugaskan ke Anda.
-          </p>
+          <p className="text-muted-foreground text-sm">{t("noClassesAssigned")}</p>
         </div>
       )}
 
@@ -79,6 +79,8 @@ export default function KelasPage() {
             group={group}
             open={openSchools.has(group.schoolName)}
             onToggle={() => toggleSection(group.schoolName)}
+            dayLabels={dayLabels}
+            classCountLabel={t("classCount", { count: group.classes.length })}
           />
         ))}
       </div>
@@ -90,10 +92,14 @@ function SchoolSection({
   group,
   open,
   onToggle,
+  dayLabels,
+  classCountLabel,
 }: {
   group: SchoolGroup;
   open: boolean;
   onToggle: () => void;
+  dayLabels: Record<string, string>;
+  classCountLabel: string;
 }) {
   return (
     <div className="space-y-2.5">
@@ -110,7 +116,7 @@ function SchoolSection({
         />
         <School className="text-muted-foreground size-4 shrink-0" />
         <span className="text-sm font-bold">{group.schoolName}</span>
-        <span className="text-muted-foreground text-xs">({group.classes.length} kelas)</span>
+        <span className="text-muted-foreground text-xs">({classCountLabel})</span>
       </button>
 
       {open && (
@@ -130,7 +136,7 @@ function SchoolSection({
                 <div className="text-muted-foreground flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs">
                   <span className="flex items-center gap-1">
                     <Clock className="size-3" />
-                    {formatScheduleSlots(c.scheduleSlots)}
+                    {formatScheduleSlots(c.scheduleSlots, dayLabels)}
                   </span>
                   {c.room && (
                     <span className="flex items-center gap-1">

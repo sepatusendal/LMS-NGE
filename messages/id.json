@@ -1,0 +1,414 @@
+{
+  "common": {
+    "nav": {
+      "today": "Hari Ini",
+      "absensi": "Absensi",
+      "lessonPlan": "Lesson Plan",
+      "lessonPlanShort": "Plan",
+      "jadwal": "Jadwal",
+      "kelas": "Kelas",
+      "profile": "Profil"
+    },
+    "logout": "Keluar",
+    "language": "Bahasa",
+    "languageIndonesian": "Indonesia",
+    "languageEnglish": "Inggris",
+    "loading": "Memuat...",
+    "loadingData": "Memuat data...",
+    "error": "Terjadi kesalahan",
+    "save": "Simpan",
+    "saving": "Menyimpan...",
+    "cancel": "Batal",
+    "empty": "Belum ada data",
+    "announcements": {
+      "dismiss": "Tutup pengumuman",
+      "gotIt": "Mengerti",
+      "othersWaiting": "{count} pengumuman lain menunggu"
+    },
+    "daysShort": {
+      "0": "Min",
+      "1": "Sen",
+      "2": "Sel",
+      "3": "Rab",
+      "4": "Kam",
+      "5": "Jum",
+      "6": "Sab"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "name": "Nama",
+    "email": "Email",
+    "tutorId": "Tutor ID",
+    "phone": "No. HP"
+  },
+  "today": {
+    "heroTitle": "Kelas Hari Ini",
+    "greeting": {
+      "morning": "Selamat pagi",
+      "afternoon": "Selamat siang",
+      "evening": "Selamat sore",
+      "night": "Selamat malam"
+    },
+    "progress": "{completed}/{total} selesai",
+    "stats": {
+      "classCount": "Kelas diampu",
+      "studentCount": "Total siswa"
+    },
+    "lessonPlanDue": "{count} kelas perlu lesson plan",
+    "lessonPlanDueHint": "Siapkan lesson plan minimal 2 minggu ke depan biar pengganti bisa langsung catch-up.",
+    "loadError": {
+      "title": "Gagal Memuat Data",
+      "description": "Terjadi kesalahan. Coba refresh halaman."
+    },
+    "todaysClasses": "Kelas hari ini",
+    "goToAbsensi": "Kerjakan di Absensi →",
+    "empty": {
+      "title": "Tidak Ada Kelas Hari Ini",
+      "description": "Nikmati waktu istirahatmu! Belum ada jadwal mengajar untuk hari ini."
+    }
+  },
+  "absensi": {
+    "title": "Absensi",
+    "subtitle": "Kerjakan check-in, absensi, check-out, dan daily teaching report untuk tiap kelas —",
+    "classesDone": "{completed}/{total} kelas selesai",
+    "loadError": "Terjadi kesalahan. Coba refresh halaman.",
+    "empty": "Tidak ada kelas hari ini."
+  },
+  "jadwal": {
+    "title": "Jadwal Mengajar",
+    "subtitle": "Jadwal mingguan semua kelasmu",
+    "noClassesAssigned": "Belum ada kelas yang ditugaskan ke Anda.",
+    "today": "Hari ini",
+    "noneScheduled": "Belum ada jadwal terjadwal.",
+    "day": {
+      "monday": "Senin",
+      "tuesday": "Selasa",
+      "wednesday": "Rabu",
+      "thursday": "Kamis",
+      "friday": "Jumat",
+      "saturday": "Sabtu",
+      "sunday": "Minggu"
+    }
+  },
+  "kelas": {
+    "title": "Kelas Saya",
+    "subtitle": "Jadwal dan modul acuan untuk setiap kelasmu",
+    "noClassesAssigned": "Belum ada kelas yang ditugaskan ke Anda.",
+    "classCount": "{count} kelas"
+  },
+  "kelasDetail": {
+    "myClasses": "Kelas Saya",
+    "notFound": {
+      "title": "Kelas tidak ditemukan",
+      "description": "Kelas ini mungkin bukan kelas Anda, atau sudah tidak aktif.",
+      "back": "← Kembali ke Kelas Saya"
+    },
+    "classType": {
+      "teacherTraining": "Kelas Guru & Staff",
+      "regular": "Kelas Reguler"
+    },
+    "room": "Ruang {room}",
+    "createLessonPlan": "Buat Lesson Plan",
+    "tabs": {
+      "roster": "Roster",
+      "attendance": "Kehadiran",
+      "history": "Riwayat"
+    },
+    "studentRoster": "Roster Siswa",
+    "loadingRoster": "Memuat roster...",
+    "studentsEnrolled": "{count} siswa terdaftar",
+    "noStudents": "Belum ada siswa di kelas ini.",
+    "meetingHistory": "Riwayat Pertemuan"
+  },
+  "classAttendanceSummary": {
+    "title": "Kehadiran Siswa",
+    "searchPlaceholder": "Cari siswa...",
+    "flaggedCount": "{count} siswa dengan kehadiran di bawah {threshold}%",
+    "loading": "Memuat data kehadiran...",
+    "empty": "Belum ada data absensi untuk kelas ini.",
+    "noSearchResults": "Tidak ada siswa dengan nama \"{search}\".",
+    "needsAttention": "Perlu perhatian",
+    "present": "Hadir",
+    "late": "Telat",
+    "excused": "Izin",
+    "absentLabel": "Alpa",
+    "outOfMeetings": "dari {count} pertemuan",
+    "meetingLine": "Meeting {number} — {topic} · {date}",
+    "absentShort": "Alpa",
+    "excusedShort": "Izin"
+  },
+  "classTimeline": {
+    "status": {
+      "completed": "Selesai",
+      "scheduled": "Terjadwal",
+      "cancelled": "Dibatalkan"
+    },
+    "objectivesStatus": {
+      "achieved": "Tercapai",
+      "partial": "Sebagian",
+      "notYet": "Belum"
+    },
+    "meeting": "Meeting {number}",
+    "teacher": "Teacher",
+    "substitute": "Substitute",
+    "manage": "Kelola",
+    "changeTutor": "Ganti Tutor",
+    "manageMeeting": "Kelola Meeting",
+    "checkIn": "Check-in",
+    "checkOut": "Check-out",
+    "late": "Terlambat",
+    "durationMinutes": "{minutes} mnt",
+    "present": "Hadir",
+    "enrolledCount": " ({count} terdaftar)",
+    "objectives": "Tujuan",
+    "reason": "Alasan",
+    "thisClass": "Kelas ini",
+    "loading": "Memuat timeline...",
+    "empty": "Belum ada lesson plan untuk kelas ini.",
+    "summary": "Total {enrolled} siswa terdaftar · {lessonPlans} lesson plan"
+  },
+  "lessonPlanList": {
+    "subtitle": "Rencana pembelajaran untuk semua kelasmu",
+    "classCount": "{count} kelas",
+    "classesNeedPlan": "{count} perlu lesson plan",
+    "allClassesSafe": "Semua kelas aman",
+    "add": "Tambah",
+    "safe": "Aman",
+    "needsLessonPlan": "Perlu Lesson Plan",
+    "noPlansForClass": "Belum ada lesson plan untuk kelas ini.",
+    "week": "Minggu {week}",
+    "noClassesAssigned": "Belum ada kelas yang ditugaskan ke Anda."
+  },
+  "lessonPlanForm": {
+    "backToLessonPlan": "← Kembali ke Lesson Plan",
+    "addTitle": "Tambah Lesson Plan",
+    "addSubtitle": "Isi setiap bagian untuk menyiapkan rencana pertemuan.",
+    "editTitle": "Edit Lesson Plan",
+    "viewTitle": "Lihat Lesson Plan",
+    "delete": "Hapus",
+    "deleteConfirm": "Hapus lesson plan \"{topic}\" (Meeting {meetingNumber})? Tindakan ini tidak bisa dibatalkan.",
+    "loadError": "Gagal memuat lesson plan",
+    "tryRefresh": "Coba refresh halaman.",
+    "validation": {
+      "classRequired": "Kelas wajib dipilih",
+      "meetingNumberRequired": "Meeting number wajib diisi",
+      "weekRequired": "Minggu wajib diisi",
+      "dateRequired": "Tanggal wajib diisi",
+      "topicRequired": "Topic wajib diisi"
+    },
+    "readOnlyNotice": "Kamu hanya bisa melihat lesson plan ini. Hanya teacher yang ditugaskan di kelas ini yang dapat mengedit.",
+    "sections": {
+      "basicInfo": { "title": "Info Dasar", "description": "Kelas, jadwal, dan level pembelajaran" },
+      "objectives": { "title": "Learning Objectives & Skills", "description": "Apa yang siswa capai di akhir pertemuan" },
+      "materials": { "title": "Materials", "description": "Alat bantu yang dipakai" },
+      "stages": { "title": "Stage-by-Stage", "description": "Rangkaian aktivitas dari awal sampai akhir kelas" },
+      "differentiation": { "title": "Differentiation", "description": "Penyesuaian dalam kegiatan mengajar" },
+      "module": { "title": "Modul Pembelajaran", "description": "Lampirkan materi PDF untuk pertemuan ini" }
+    },
+    "fields": {
+      "class": "Kelas",
+      "classPlaceholder": "Pilih kelas",
+      "meetingNumber": "Meeting No.",
+      "week": "Minggu Ke-",
+      "date": "Tanggal",
+      "level": "Level",
+      "levelPlaceholder": "Pilih level",
+      "unitAndTopic": "Unit & Topic",
+      "unitAndTopicPlaceholder": "mis. Unit 1: Welcome",
+      "topic": "Topic",
+      "learningObjectives": "Learning Objectives",
+      "learningObjectivePlaceholder": "By the end of this lesson, students will be able to...",
+      "addObjective": "Tambah Poin",
+      "skill": "Skill",
+      "materialsRequired": "Materials Required",
+      "vocabularyFocus": "Vocabulary / Language Focus",
+      "stageFallback": "Tahap {number}",
+      "stageActivityPlaceholder": "Aktivitas tutor & siswa di tahap ini",
+      "stageMediaPlaceholder": "Media (opsional)",
+      "stageAssessmentPlaceholder": "Assessment (opsional)",
+      "differentiationSupport": "Approach/Strategy for Learners Needing Extra Support",
+      "differentiationExtension": "Approach/Strategy for Fast Learners",
+      "differentiationHomework": "Homework (opsional)",
+      "module": "Modul (PDF)",
+      "noModuleUploaded": "Belum ada modul yang diupload.",
+      "uploadModule": "Upload Modul (PDF)"
+    },
+    "albrightNotice": "Kurikulum Albright — detail Activities, Resources, dan Language Focus diisi setelah kelas selesai, di Daily Teaching Report.",
+    "submitting": "Menyimpan...",
+    "submit": "Simpan Lesson Plan",
+    "toasts": {
+      "teacherProfileNotReady": "Profil teacher belum siap",
+      "createSuccess": "Lesson plan berhasil disimpan",
+      "createError": "Gagal menyimpan lesson plan",
+      "updateSuccess": "Lesson plan berhasil diperbarui",
+      "updateError": "Gagal memperbarui lesson plan",
+      "deleteSuccess": "Lesson plan berhasil dihapus",
+      "deleteError": "Gagal menghapus lesson plan",
+      "HOLIDAY_NO_LESSON_PLAN": "Tanggal ini adalah hari libur, tidak bisa membuat lesson plan",
+      "DUPLICATE_MEETING_NUMBER": "Meeting number ini sudah dipakai lesson plan lain di kelas ini. Ubah nomor meeting-nya."
+    }
+  },
+  "attendanceForm": {
+    "loadingRoster": "Memuat roster...",
+    "noStudentsNotice": "Kelas ini belum memiliki siswa. Silakan lanjutkan ke tahap berikutnya.",
+    "continue": "Lanjutkan",
+    "present": "Hadir",
+    "saved": "Tersimpan",
+    "markAllPresent": "Tandai semua hadir",
+    "saveAttendance": "Simpan Absensi",
+    "status": {
+      "present": "Hadir",
+      "absent": "Alpa",
+      "excused": "Izin",
+      "late": "Telat"
+    },
+    "toasts": {
+      "saveError": "Gagal menyimpan absensi",
+      "saveSuccess": "Absensi berhasil disimpan"
+    }
+  },
+  "reportForm": {
+    "studentNoLongerEnrolled": "Siswa tidak lagi terdaftar di kelas ini",
+    "rosterUpdatedNotice": "Daftar siswa telah diperbarui. Silakan pilih siswa lain.",
+    "albright": {
+      "languageSkillsFocus": "Language & Skills Focus",
+      "languageSkillsFocusHint": "Contoh: \"Grammar: to be, Listening\" atau \"Vocabulary: Jobs, Speaking\"",
+      "activities": "Activities",
+      "activitiesHint": "Rangkaian kegiatan yang dilakukan di kelas hari ini.",
+      "resources": "Resources",
+      "resourcesHint": "Contoh: \"Bright Book p. 14-15\"",
+      "homework": "Homework (opsional)"
+    },
+    "skillsTaught": "Skill yang Diajarkan",
+    "objectivesAchieved": "Tujuan Pembelajaran Tercapai?",
+    "objectivesStatus": {
+      "achieved": "Tercapai",
+      "partial": "Sebagian",
+      "notAchieved": "Belum Tercapai"
+    },
+    "objectivesDefaultHint": "Semua objective dianggap tercapai secara default — uncheck yang belum tercapai.",
+    "whatWentWell": "Hal Positif Hari Ini",
+    "whatNeedsImprovement": "Yang Perlu Ditingkatkan",
+    "actionPlan": "Action Plan",
+    "actionPlanHint": "Gimana caranya ini bakal dilatih/diperbaiki di sesi mengajar berikutnya?",
+    "nextLessonNotes": "Catatan untuk Pertemuan Selanjutnya (materi/bab yang perlu dilanjutkan)",
+    "homework": "PR / Tugas (opsional)",
+    "followUpStudents": "Siswa yang Perlu Follow-up",
+    "selectStudent": "Pilih siswa",
+    "notePlaceholder": "Catatan...",
+    "activityPhoto": "Foto Aktivitas (opsional)",
+    "uploadActivityPhoto": "Upload Foto Kegiatan",
+    "submitting": "Menyimpan...",
+    "submit": "Submit Daily Teaching Report",
+    "validation": {
+      "followUpNoteRequired": "Catatan wajib diisi",
+      "actionPlanRequired": "Action plan wajib diisi kalau ada catatan yang perlu ditingkatkan"
+    },
+    "toasts": {
+      "profileNotReady": "Profil belum siap",
+      "saveSuccess": "Daily Teaching Report berhasil disimpan",
+      "saveError": "Gagal menyimpan report"
+    }
+  },
+  "fileUpload": {
+    "uploadPhoto": "Upload Foto",
+    "uploading": "Mengupload...",
+    "toasts": {
+      "uploadSuccess": "File berhasil diupload",
+      "uploadError": "Gagal upload file",
+      "uploadFailed": "Upload gagal"
+    }
+  },
+  "moduleCover": {
+    "moduleName": "Modul {name}",
+    "noModule": "Belum ada modul acuan untuk kelas ini.",
+    "learningModule": "Modul Pembelajaran"
+  },
+  "handoverSummary": {
+    "loading": "Memuat handover summary...",
+    "originalTeacher": "Guru Asli",
+    "previousLesson": "Pelajaran Sebelumnya (Meeting {number})",
+    "whatWentWell": "Hal positif",
+    "whatNeedsImprovement": "Perlu ditingkatkan",
+    "nextLessonNotes": "Catatan pertemuan ini",
+    "previousHomework": "PR sebelumnya",
+    "followUpStudents": "Siswa Perlu Follow-up",
+    "currentLesson": "Pelajaran Sekarang (Meeting {number})",
+    "nextLesson": "Pelajaran Selanjutnya (Meeting {number})"
+  },
+  "workflow": {
+    "status": {
+      "notStarted": "Belum Mulai",
+      "fillAttendance": "Isi Absensi",
+      "checkOut": "Check-out",
+      "fillReport": "Isi Report",
+      "done": "Selesai",
+      "courseCompleted": "Kelas Selesai"
+    },
+    "meetingTopic": "Meeting {number}: {topic}",
+    "noLessonPlanForMeeting": "Belum ada lesson plan untuk meeting ini",
+    "teachingAsSubstitute": "Anda mengajar sebagai pengganti",
+    "checkIn": "Check-in",
+    "duration": "Durasi",
+    "durationMinutes": "{minutes} mnt",
+    "late": "Terlambat",
+    "closeHandoverSummary": "Tutup Handover Summary",
+    "viewHandoverSummary": "Lihat Handover Summary",
+    "createLessonPlan": "Buat Lesson Plan",
+    "startClass": "Mulai Kelas",
+    "closeAttendance": "Tutup Absensi",
+    "fillStudentAttendance": "Isi Absensi Siswa",
+    "viewLessonPlan": "Lihat Lesson Plan",
+    "close": "Tutup",
+    "fillDailyReport": "Isi Daily Teaching Report",
+    "classDone": "Kelas selesai!",
+    "courseAllDone": "Semua pertemuan telah selesai",
+    "handoverSummary": "Handover Summary",
+    "studentAttendance": "Absensi Siswa",
+    "closeClassPhoto": "Tutup foto kelas",
+    "addClassPhoto": "Tambah foto kelas (opsional)",
+    "uploadClassPhoto": "Upload foto kelas",
+    "lessonPlan": "Lesson Plan",
+    "topic": "Topic",
+    "objectives": "Objectives",
+    "viewFull": "Lihat lengkap →",
+    "dailyTeachingReport": "Daily Teaching Report",
+    "absenceReason": {
+      "sickLeave": "Sakit",
+      "emergency": "Darurat",
+      "personalLeave": "Izin Pribadi",
+      "officialDuty": "Tugas Dinas",
+      "scheduleConflict": "Bentrok Jadwal"
+    },
+    "toasts": {
+      "profileNotReady": "Profil belum siap",
+      "classStarted": "Kelas dimulai! Check-in berhasil",
+      "startClassError": "Gagal memulai kelas",
+      "checkOutSuccess": "Check-out berhasil",
+      "checkOutError": "Gagal check-out",
+      "HOLIDAY_NO_CLASS": "Hari ini hari libur, tidak bisa mulai kelas",
+      "ALREADY_CHECKED_IN": "Kelas ini sudah di-check-in"
+    }
+  },
+  "changePassword": {
+    "title": "Ganti Password",
+    "currentPassword": "Password Saat Ini",
+    "newPassword": "Password Baru",
+    "confirmPassword": "Konfirmasi Password Baru",
+    "showPassword": "Tampilkan password",
+    "hidePassword": "Sembunyikan password",
+    "submit": "Simpan Password",
+    "submitting": "Menyimpan...",
+    "errorTitle": "Gagal ganti password",
+    "errorNoSession": "Sesi tidak ditemukan, silakan login ulang.",
+    "errorWrongCurrentPassword": "Password saat ini salah",
+    "success": "Password berhasil diubah",
+    "validation": {
+      "currentPasswordRequired": "Password saat ini wajib diisi",
+      "newPasswordMin": "Password baru minimal 6 karakter",
+      "confirmPasswordRequired": "Konfirmasi password wajib diisi",
+      "confirmPasswordMismatch": "Konfirmasi password tidak cocok"
+    }
+  }
+}

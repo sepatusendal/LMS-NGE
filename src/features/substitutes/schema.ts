@@ -15,6 +15,15 @@ export const ABSENCE_REASON_LABEL: Record<string, string> = {
   SCHEDULE_CONFLICT: "Bentrok Jadwal",
 };
 
+// value -> translation key, for teacher-facing i18n displays (e.g. class-workflow-card).
+export const ABSENCE_REASON_KEY: Record<string, string> = {
+  SICK_LEAVE: "sickLeave",
+  EMERGENCY: "emergency",
+  PERSONAL_LEAVE: "personalLeave",
+  OFFICIAL_DUTY: "officialDuty",
+  SCHEDULE_CONFLICT: "scheduleConflict",
+};
+
 export interface CurrentMeetingInfo {
   lessonPlanId: string;
   meetingNumber: number;

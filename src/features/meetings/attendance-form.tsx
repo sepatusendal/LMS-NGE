@@ -3,32 +3,33 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Check, AlertCircle, CheckCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useClassRoster } from "@/features/classes/use-roster";
 import { useBulkAttendance, useAttendances } from "@/features/attendances/use-attendances";
 import { ATTENDANCE_STATUS_OPTIONS } from "@/features/attendances/schema";
 import type { RosterStudent } from "@/features/classes/roster-queries";
 
-const STATUS_STYLE: Record<string, { active: string; idle: string; short: string }> = {
+const STATUS_STYLE: Record<string, { active: string; idle: string; shortKey: string }> = {
   PRESENT: {
     active: "border-emerald-600 bg-emerald-600 text-white",
     idle: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    short: "Hadir",
+    shortKey: "present",
   },
   ABSENT: {
     active: "border-red-600 bg-red-600 text-white",
     idle: "border-red-200 bg-red-50 text-red-700",
-    short: "Alpa",
+    shortKey: "absent",
   },
   EXCUSED: {
     active: "border-blue-600 bg-blue-600 text-white",
     idle: "border-blue-200 bg-blue-50 text-blue-700",
-    short: "Izin",
+    shortKey: "excused",
   },
   LATE: {
     active: "border-amber-600 bg-amber-600 text-white",
     idle: "border-amber-200 bg-amber-50 text-amber-700",
-    short: "Telat",
+    shortKey: "late",
   },
 };
 
@@ -46,6 +47,7 @@ interface Props {
 }
 
 export function AttendanceForm({ meetingId, classId, onDone }: Props) {
+  const t = useTranslations("attendanceForm");
   const { data: roster, isLoading: rosterLoading } = useClassRoster(classId);
   const { data: existing, isLoading: existingLoading } = useAttendances(meetingId);
   const bulkAttendance = useBulkAttendance(meetingId);
@@ -100,7 +102,7 @@ export function AttendanceForm({ meetingId, classId, onDone }: Props) {
     return (
       <div className="text-muted-foreground flex items-center gap-2 py-4 text-sm">
         <Loader2 className="size-4 animate-spin" />
-        Memuat roster...
+        {t("loadingRoster")}
       </div>
     );
   }
@@ -110,9 +112,7 @@ export function AttendanceForm({ meetingId, classId, onDone }: Props) {
       <div className="space-y-3 py-2">
         <div className="text-muted-foreground flex items-start gap-2 rounded-md bg-amber-50 px-3 py-2 text-sm">
           <AlertCircle className="text-amber-600 mt-0.5 size-4 shrink-0" />
-          <span>
-            Kelas ini belum memiliki siswa. Silakan lanjutkan ke tahap berikutnya.
-          </span>
+          <span>{t("noStudentsNotice")}</span>
         </div>
         <Button
           variant="outline"
@@ -122,7 +122,7 @@ export function AttendanceForm({ meetingId, classId, onDone }: Props) {
             onDone?.();
           }}
         >
-          Lanjutkan
+          {t("continue")}
         </Button>
       </div>
     );
@@ -132,12 +132,12 @@ export function AttendanceForm({ meetingId, classId, onDone }: Props) {
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-muted-foreground text-xs">
-          Hadir: <span className="font-semibold text-foreground">{presentCount}/{totalCount}</span>
+          {t("present")}: <span className="font-semibold text-foreground">{presentCount}/{totalCount}</span>
         </span>
         {saved ? (
           <span className="text-emerald-600 flex items-center gap-1 text-xs font-medium">
             <Check className="size-3" />
-            Tersimpan
+            {t("saved")}
           </span>
         ) : (
           <button
@@ -146,7 +146,7 @@ export function AttendanceForm({ meetingId, classId, onDone }: Props) {
             className="text-muted-foreground flex items-center gap-1 text-xs font-medium hover:text-foreground"
           >
             <CheckCheck className="size-3.5" />
-            Tandai semua hadir
+            {t("markAllPresent")}
           </button>
         )}
       </div>
@@ -158,6 +158,7 @@ export function AttendanceForm({ meetingId, classId, onDone }: Props) {
             student={s}
             status={statusMap[s.studentId] || "PRESENT"}
             onChange={(st) => handleStatusChange(s.studentId, st)}
+            t={t}
           />
         ))}
       </div>
@@ -172,7 +173,7 @@ export function AttendanceForm({ meetingId, classId, onDone }: Props) {
           {bulkAttendance.isPending ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
-            "Simpan Absensi"
+            t("saveAttendance")
           )}
         </Button>
       )}
@@ -184,10 +185,12 @@ function StatusRow({
   student,
   status,
   onChange,
+  t,
 }: {
   student: RosterStudent;
   status: string;
   onChange: (status: string) => void;
+  t: ReturnType<typeof useTranslations>;
 }) {
   return (
     <div className="space-y-2 px-3 py-2.5">
@@ -217,7 +220,7 @@ function StatusRow({
               )}
               aria-pressed={active}
             >
-              {style.short}
+              {t(`status.${style.shortKey}`)}
             </button>
           );
         })}

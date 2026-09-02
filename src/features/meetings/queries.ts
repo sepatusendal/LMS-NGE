@@ -76,7 +76,7 @@ export async function startClass(
   if (cls?.schoolId) {
     const todayDateStr = todayLocalDateStr();
     if (await isHoliday(todayDateStr, cls.schoolId)) {
-      throw new Error("Hari ini hari libur, tidak bisa mulai kelas");
+      throw new Error("HOLIDAY_NO_CLASS");
     }
   }
 
@@ -106,7 +106,7 @@ export async function startClass(
       .select("id")
       .eq("meetingId", meetingId)
       .maybeSingle();
-    if (ci) throw new Error("Kelas ini sudah di-check-in");
+    if (ci) throw new Error("ALREADY_CHECKED_IN");
   } else {
     const { data: meeting, error: mErr } = await supabase
       .from("meetings")

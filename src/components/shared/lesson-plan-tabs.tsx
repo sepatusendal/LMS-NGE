@@ -2,18 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-
-const TABS = [
-  { href: "/lesson-plan", label: "Lesson Plan" },
-  { href: "/jadwal", label: "Jadwal" },
-];
 
 // Mobile-only switcher between the two routes grouped under "Lesson Plan" in
 // the desktop sidebar — the bottom nav stays flat with Absensi centered, so
 // this is the only way to reach /jadwal on mobile.
 export function LessonPlanTabs() {
   const pathname = usePathname();
+  const t = useTranslations("common.nav");
+
+  const TABS = [
+    { href: "/lesson-plan", label: t("lessonPlan") },
+    { href: "/jadwal", label: t("jadwal") },
+  ];
 
   return (
     <div className="bg-muted flex gap-1 rounded-full p-1 md:hidden">

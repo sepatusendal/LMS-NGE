@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AlertCircle, NotebookPen, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { LessonPlanForm } from "@/features/lesson-plans/lesson-plan-form";
 import { useDeleteLessonPlan, useLessonPlan } from "@/features/lesson-plans/use-lesson-plans";
@@ -17,14 +18,11 @@ export default function EditLessonPlanPage() {
   const { data: myClasses } = useMyClasses();
   const { data: currentUser } = useCurrentUser();
   const deleteLessonPlan = useDeleteLessonPlan();
+  const t = useTranslations("lessonPlanForm");
 
   function handleDelete() {
     if (!lessonPlan) return;
-    if (
-      window.confirm(
-        `Hapus lesson plan "${lessonPlan.topic}" (Meeting ${lessonPlan.meetingNumber})? Tindakan ini tidak bisa dibatalkan.`,
-      )
-    ) {
+    if (window.confirm(t("deleteConfirm", { topic: lessonPlan.topic, meetingNumber: lessonPlan.meetingNumber }))) {
       deleteLessonPlan.mutate(lessonPlan.id);
     }
   }
@@ -45,7 +43,7 @@ export default function EditLessonPlanPage() {
         href={isAdmin ? "/lesson-plans" : "/lesson-plan"}
         className="text-muted-foreground text-sm hover:underline"
       >
-        ← Kembali ke Lesson Plan
+        {t("backToLessonPlan")}
       </Link>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -53,7 +51,7 @@ export default function EditLessonPlanPage() {
             <NotebookPen className="size-5" />
           </div>
           <h1 className="text-xl font-semibold">
-            {isOwner ? "Edit Lesson Plan" : "Lihat Lesson Plan"}
+            {isOwner ? t("editTitle") : t("viewTitle")}
           </h1>
         </div>
         {isAdmin && lessonPlan && (
@@ -66,7 +64,7 @@ export default function EditLessonPlanPage() {
             onClick={handleDelete}
           >
             <Trash2 className="size-3.5" />
-            Hapus
+            {t("delete")}
           </Button>
         )}
       </div>
@@ -76,9 +74,9 @@ export default function EditLessonPlanPage() {
           <div className="bg-destructive/10 mb-3 flex size-12 items-center justify-center rounded-full">
             <AlertCircle className="text-destructive size-5" />
           </div>
-          <p className="text-sm font-medium">Gagal memuat lesson plan</p>
+          <p className="text-sm font-medium">{t("loadError")}</p>
           <p className="text-muted-foreground mt-1 text-xs">
-            {error?.message || "Coba refresh halaman."}
+            {error?.message || t("tryRefresh")}
           </p>
         </div>
       ) : isLoading || !lessonPlan ? (

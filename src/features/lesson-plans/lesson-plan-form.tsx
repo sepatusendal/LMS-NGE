@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import {
   Plus,
   X,
@@ -37,9 +38,9 @@ import {
   MATERIAL_OPTIONS,
   SKILL_OPTIONS,
   STAGE_NAMES,
+  buildLessonPlanSchema,
   emptyLearningObjectives,
   emptyStages,
-  lessonPlanSchema,
   type LessonPlan,
   type LessonPlanInput,
 } from "./schema";
@@ -130,6 +131,9 @@ export function LessonPlanForm({
 }) {
   const isEdit = Boolean(lessonPlan);
   const router = useRouter();
+  const t = useTranslations("lessonPlanForm");
+  const dayLabels = useTranslations("common").raw("daysShort") as Record<string, string>;
+  const lessonPlanSchema = useMemo(() => buildLessonPlanSchema(t), [t]);
   const { data: myClasses } = useMyClasses();
   const { data: allClasses } = useClasses(undefined, adminMode);
   // Lesson-plan authorship is restricted to a class's primary teacher at the
@@ -264,22 +268,19 @@ export function LessonPlanForm({
           <span className="bg-chart-4/20 text-chart-4 mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
             !
           </span>
-          <span>
-            Kamu hanya bisa melihat lesson plan ini. Hanya teacher yang
-            ditugaskan di kelas ini yang dapat mengedit.
-          </span>
+          <span>{t("readOnlyNotice")}</span>
         </div>
       )}
 
       <fieldset disabled={readOnly} className="space-y-5 border-0 p-0">
         <Section
-          title="Info Dasar"
-          description="Kelas, jadwal, dan level pembelajaran"
+          title={t("sections.basicInfo.title")}
+          description={t("sections.basicInfo.description")}
           icon={ClipboardList}
           accent="blue"
         >
         <div className="space-y-2">
-          <Label>Kelas</Label>
+          <Label>{t("fields.class")}</Label>
           {isEdit ? (
             // Editing/viewing an existing plan: classId is immutable, and
             // the viewer (another teacher, or an admin with no "my classes"
@@ -298,13 +299,13 @@ export function LessonPlanForm({
                 <Select
                   items={classes?.map((c) => ({
                     value: c.id,
-                    label: `${c.name} — ${c.schoolName} · ${formatScheduleSlots(c.scheduleSlots)}`,
+                    label: `${c.name} — ${c.schoolName} · ${formatScheduleSlots(c.scheduleSlots, dayLabels)}`,
                   }))}
                   value={field.value}
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih kelas" />
+                    <SelectValue placeholder={t("fields.classPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {classes?.map((c) => (
@@ -326,7 +327,7 @@ export function LessonPlanForm({
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label htmlFor="meetingNumber">Meeting No.</Label>
+            <Label htmlFor="meetingNumber">{t("fields.meetingNumber")}</Label>
             <Input
               id="meetingNumber"
               type="number"
@@ -335,13 +336,13 @@ export function LessonPlanForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="week">Minggu Ke-</Label>
+            <Label htmlFor="week">{t("fields.week")}</Label>
             <Input id="week" type="number" min={1} {...register("week")} />
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="scheduledDate">Tanggal</Label>
+          <Label htmlFor="scheduledDate">{t("fields.date")}</Label>
           <Input
             id="scheduledDate"
             type="date"
@@ -356,7 +357,7 @@ export function LessonPlanForm({
 
         {!isAlbright && (
         <div className="space-y-2">
-          <Label>Level</Label>
+          <Label>{t("fields.level")}</Label>
           <Controller
             control={control}
             name="level"
@@ -367,7 +368,7 @@ export function LessonPlanForm({
                 onValueChange={field.onChange}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih level" />
+                  <SelectValue placeholder={t("fields.levelPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {LEVEL_OPTIONS.map((l) => (
@@ -383,32 +384,30 @@ export function LessonPlanForm({
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="topic">{isAlbright ? "Unit & Topic" : "Topic"}</Label>
+          <Label htmlFor="topic">{isAlbright ? t("fields.unitAndTopic") : t("fields.topic")}</Label>
           <Input
             id="topic"
-            placeholder={isAlbright ? "mis. Unit 1: Welcome" : undefined}
+            placeholder={isAlbright ? t("fields.unitAndTopicPlaceholder") : undefined}
             {...register("topic")}
           />
           {errors.topic && (
             <p className="text-destructive text-sm">{errors.topic.message}</p>
           )}
           {isAlbright && (
-            <p className="text-muted-foreground text-xs">
-              Kurikulum Albright — detail Activities, Resources, dan Language Focus diisi setelah kelas selesai, di Daily Teaching Report.
-            </p>
+            <p className="text-muted-foreground text-xs">{t("albrightNotice")}</p>
           )}
         </div>
       </Section>
 
       {!isAlbright && (
         <Section
-          title="Learning Objectives & Skills"
-          description="Apa yang siswa capai di akhir pertemuan"
+          title={t("sections.objectives.title")}
+          description={t("sections.objectives.description")}
           icon={Target}
           accent="green"
         >
           <div className="space-y-2">
-            <Label>Learning Objectives</Label>
+            <Label>{t("fields.learningObjectives")}</Label>
             <div className="space-y-2">
               {learningObjectives.map((_, index) => (
                 <div key={index} className="flex items-start gap-2">
@@ -417,7 +416,7 @@ export function LessonPlanForm({
                   </span>
                   <Textarea
                     rows={1}
-                    placeholder="By the end of this lesson, students will be able to..."
+                    placeholder={t("fields.learningObjectivePlaceholder")}
                     className="min-h-9 resize-none py-1.5"
                     {...register(`learningObjectives.${index}` as const)}
                   />
@@ -437,11 +436,11 @@ export function LessonPlanForm({
             </div>
             <Button type="button" variant="outline" size="sm" onClick={addObjective}>
               <Plus className="size-3.5" />
-              Tambah Poin
+              {t("fields.addObjective")}
             </Button>
           </div>
           <div className="space-y-2">
-            <Label>Skill</Label>
+            <Label>{t("fields.skill")}</Label>
             <div className="grid grid-cols-2 gap-2">
               {SKILL_OPTIONS.map((skill) => (
                 <label key={skill} className="flex items-center gap-2 text-sm">
@@ -461,13 +460,13 @@ export function LessonPlanForm({
 
       {!isAlbright && (
         <Section
-          title="Materials"
-          description="Alat bantu yang dipakai"
+          title={t("sections.materials.title")}
+          description={t("sections.materials.description")}
           icon={Wrench}
           accent="gold"
         >
           <div className="space-y-2">
-            <Label>Materials Required</Label>
+            <Label>{t("fields.materialsRequired")}</Label>
             <div className="grid grid-cols-2 gap-2">
               {MATERIAL_OPTIONS.map((material) => (
                 <label
@@ -486,7 +485,7 @@ export function LessonPlanForm({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="vocabularyFocus">Vocabulary / Language Focus</Label>
+            <Label htmlFor="vocabularyFocus">{t("fields.vocabularyFocus")}</Label>
             <Textarea
               id="vocabularyFocus"
               rows={2}
@@ -498,8 +497,8 @@ export function LessonPlanForm({
 
       {!isAlbright && (
         <Section
-          title="Stage-by-Stage"
-          description="Rangkaian aktivitas dari awal sampai akhir kelas"
+          title={t("sections.stages.title")}
+          description={t("sections.stages.description")}
           icon={ListOrdered}
           accent="orange"
         >
@@ -514,7 +513,7 @@ export function LessonPlanForm({
                     {index + 1}
                   </span>
                   <p className="text-sm font-medium">
-                    {field.stage || STAGE_NAMES[index] || `Tahap ${index + 1}`}
+                    {field.stage || STAGE_NAMES[index] || t("fields.stageFallback", { number: index + 1 })}
                   </p>
                 </div>
                 <input
@@ -524,18 +523,18 @@ export function LessonPlanForm({
                 />
                 <Textarea
                   rows={2}
-                  placeholder="Aktivitas tutor & siswa di tahap ini"
+                  placeholder={t("fields.stageActivityPlaceholder")}
                   className="bg-card"
                   {...register(`stages.${index}.activity` as const)}
                 />
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <Input
-                    placeholder="Media (opsional)"
+                    placeholder={t("fields.stageMediaPlaceholder")}
                     className="bg-card"
                     {...register(`stages.${index}.media` as const)}
                   />
                   <Input
-                    placeholder="Assessment (opsional)"
+                    placeholder={t("fields.stageAssessmentPlaceholder")}
                     className="bg-card"
                     {...register(`stages.${index}.assessment` as const)}
                   />
@@ -548,15 +547,13 @@ export function LessonPlanForm({
 
       {!isAlbright && (
         <Section
-          title="Differentiation"
-          description="Penyesuaian dalam kegiatan mengajar"
+          title={t("sections.differentiation.title")}
+          description={t("sections.differentiation.description")}
           icon={MessageCircleQuestion}
           accent="pink"
         >
           <div className="space-y-2">
-            <Label htmlFor="differentiationSupport">
-              Approach/Strategy for Learners Needing Extra Support
-            </Label>
+            <Label htmlFor="differentiationSupport">{t("fields.differentiationSupport")}</Label>
             <Textarea
               id="differentiationSupport"
               rows={2}
@@ -564,9 +561,7 @@ export function LessonPlanForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="differentiationExtension">
-              Approach/Strategy for Fast Learners
-            </Label>
+            <Label htmlFor="differentiationExtension">{t("fields.differentiationExtension")}</Label>
             <Textarea
               id="differentiationExtension"
               rows={2}
@@ -574,9 +569,7 @@ export function LessonPlanForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="differentiationHomework">
-              Homework (opsional)
-            </Label>
+            <Label htmlFor="differentiationHomework">{t("fields.differentiationHomework")}</Label>
             <Textarea
               id="differentiationHomework"
               rows={2}
@@ -587,13 +580,13 @@ export function LessonPlanForm({
       )}
 
         <Section
-          title="Modul Pembelajaran"
-          description="Lampirkan materi PDF untuk pertemuan ini"
+          title={t("sections.module.title")}
+          description={t("sections.module.description")}
           icon={FileText}
           accent="blue"
         >
           <div className="space-y-2">
-            <Label>Modul (PDF)</Label>
+            <Label>{t("fields.module")}</Label>
             {readOnly ? (
               moduleFileName ? (
                 <a
@@ -606,13 +599,11 @@ export function LessonPlanForm({
                   {moduleFileName}
                 </a>
               ) : (
-                <p className="text-muted-foreground text-sm">
-                  Belum ada modul yang diupload.
-                </p>
+                <p className="text-muted-foreground text-sm">{t("fields.noModuleUploaded")}</p>
               )
             ) : (
               <FileUpload
-                label="Upload Modul (PDF)"
+                label={t("fields.uploadModule")}
                 accept="application/pdf"
                 currentFile={moduleFileName || null}
                 onUploaded={(id, name) => {
@@ -633,7 +624,7 @@ export function LessonPlanForm({
             className="w-full shadow-sm"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Menyimpan..." : "Simpan Lesson Plan"}
+            {isSubmitting ? t("submitting") : t("submit")}
           </Button>
         </div>
       )}

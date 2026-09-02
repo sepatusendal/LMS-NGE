@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   fetchAttendances,
   upsertAttendance,
@@ -28,26 +29,28 @@ export function useClassAttendanceSummary(classId: string) {
 
 export function useUpsertAttendance(meetingId: string) {
   const queryClient = useQueryClient();
+  const t = useTranslations("attendanceForm.toasts");
   return useMutation({
     mutationFn: (input: AttendanceInput) => upsertAttendance(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...ATTENDANCE_KEY, meetingId] });
     },
     onError: (error) =>
-      toast.error("Gagal menyimpan absensi", { description: error.message }),
+      toast.error(t("saveError"), { description: error.message }),
   });
 }
 
 export function useBulkAttendance(meetingId: string) {
   const queryClient = useQueryClient();
+  const t = useTranslations("attendanceForm.toasts");
   return useMutation({
     mutationFn: (input: BulkAttendanceInput) => bulkUpsertAttendance(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...ATTENDANCE_KEY, meetingId] });
       queryClient.invalidateQueries({ queryKey: ["today-classes"] });
-      toast.success("Absensi berhasil disimpan");
+      toast.success(t("saveSuccess"));
     },
     onError: (error) =>
-      toast.error("Gagal menyimpan absensi", { description: error.message }),
+      toast.error(t("saveError"), { description: error.message }),
   });
 }
