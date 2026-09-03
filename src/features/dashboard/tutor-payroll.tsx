@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Banknote, ListChecks } from "lucide-react";
+import { AlertCircle, Banknote, ListChecks } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -124,7 +124,7 @@ export function TutorPayroll() {
     () => computeRange(period, customFrom, customTo),
     [period, customFrom, customTo],
   );
-  const { data, isLoading } = useTutorPayroll(range.from, range.to, !isIncomplete);
+  const { data, isLoading, isError } = useTutorPayroll(range.from, range.to, !isIncomplete);
 
   const chartData = useMemo(
     () =>
@@ -208,6 +208,13 @@ export function TutorPayroll() {
         <Card>
           <CardContent className="text-muted-foreground py-8 text-center text-sm">
             Lengkapi rentang tanggal untuk melihat beban gaji tutor.
+          </CardContent>
+        </Card>
+      ) : isError ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center gap-1.5 py-8">
+            <AlertCircle className="text-destructive size-5" />
+            <p className="text-muted-foreground text-sm">Gagal memuat beban gaji tutor.</p>
           </CardContent>
         </Card>
       ) : isLoading || !data ? (

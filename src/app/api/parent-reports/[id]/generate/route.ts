@@ -84,11 +84,11 @@ export async function POST(
       driveFileId = result.driveFileId;
     } catch (e) {
       const driveError = e instanceof Error ? e.message : "Unknown Drive error";
-      console.warn("Drive upload failed:", driveError);
+      console.error("Drive upload failed:", driveError);
       // Do not mark the report as GENERATED when the PDF was never archived
       // to Drive — leave status as-is so an admin can retry generation.
       return NextResponse.json(
-        { error: `Gagal mengunggah PDF ke Google Drive: ${driveError}` },
+        { error: "Gagal mengunggah PDF ke Google Drive. Coba lagi nanti." },
         { status: 502 },
       );
     }

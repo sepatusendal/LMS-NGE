@@ -559,6 +559,11 @@ model Announcement {
   displayMode     AnnouncementDisplayMode @default(BANNER)
   isActive        Boolean          @default(true)
   createdByUserId String           @db.Uuid
+  // Empty array = visible to every role (backward-compatible default for
+  // existing rows and the "no targeting" case) — non-empty restricts
+  // visibility to just those roles. Filtered client-side in
+  // fetchAnnouncementsForCurrentUser (src/features/announcements/queries.ts).
+  targetRoles     Role[]           @default([])
   expiresAt       DateTime?        @db.Timestamptz(3)
   createdAt       DateTime         @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime         @updatedAt @db.Timestamptz(3)

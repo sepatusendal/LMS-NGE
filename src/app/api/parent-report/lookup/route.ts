@@ -7,6 +7,12 @@ import { getClientIp, rateLimit } from "@/lib/rate-limit";
 // public endpoint lets anyone enumerate every student's name and school.
 const LOOKUP_LIMIT = { limit: 8, windowMs: 60_000 };
 
+// Per-IP limiting alone doesn't stop an attacker rotating IPs. Also cap
+// lookups per submitted NIS regardless of who's asking, so brute-forcing a
+// single NIS (or scripted enumeration across many) stays bounded even from a
+// rotating-IP source.
+const NIS_LOOKUP_LIMIT = { limit: 5, windowMs: 10 * 60_000 };
+
 export async function GET(request: NextRequest) {
   const nis = request.nextUrl.searchParams.get("nis");
   if (!nis) {
@@ -19,6 +25,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { error: "Terlalu banyak percobaan. Coba lagi sebentar lagi." },
       { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } },
+    );
+  }
+
+  const nisLimitResult = rateLimit(`parent-lookup-nis:${nis}`, NIS_LOOKUP_LIMIT);
+  if (!nisLimitResult.ok) {
+    return NextResponse.json(
+      { error: "Terlalu banyak percobaan. Coba lagi sebentar lagi." },
+      { status: 429, headers: { "Retry-After": String(nisLimitResult.retryAfterSeconds) } },
     );
   }
 

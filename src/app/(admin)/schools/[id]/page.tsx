@@ -23,7 +23,7 @@ export default function SchoolDetailPage() {
   const schoolId = params.id;
   const { data: schools } = useSchools();
   const school = schools?.find((s) => s.id === schoolId);
-  const { data: students, isLoading: studentsLoading } = useStudents(schoolId);
+  const { data: students, isLoading: studentsLoading, isError: studentsError } = useStudents(schoolId);
   const { data: classes } = useClasses();
   const schoolClasses = (classes ?? []).filter((c) => c.schoolId === schoolId && c.isActive);
 
@@ -127,6 +127,7 @@ export default function SchoolDetailPage() {
             columns={studentColumns}
             data={students ?? []}
             isLoading={studentsLoading}
+            isError={studentsError}
             searchPlaceholder="Cari nama atau NIS..."
           />
           <StudentFormDialog

@@ -47,6 +47,15 @@ const ROUTE_PREFIX_ROLES: Array<{ prefix: string; roles: AppRole[] }> = [
 ];
 
 export function allowedRolesForPath(pathname: string): AppRole[] {
+  // GET /api/parent-reports/[id]/download is intentionally public — even
+  // unauthenticated parents use it (see middleware.ts's `!user` branch and
+  // the route handler's own comments) — so a logged-in Teacher or
+  // Coordinator must not get bounced by the blanket ADMIN-only rule below
+  // that otherwise covers "/api/parent-reports" (e.g. .../generate).
+  if (pathname.startsWith("/api/parent-reports") && pathname.endsWith("/download")) {
+    return ALL_ROLES;
+  }
+
   const match = ROUTE_PREFIX_ROLES.find((r) => pathname.startsWith(r.prefix));
   return match ? match.roles : [];
 }

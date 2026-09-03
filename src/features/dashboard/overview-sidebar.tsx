@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarCheck, ClipboardCheck, Wallet } from "lucide-react";
+import { AlertCircle, CalendarCheck, ClipboardCheck, Wallet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,11 +41,22 @@ function SidebarCard({
 /** Estimasi pendapatan bulanan = siswa aktif × harga per siswa (wireframe
  * "Earning" card pada kolom samping). */
 export function RevenueCard() {
-  const { data: students } = useStudents();
+  const { data: students, isError } = useStudents();
   const [pricePerStudent, setPricePerStudent] = useState(300000);
 
   const activeStudents = students?.filter((s) => s.isActive).length ?? 0;
   const estimatedRevenue = activeStudents * pricePerStudent;
+
+  if (isError) {
+    return (
+      <SidebarCard icon={Wallet} iconColor="var(--primary)" title="Estimasi Pendapatan">
+        <p className="text-destructive flex items-center gap-1.5 text-xs font-medium">
+          <AlertCircle className="size-3.5" />
+          Gagal memuat data siswa
+        </p>
+      </SidebarCard>
+    );
+  }
 
   return (
     <SidebarCard icon={Wallet} iconColor="var(--primary)" title="Estimasi Pendapatan">
@@ -76,8 +87,9 @@ export function RevenueCard() {
  * ini + persentase kepatuhan lesson plan. Owns the "kelas hari ini" metric —
  * `OverviewStats` no longer duplicates it. */
 export function TodayCard() {
-  const { data: classes } = useClasses();
-  const { data: lessonPlans } = useLessonPlans();
+  const { data: classes, isError: classesError } = useClasses();
+  const { data: lessonPlans, isError: lessonPlansError } = useLessonPlans();
+  const isError = classesError || lessonPlansError;
 
   // Deferred to client-only, same as `schedule-chart.tsx`'s `today`: reading
   // the viewer's local clock during SSR can genuinely produce the wrong
@@ -95,6 +107,17 @@ export function TodayCard() {
       lessonPlans,
     );
   }, [classes, lessonPlans]);
+
+  if (isError) {
+    return (
+      <SidebarCard icon={CalendarCheck} iconColor="var(--chart-4)" title="Hari Ini">
+        <p className="text-destructive flex items-center gap-1.5 text-xs font-medium">
+          <AlertCircle className="size-3.5" />
+          Gagal memuat data
+        </p>
+      </SidebarCard>
+    );
+  }
 
   return (
     <SidebarCard icon={CalendarCheck} iconColor="var(--chart-4)" title="Hari Ini">

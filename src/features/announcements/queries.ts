@@ -1,5 +1,11 @@
 import { createClient } from "@/lib/supabase/client";
-import type { Announcement, AnnouncementDisplayMode, AnnouncementInput, AnnouncementType } from "./schema";
+import type {
+  Announcement,
+  AnnouncementDisplayMode,
+  AnnouncementInput,
+  AnnouncementTargetRole,
+  AnnouncementType,
+} from "./schema";
 
 interface AnnouncementRow {
   id: string;
@@ -10,6 +16,7 @@ interface AnnouncementRow {
   isActive: boolean;
   expiresAt: string | null;
   createdAt: string;
+  targetRoles: AnnouncementTargetRole[] | null;
   users: { fullName: string } | { fullName: string }[] | null;
 }
 
@@ -29,10 +36,11 @@ function mapRow(row: AnnouncementRow): Announcement {
     createdByName: toOne(row.users)?.fullName ?? "-",
     expiresAt: row.expiresAt,
     createdAt: row.createdAt,
+    targetRoles: row.targetRoles ?? [],
   };
 }
 
-const SELECT = "id, title, body, type, displayMode, isActive, expiresAt, createdAt, users(fullName)";
+const SELECT = "id, title, body, type, displayMode, isActive, expiresAt, createdAt, targetRoles, users(fullName)";
 
 /** Full list for the admin management page — every announcement regardless
  * of active/expired state. */
@@ -47,8 +55,16 @@ export async function fetchAnnouncementsAdmin(): Promise<Announcement[]> {
 }
 
 /** Active, not-yet-expired announcements the current user hasn't dismissed
- * yet — what the dashboard banner renders. Read status is server-side
- * (announcement_reads), so it follows the user across devices. */
+ * yet, filtered to those targeting the current user's role — what the
+ * dashboard banner renders. Read status is server-side (announcement_reads),
+ * so it follows the user across devices.
+ *
+ * `targetRoles` empty/null = visible to every role (backward compatible
+ * with rows created before targeting existed); the actual role restriction
+ * is applied here in application code rather than via RLS — the
+ * "authenticated_read_announcements" policy already lets any authenticated
+ * user SELECT every row (same as before targeting was added), so an
+ * untargeted admin query still sees the full list. */
 export async function fetchAnnouncementsForCurrentUser(): Promise<Announcement[]> {
   const supabase = createClient();
   const {
@@ -57,22 +73,33 @@ export async function fetchAnnouncementsForCurrentUser(): Promise<Announcement[]
   if (!user) return [];
 
   const nowIso = new Date().toISOString();
-  const [{ data: activeRows, error: activeError }, { data: readRows, error: readError }] =
-    await Promise.all([
-      supabase
-        .from("announcements")
-        .select(SELECT)
-        .eq("isActive", true)
-        .or(`expiresAt.is.null,expiresAt.gt.${nowIso}`)
-        .order("createdAt", { ascending: false }),
-      supabase.from("announcement_reads").select("announcementId").eq("userId", user.id),
-    ]);
+  const [
+    { data: activeRows, error: activeError },
+    { data: readRows, error: readError },
+    { data: profile, error: profileError },
+  ] = await Promise.all([
+    supabase
+      .from("announcements")
+      .select(SELECT)
+      .eq("isActive", true)
+      .or(`expiresAt.is.null,expiresAt.gt.${nowIso}`)
+      .order("createdAt", { ascending: false }),
+    supabase.from("announcement_reads").select("announcementId").eq("userId", user.id),
+    supabase.from("users").select("role").eq("id", user.id).single(),
+  ]);
   if (activeError) throw activeError;
   if (readError) throw readError;
+  if (profileError) throw profileError;
 
+  const myRole = (profile as { role: AnnouncementTargetRole } | null)?.role ?? null;
   const readIds = new Set((readRows as { announcementId: string }[]).map((r) => r.announcementId));
   return (activeRows as unknown as AnnouncementRow[])
     .filter((r) => !readIds.has(r.id))
+    .filter((r) => {
+      const targets = r.targetRoles ?? [];
+      if (targets.length === 0) return true; // untargeted = everyone
+      return myRole !== null && targets.includes(myRole);
+    })
     .map(mapRow);
 }
 
@@ -89,6 +116,7 @@ export async function createAnnouncement(input: AnnouncementInput): Promise<void
     type: input.type,
     displayMode: input.displayMode,
     expiresAt: input.expiresAt || null,
+    targetRoles: input.targetRoles ?? [],
     createdByUserId: user.id,
   });
   if (error) throw error;

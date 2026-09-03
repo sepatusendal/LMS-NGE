@@ -10,7 +10,7 @@ import { CurriculumModuleDialog } from "@/features/curriculum/curriculum-module-
 import type { Curriculum } from "@/features/curriculum/schema";
 
 export default function CurriculumPage() {
-  const { data: curriculums, isLoading } = useCurriculums();
+  const { data: curriculums, isLoading, isError } = useCurriculums();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Curriculum | undefined>();
   const [moduleDialogOpen, setModuleDialogOpen] = useState(false);
@@ -58,6 +58,7 @@ export default function CurriculumPage() {
         columns={columns}
         data={curriculums ?? []}
         isLoading={isLoading}
+        isError={isError}
         searchPlaceholder="Cari kurikulum..."
       />
 

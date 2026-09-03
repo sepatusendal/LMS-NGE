@@ -1,8 +1,13 @@
 "use server";
 
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assertIsAdmin } from "@/features/auth/assert-admin";
-import { teacherCreateSchema, type TeacherCreateInput } from "./schema";
+import {
+  teacherCreateSchema,
+  teacherResetPasswordSchema,
+  type TeacherCreateInput,
+} from "./schema";
 
 export async function createTeacherAccount(rawInput: TeacherCreateInput) {
   await assertIsAdmin();
@@ -50,6 +55,15 @@ export async function setTeacherActiveAction(
   isActive: boolean,
 ) {
   await assertIsAdmin();
+
+  const supabase = await createClient();
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
+  if (currentUser?.id === userId) {
+    throw new Error("Tidak bisa menonaktifkan akun sendiri");
+  }
+
   const admin = createAdminClient();
 
   const { error: updateError } = await admin
@@ -66,8 +80,11 @@ export async function setTeacherActiveAction(
 
 export async function resetTeacherPassword(userId: string, password: string) {
   await assertIsAdmin();
+  const { password: validatedPassword } = teacherResetPasswordSchema.parse({ password });
   const admin = createAdminClient();
 
-  const { error } = await admin.auth.admin.updateUserById(userId, { password });
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    password: validatedPassword,
+  });
   if (error) throw new Error(error.message);
 }

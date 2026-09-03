@@ -20,7 +20,7 @@ import type { Student } from "@/features/students/schema";
 export default function StudentsPage() {
   const { data: schools } = useSchools();
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>("");
-  const { data: students, isLoading } = useStudents(
+  const { data: students, isLoading, isError } = useStudents(
     selectedSchoolId || undefined,
   );
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -103,6 +103,7 @@ export default function StudentsPage() {
             columns={columns}
             data={students ?? []}
             isLoading={isLoading}
+            isError={isError}
             searchPlaceholder="Cari nama atau NIS..."
           />
         </>

@@ -63,6 +63,7 @@ function NavSection({
     return (
       <Link
         href={item.href}
+        aria-current={isDirectActive ? "page" : undefined}
         className={cn(
           "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap",
           isDirectActive
@@ -109,6 +110,7 @@ function NavSection({
               <Link
                 key={child.href}
                 href={child.href}
+                aria-current={isChildActive ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm whitespace-nowrap",
                   isChildActive

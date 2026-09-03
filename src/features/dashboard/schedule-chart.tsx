@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Clock, MapPin, CalendarRange } from "lucide-react";
+import { AlertCircle, Clock, MapPin, CalendarRange } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useClasses } from "@/features/classes/use-classes";
 import { getSlotForDay, type Class, type ScheduleSlot } from "@/features/classes/schema";
@@ -69,7 +69,7 @@ function ScheduleTooltip({
 }
 
 export function ScheduleChart() {
-  const { data: classes, isLoading } = useClasses();
+  const { data: classes, isLoading, isError } = useClasses();
   // Deferred to client-only: `new Date().getDay()` reads the viewer's local
   // clock, which can differ from the server's at render time (e.g. near the
   // UTC-midnight/WIB-7am boundary) — computing it during the initial render
@@ -116,7 +116,12 @@ export function ScheduleChart() {
       </CardHeader>
       <CardContent>
         <div className="h-52">
-          {isLoading ? (
+          {isError ? (
+            <div className="flex h-full flex-col items-center justify-center gap-1.5">
+              <AlertCircle className="text-destructive size-5" />
+              <p className="text-muted-foreground text-sm">Gagal memuat data jadwal.</p>
+            </div>
+          ) : isLoading ? (
             <p className="text-muted-foreground text-sm">Memuat data...</p>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
@@ -150,7 +155,7 @@ export function ScheduleChart() {
           )}
         </div>
 
-        {!isLoading && effectiveSelectedDay !== null && (
+        {!isLoading && !isError && effectiveSelectedDay !== null && (
           <div className="mt-3 border-t pt-3">
             <p className="text-muted-foreground mb-2 text-xs font-medium">
               {selectedList.length} kelas pada hari {DAY_LABELS[effectiveSelectedDay]}

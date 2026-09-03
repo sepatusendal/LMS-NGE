@@ -9,6 +9,7 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { AlertCircle } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -25,6 +26,8 @@ interface DataTableProps<TData, TValue> {
   data: TData[];
   searchPlaceholder?: string;
   isLoading?: boolean;
+  isError?: boolean;
+  errorMessage?: string;
 }
 
 export function DataTable<TData, TValue>({
@@ -32,6 +35,8 @@ export function DataTable<TData, TValue>({
   data,
   searchPlaceholder = "Cari...",
   isLoading,
+  isError,
+  errorMessage = "Gagal memuat data. Coba muat ulang halaman.",
 }: DataTableProps<TData, TValue>) {
   const [globalFilter, setGlobalFilter] = useState("");
 
@@ -72,7 +77,16 @@ export function DataTable<TData, TValue>({
             ))}
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {isError ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  <div className="flex flex-col items-center justify-center gap-2 py-4">
+                    <AlertCircle className="text-destructive size-6" />
+                    <p className="text-muted-foreground text-sm">{errorMessage}</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : isLoading ? (
               <TableRow>
                 <TableCell
                   colSpan={columns.length}

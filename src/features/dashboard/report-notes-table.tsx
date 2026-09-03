@@ -1,6 +1,6 @@
 "use client";
 
-import { NotebookPen } from "lucide-react";
+import { AlertCircle, NotebookPen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -18,7 +18,7 @@ function formatDate(dateStr: string) {
 }
 
 export function ReportNotesTable() {
-  const { data, isLoading } = useReportNotes();
+  const { data, isLoading, isError } = useReportNotes();
 
   return (
     <Card>
@@ -29,7 +29,12 @@ export function ReportNotesTable() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {isError ? (
+          <p className="text-destructive flex items-center gap-1.5 text-sm">
+            <AlertCircle className="size-4" />
+            Gagal memuat catatan.
+          </p>
+        ) : isLoading ? (
           <p className="text-muted-foreground text-sm">Memuat data...</p>
         ) : !data || data.length === 0 ? (
           <p className="text-muted-foreground text-sm">Belum ada catatan.</p>

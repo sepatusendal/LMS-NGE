@@ -40,6 +40,7 @@ export function BottomNav({ items }: { items: BottomNavItem[] }) {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               className="flex flex-1 flex-col items-center justify-start gap-1 py-1.5 text-[11px] font-semibold"
             >
               <span
@@ -61,6 +62,7 @@ export function BottomNav({ items }: { items: BottomNavItem[] }) {
           <Link
             key={item.href}
             href={item.href}
+            aria-current={isActive ? "page" : undefined}
             className={cn(
               "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium",
               isActive ? "text-primary" : "text-muted-foreground",

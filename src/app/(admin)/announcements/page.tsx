@@ -12,7 +12,7 @@ import {
   useSetAnnouncementActive,
 } from "@/features/announcements/use-announcements";
 import { AnnouncementFormDialog } from "@/features/announcements/announcement-form-dialog";
-import { ANNOUNCEMENT_THEME } from "@/features/announcements/schema";
+import { ANNOUNCEMENT_THEME, TARGET_ROLE_LABEL } from "@/features/announcements/schema";
 import type { Announcement } from "@/features/announcements/schema";
 import { LoadingState } from "@/components/shared/loading-state";
 
@@ -89,6 +89,11 @@ function AnnouncementRow({ announcement: a, expired }: { announcement: Announcem
                 Kadaluarsa
               </Badge>
             )}
+            <Badge variant="outline" className="text-[10px]">
+              {a.targetRoles.length === 0
+                ? "Semua peran"
+                : a.targetRoles.map((r) => TARGET_ROLE_LABEL[r]).join(", ")}
+            </Badge>
           </div>
           <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">{a.body}</p>
           <p className="text-muted-foreground/70 mt-2 text-xs">
