@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { TrendingDown, TrendingUp, Minus, NotebookText } from "lucide-react";
+import { AlertCircle, TrendingDown, TrendingUp, Minus, NotebookText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseLocalDate } from "@/lib/date";
 import { useReportStats } from "./use-dashboard";
@@ -39,7 +39,7 @@ const OBJECTIVES_COLOR: Record<string, string> = {
 };
 
 export function ReportStatsPanel({ days = 14 }: { days?: number }) {
-  const { data, isLoading } = useReportStats(days);
+  const { data, isLoading, isError } = useReportStats(days);
 
   return (
     <Card>
@@ -50,7 +50,12 @@ export function ReportStatsPanel({ days = 14 }: { days?: number }) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading || !data ? (
+        {isError ? (
+          <div className="flex flex-col items-center justify-center gap-1.5 py-6">
+            <AlertCircle className="text-destructive size-5" />
+            <p className="text-muted-foreground text-sm">Gagal memuat data report.</p>
+          </div>
+        ) : isLoading || !data ? (
           <p className="text-muted-foreground text-sm">Memuat data...</p>
         ) : (
           <div className="space-y-4">

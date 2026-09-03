@@ -9,7 +9,7 @@ import { SchoolFormDialog } from "@/features/schools/school-form-dialog";
 import type { School } from "@/features/schools/schema";
 
 export default function SchoolsPage() {
-  const { data: schools, isLoading } = useSchools();
+  const { data: schools, isLoading, isError } = useSchools();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState<School | undefined>();
 
@@ -45,6 +45,7 @@ export default function SchoolsPage() {
         columns={columns}
         data={schools ?? []}
         isLoading={isLoading}
+        isError={isError}
         searchPlaceholder="Cari sekolah..."
       />
 

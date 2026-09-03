@@ -11,7 +11,7 @@ import { ClassFormDialog } from "@/features/classes/class-form-dialog";
 import type { Class } from "@/features/classes/schema";
 
 export default function TeacherTrainingClassesPage() {
-  const { data: classes, isLoading } = useClasses("TEACHER_TRAINING");
+  const { data: classes, isLoading, isError } = useClasses("TEACHER_TRAINING");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Class | undefined>();
 
@@ -53,6 +53,7 @@ export default function TeacherTrainingClassesPage() {
         columns={columns}
         data={classes ?? []}
         isLoading={isLoading}
+        isError={isError}
         searchPlaceholder="Cari kelas..."
       />
 

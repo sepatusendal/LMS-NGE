@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assertIsAdmin } from "@/features/auth/assert-admin";
-import { userCreateSchema, type UserCreateInput } from "./schema";
+import { userCreateSchema, userResetPasswordSchema, type UserCreateInput } from "./schema";
 
 export async function createAppUser(rawInput: UserCreateInput) {
   await assertIsAdmin();
@@ -56,8 +56,11 @@ export async function setAppUserActiveAction(userId: string, isActive: boolean) 
 
 export async function resetAppUserPassword(userId: string, password: string) {
   await assertIsAdmin();
+  const { password: validatedPassword } = userResetPasswordSchema.parse({ password });
   const admin = createAdminClient();
 
-  const { error } = await admin.auth.admin.updateUserById(userId, { password });
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    password: validatedPassword,
+  });
   if (error) throw new Error(error.message);
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, Users, GraduationCap, BookOpen } from "lucide-react";
+import { Building2, Users, GraduationCap, BookOpen, AlertCircle } from "lucide-react";
 import { ProgressBar } from "@/components/shared/progress-bar";
 import { useSchools } from "@/features/schools/use-schools";
 import { useStudents } from "@/features/students/use-students";
@@ -14,6 +14,7 @@ function StatBlock({
   sub,
   progress,
   color,
+  isError,
 }: {
   icon: React.ElementType;
   label: string;
@@ -21,6 +22,7 @@ function StatBlock({
   sub?: string;
   progress?: number;
   color: string;
+  isError?: boolean;
 }) {
   return (
     <div
@@ -32,7 +34,14 @@ function StatBlock({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-muted-foreground truncate text-[11px] font-medium">{label}</p>
-          <p className="mt-1 text-2xl font-bold leading-none tracking-tight">{value}</p>
+          {isError ? (
+            <p className="text-destructive mt-1 flex items-center gap-1 text-xs font-medium">
+              <AlertCircle className="size-3.5" />
+              Gagal memuat
+            </p>
+          ) : (
+            <p className="mt-1 text-2xl font-bold leading-none tracking-tight">{value}</p>
+          )}
         </div>
         <span
           className="flex size-9 shrink-0 items-center justify-center rounded-lg"
@@ -41,10 +50,12 @@ function StatBlock({
           <Icon className="size-4.5" style={{ color }} />
         </span>
       </div>
-      <div className="mt-3">
-        {progress != null && <ProgressBar value={progress} color={color} />}
-        {sub && <p className="text-muted-foreground mt-1.5 text-[11px]">{sub}</p>}
-      </div>
+      {!isError && (
+        <div className="mt-3">
+          {progress != null && <ProgressBar value={progress} color={color} />}
+          {sub && <p className="text-muted-foreground mt-1.5 text-[11px]">{sub}</p>}
+        </div>
+      )}
     </div>
   );
 }
@@ -53,10 +64,10 @@ function StatBlock({
  * aktif — sekolah, siswa, teacher, kelas. Metrik turunan (kelas hari ini,
  * kepatuhan lesson plan, estimasi pendapatan) dipindah ke `overview-sidebar`. */
 export function OverviewStats() {
-  const { data: schools } = useSchools();
-  const { data: students } = useStudents();
-  const { data: teachers } = useTeachers();
-  const { data: classes } = useClasses();
+  const { data: schools, isError: schoolsError } = useSchools();
+  const { data: students, isError: studentsError } = useStudents();
+  const { data: teachers, isError: teachersError } = useTeachers();
+  const { data: classes, isError: classesError } = useClasses();
 
   const activeSchools = schools?.filter((s) => s.isActive).length ?? 0;
   const activeStudents = students?.filter((s) => s.isActive).length ?? 0;
@@ -77,6 +88,7 @@ export function OverviewStats() {
         sub={`${activeSchools} dari ${schools?.length ?? 0} sekolah`}
         progress={schools?.length ? (activeSchools / schools.length) * 100 : 0}
         color="var(--chart-1)"
+        isError={schoolsError}
       />
       <StatBlock
         icon={Users}
@@ -85,6 +97,7 @@ export function OverviewStats() {
         sub={`${activeStudents} dari ${students?.length ?? 0} siswa`}
         progress={students?.length ? (activeStudents / students.length) * 100 : 0}
         color="var(--chart-3)"
+        isError={studentsError}
       />
       <StatBlock
         icon={GraduationCap}
@@ -93,6 +106,7 @@ export function OverviewStats() {
         sub={`${activeTeachers} dari ${teachers?.length ?? 0} teacher`}
         progress={teachers?.length ? (activeTeachers / teachers.length) * 100 : 0}
         color="var(--chart-5)"
+        isError={teachersError}
       />
       <StatBlock
         icon={BookOpen}
@@ -101,6 +115,7 @@ export function OverviewStats() {
         sub={`${activeClasses} dari ${regularClasses.length} kelas · ${activeTeacherTrainingClasses} kelas guru & staff`}
         progress={regularClasses.length ? (activeClasses / regularClasses.length) * 100 : 0}
         color="var(--chart-2)"
+        isError={classesError}
       />
     </div>
   );

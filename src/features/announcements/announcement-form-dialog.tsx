@@ -15,12 +15,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import {
   announcementSchema,
   ANNOUNCEMENT_THEME,
   ANNOUNCEMENT_TYPES,
   ANNOUNCEMENT_DISPLAY_MODES,
+  ANNOUNCEMENT_TARGET_ROLES,
+  TARGET_ROLE_LABEL,
   DISPLAY_MODE_INFO,
 } from "./schema";
 import type { AnnouncementInput } from "./schema";
@@ -32,6 +35,7 @@ const DEFAULT_VALUES: AnnouncementInput = {
   type: "INFO",
   displayMode: "BANNER",
   expiresAt: null,
+  targetRoles: [],
 };
 
 export function AnnouncementFormDialog({
@@ -180,6 +184,38 @@ export function AnnouncementFormDialog({
               {...register("body")}
             />
             {errors.body && <p className="text-destructive text-sm">{errors.body.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Target Audiens</Label>
+            <Controller
+              control={control}
+              name="targetRoles"
+              render={({ field }) => (
+                <div className="space-y-1.5 rounded-xl border px-3 py-2.5">
+                  {ANNOUNCEMENT_TARGET_ROLES.map((role) => {
+                    const checked = (field.value ?? []).includes(role);
+                    return (
+                      <label key={role} className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            const current = field.value ?? [];
+                            field.onChange(
+                              v ? [...current, role] : current.filter((r) => r !== role),
+                            );
+                          }}
+                        />
+                        {TARGET_ROLE_LABEL[role]}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            />
+            <p className="text-muted-foreground text-xs">
+              Kosongkan semua (tidak dicentang) supaya pengumuman tampil untuk semua peran.
+            </p>
           </div>
 
           <div className="space-y-2">

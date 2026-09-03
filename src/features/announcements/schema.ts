@@ -12,12 +12,26 @@ export type AnnouncementType = (typeof ANNOUNCEMENT_TYPES)[number];
 export const ANNOUNCEMENT_DISPLAY_MODES = ["BANNER", "POPUP"] as const;
 export type AnnouncementDisplayMode = (typeof ANNOUNCEMENT_DISPLAY_MODES)[number];
 
+// Mirrors the Prisma `Role` enum (prisma/schema.prisma) — kept as a local
+// literal list rather than importing the generated enum since this schema
+// is also used client-side.
+export const ANNOUNCEMENT_TARGET_ROLES = ["ADMIN", "COORDINATOR", "TEACHER"] as const;
+export type AnnouncementTargetRole = (typeof ANNOUNCEMENT_TARGET_ROLES)[number];
+
+export const TARGET_ROLE_LABEL: Record<AnnouncementTargetRole, string> = {
+  ADMIN: "Admin",
+  COORDINATOR: "Koordinator",
+  TEACHER: "Tutor",
+};
+
 export const announcementSchema = z.object({
   title: z.string().min(1, "Judul wajib diisi").max(80, "Judul maksimal 80 karakter"),
   body: z.string().min(1, "Isi pengumuman wajib diisi").max(500, "Isi maksimal 500 karakter"),
   type: z.enum(ANNOUNCEMENT_TYPES),
   displayMode: z.enum(ANNOUNCEMENT_DISPLAY_MODES),
   expiresAt: z.string().nullable(),
+  // Empty = visible to every role (backward compatible default).
+  targetRoles: z.array(z.enum(ANNOUNCEMENT_TARGET_ROLES)),
 });
 export type AnnouncementInput = z.infer<typeof announcementSchema>;
 
@@ -31,6 +45,7 @@ export interface Announcement {
   createdByName: string;
   expiresAt: string | null;
   createdAt: string;
+  targetRoles: AnnouncementTargetRole[];
 }
 
 export const DISPLAY_MODE_INFO: Record<AnnouncementDisplayMode, { label: string; description: string }> = {

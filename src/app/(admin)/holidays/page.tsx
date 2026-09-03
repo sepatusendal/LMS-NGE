@@ -8,7 +8,7 @@ import { createHolidayColumns } from "@/features/holidays/columns";
 import { HolidayFormDialog } from "@/features/holidays/holiday-form-dialog";
 
 export default function HolidaysPage() {
-  const { data: holidays, isLoading } = useHolidays();
+  const { data: holidays, isLoading, isError } = useHolidays();
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const columns = useMemo(() => createHolidayColumns(), []);
@@ -30,6 +30,7 @@ export default function HolidaysPage() {
         columns={columns}
         data={holidays ?? []}
         isLoading={isLoading}
+        isError={isError}
         searchPlaceholder="Cari hari libur..."
       />
 

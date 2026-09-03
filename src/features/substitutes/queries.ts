@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/client";
 import { parseLocalDate, todayLocalDateStr } from "@/lib/date";
+import { findRecurringScheduleConflict, ScheduleConflictError, timeRangesOverlap } from "@/lib/schedule-conflict";
 import type { CurrentMeetingInfo, HandoverSummary } from "./schema";
+
+export { ScheduleConflictError as SubstituteScheduleConflictError } from "@/lib/schedule-conflict";
 
 function toOne<T>(rel: T | T[] | null | undefined): T | null {
   if (!rel) return null;
@@ -150,6 +153,105 @@ export async function fetchCurrentMeetingInfo(classId: string): Promise<CurrentM
   };
 }
 
+/** Resolves the effective start/end time for `classId` on `dateStr`'s
+ * weekday — the override's window if one exists for that day, else the
+ * class's own recurring slot. Mirrors resolveEffectiveTeacherForDate's
+ * override-then-slot precedence, but for the time window instead of the
+ * teacher. Returns null if the class doesn't meet that weekday at all
+ * (shouldn't normally happen for a lesson plan's own class, but guards
+ * against schedule drift). */
+async function resolveClassTimeWindowForDate(
+  classId: string,
+  dateStr: string,
+): Promise<{ startTime: string; endTime: string } | null> {
+  const supabase = createClient();
+  const day = dayOfWeek(dateStr);
+
+  const { data: override, error: ovErr } = await supabase
+    .from("class_schedule_overrides")
+    .select("startTime, endTime")
+    .eq("classId", classId)
+    .eq("dayOfWeek", day)
+    .maybeSingle();
+  if (ovErr) throw ovErr;
+  if (override) {
+    const ov = override as { startTime: string; endTime: string };
+    return { startTime: ov.startTime, endTime: ov.endTime };
+  }
+
+  const { data: slot, error: slotErr } = await supabase
+    .from("class_schedule_slots")
+    .select("startTime, endTime")
+    .eq("classId", classId)
+    .eq("dayOfWeek", day)
+    .maybeSingle();
+  if (slotErr) throw slotErr;
+  if (!slot) return null;
+  return slot as { startTime: string; endTime: string };
+}
+
+/** Checks whether assigning `teacherId` to teach on `dateStr` from
+ * `startTime` to `endTime` would double-book them — either against their
+ * own recurring weekly schedule (via the shared findRecurringScheduleConflict,
+ * same helper used for class-schedule edits) or against another one-off
+ * substitute meeting they're already covering that same date.
+ *
+ * `excludeClassId`/`excludeLessonPlanId` skip the assignment being made
+ * itself (the class/lesson-plan the substitute is being assigned *to* isn't
+ * a conflict with itself). */
+async function findSubstituteScheduleConflict(params: {
+  teacherId: string;
+  dateStr: string;
+  startTime: string;
+  endTime: string;
+  excludeClassId?: string;
+  excludeLessonPlanId?: string;
+}) {
+  const { teacherId, dateStr, startTime, endTime, excludeClassId, excludeLessonPlanId } = params;
+
+  const recurringConflict = await findRecurringScheduleConflict({
+    teacherId,
+    dayOfWeek: dayOfWeek(dateStr),
+    startTime,
+    endTime,
+    excludeClassId,
+  });
+  if (recurringConflict) return recurringConflict;
+
+  // One-off substitute assignments this teacher already has on other
+  // classes' meetings scheduled for the same date.
+  const supabase = createClient();
+  const { data: subMeetings, error: subErr } = await supabase
+    .from("meetings")
+    .select("lessonPlanId, lesson_plans!inner(id, classId, scheduledDate, classes(id, name))")
+    .eq("actualTeacherId", teacherId)
+    .eq("lesson_plans.scheduledDate", dateStr);
+  if (subErr) throw subErr;
+
+  const subRows = subMeetings as unknown as {
+    lessonPlanId: string;
+    lesson_plans:
+      | { id: string; classId: string; scheduledDate: string; classes: { id: string; name: string } | { id: string; name: string }[] | null }
+      | { id: string; classId: string; scheduledDate: string; classes: { id: string; name: string } | { id: string; name: string }[] | null }[]
+      | null;
+  }[];
+
+  for (const row of subRows) {
+    const lp = toOne(row.lesson_plans);
+    if (!lp) continue;
+    if (lp.id === excludeLessonPlanId) continue;
+    if (lp.classId === excludeClassId) continue;
+    const window = await resolveClassTimeWindowForDate(lp.classId, dateStr);
+    if (!window) continue;
+    if (timeRangesOverlap(startTime, endTime, window.startTime, window.endTime)) {
+      const cls = toOne(lp.classes);
+      return { classId: lp.classId, className: cls?.name ?? "-", startTime: window.startTime, endTime: window.endTime };
+    }
+  }
+
+  return null;
+}
+
 /** Core one-off substitute assignment, scoped to an explicit lessonPlanId —
  * reusable for "today's meeting" (assignSubstitute below) as well as any
  * other date's meeting (e.g. an admin picking a future meeting off the
@@ -165,6 +267,19 @@ export async function assignSubstituteForLessonPlan(input: {
 }): Promise<void> {
   const supabase = createClient();
   const effective = await resolveEffectiveTeacherForDate(input.classId, input.scheduledDate);
+
+  const targetWindow = await resolveClassTimeWindowForDate(input.classId, input.scheduledDate);
+  if (targetWindow) {
+    const conflict = await findSubstituteScheduleConflict({
+      teacherId: input.substituteTeacherId,
+      dateStr: input.scheduledDate,
+      startTime: targetWindow.startTime,
+      endTime: targetWindow.endTime,
+      excludeClassId: input.classId,
+      excludeLessonPlanId: input.lessonPlanId,
+    });
+    if (conflict) throw new ScheduleConflictError(conflict);
+  }
 
   const { data: existing, error: findErr } = await supabase
     .from("meetings")

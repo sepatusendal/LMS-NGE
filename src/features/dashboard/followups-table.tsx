@@ -1,6 +1,6 @@
 "use client";
 
-import { UserRoundSearch } from "lucide-react";
+import { AlertCircle, UserRoundSearch } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -13,7 +13,7 @@ import {
 import { useOpenFollowUps } from "./use-dashboard";
 
 export function FollowUpsTable() {
-  const { data, isLoading } = useOpenFollowUps();
+  const { data, isLoading, isError } = useOpenFollowUps();
 
   return (
     <Card>
@@ -24,7 +24,12 @@ export function FollowUpsTable() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {isError ? (
+          <p className="text-destructive flex items-center gap-1.5 text-sm">
+            <AlertCircle className="size-4" />
+            Gagal memuat data follow-up.
+          </p>
+        ) : isLoading ? (
           <p className="text-muted-foreground text-sm">Memuat data...</p>
         ) : !data || data.length === 0 ? (
           <p className="text-muted-foreground text-sm">Tidak ada follow-up terbuka.</p>

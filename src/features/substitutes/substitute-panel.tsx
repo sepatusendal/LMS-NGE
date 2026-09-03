@@ -45,10 +45,16 @@ export function SubstitutePanel({ classId }: Props) {
 
   async function handleAssign() {
     if (!substituteTeacherId || !reason) return;
-    await assign.mutateAsync({ substituteTeacherId, reason });
-    setAssigning(false);
-    setSubstituteTeacherId("");
-    setReason("");
+    try {
+      await assign.mutateAsync({ substituteTeacherId, reason });
+      setAssigning(false);
+      setSubstituteTeacherId("");
+      setReason("");
+    } catch {
+      // Error toast already shown by the mutation's onError (e.g. a
+      // schedule conflict) — keep the form open so the admin can pick a
+      // different teacher instead of losing their input.
+    }
   }
 
   const teacherOptions = (teachers ?? []).filter((t) => t.id !== info.effectiveTeacherId);

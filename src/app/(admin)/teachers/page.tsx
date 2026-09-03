@@ -10,7 +10,7 @@ import { TeacherEditDialog } from "@/features/teachers/teacher-edit-dialog";
 import type { Teacher } from "@/features/teachers/schema";
 
 export default function TeachersPage() {
-  const { data: teachers, isLoading } = useTeachers();
+  const { data: teachers, isLoading, isError } = useTeachers();
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<Teacher | undefined>();
@@ -40,6 +40,7 @@ export default function TeachersPage() {
         columns={columns}
         data={teachers ?? []}
         isLoading={isLoading}
+        isError={isError}
         searchPlaceholder="Cari teacher..."
       />
 

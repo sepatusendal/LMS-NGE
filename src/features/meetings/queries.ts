@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { isHoliday, fetchHolidaySchoolsForDate } from "@/features/holidays/queries";
 import { todayLocalDateStr } from "@/lib/date";
-import type { TodayClass, CheckInInput, CheckOutInput } from "./schema";
+import type { TodayClass, CheckOutInput } from "./schema";
 
 function getTodayDayOfWeek(): number {
   const day = new Date().getDay();
@@ -476,41 +476,6 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
       courseCompleted,
     };
   });
-}
-
-export async function createMeeting(
-  lessonPlanId: string,
-  assignedTeacherId: string,
-): Promise<string> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("meetings")
-    .insert({
-      lessonPlanId,
-      assignedTeacherId,
-      actualTeacherId: assignedTeacherId,
-      status: "SCHEDULED",
-    })
-    .select("id")
-    .single();
-  if (error) throw error;
-  return (data as { id: string }).id;
-}
-
-export async function doCheckIn(input: CheckInInput): Promise<void> {
-  const supabase = createClient();
-
-  if (!input.meetingId) throw new Error("Meeting ID diperlukan");
-
-  const { error } = await supabase.from("check_ins").insert({
-    meetingId: input.meetingId,
-    teacherId: input.teacherId,
-    gpsLat: input.gpsLat ?? null,
-    gpsLng: input.gpsLng ?? null,
-    notes: input.notes ?? null,
-    isLate: false,
-  });
-  if (error) throw error;
 }
 
 export async function updateCheckInPhoto(

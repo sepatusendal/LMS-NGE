@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { findRecurringScheduleConflict, ScheduleConflictError } from "@/lib/schedule-conflict";
 import type { Class, ClassInput, ClassType, ScheduleSlot } from "./schema";
 
 interface ClassRow {
@@ -94,6 +95,26 @@ function toSlots(classId: string, input: ClassInput): (ScheduleSlot & { classId:
   }));
 }
 
+/** Blocks saving a class schedule that would double-book its teacher —
+ * checked per selected day against every other active class (own recurring
+ * slot, or a class handed to them that weekday by an override). Runs before
+ * any write so a conflict never leaves a half-applied class/slot update.
+ * `excludeClassId` is the class being edited itself (undefined on create). */
+async function assertNoScheduleConflict(input: ClassInput, excludeClassId?: string) {
+  for (const d of input.scheduleDaysOfWeek) {
+    const times = input.scheduleTimes[d];
+    if (!times) continue;
+    const conflict = await findRecurringScheduleConflict({
+      teacherId: input.teacherId,
+      dayOfWeek: Number(d),
+      startTime: times.startTime,
+      endTime: times.endTime,
+      excludeClassId,
+    });
+    if (conflict) throw new ScheduleConflictError(conflict);
+  }
+}
+
 async function syncScheduleSlots(supabase: ReturnType<typeof createClient>, classId: string, input: ClassInput) {
   const days = input.scheduleDaysOfWeek.map(Number);
 
@@ -111,6 +132,8 @@ async function syncScheduleSlots(supabase: ReturnType<typeof createClient>, clas
 }
 
 export async function createClassRecord(input: ClassInput, classType: ClassType = "REGULAR") {
+  await assertNoScheduleConflict(input);
+
   const supabase = createClient();
   const { data, error } = await supabase
     .from("classes")
@@ -123,6 +146,8 @@ export async function createClassRecord(input: ClassInput, classType: ClassType 
 }
 
 export async function updateClassRecord(id: string, input: ClassInput, classType: ClassType = "REGULAR") {
+  await assertNoScheduleConflict(input, id);
+
   const supabase = createClient();
   const { error } = await supabase
     .from("classes")

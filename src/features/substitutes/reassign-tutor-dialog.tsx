@@ -71,19 +71,29 @@ export function ReassignTutorDialog({
 
   async function handleSave() {
     if (!target || !substituteTeacherId || !reason) return;
-    await assign.mutateAsync({
-      lessonPlanId: target.lessonPlanId,
-      scheduledDate: target.scheduledDate,
-      substituteTeacherId,
-      reason,
-    });
-    onOpenChange(false);
+    try {
+      await assign.mutateAsync({
+        lessonPlanId: target.lessonPlanId,
+        scheduledDate: target.scheduledDate,
+        substituteTeacherId,
+        reason,
+      });
+      onOpenChange(false);
+    } catch {
+      // Error toast already shown by the mutation's onError (e.g. a
+      // schedule conflict) — keep the dialog open so the admin can pick a
+      // different teacher instead of losing their input.
+    }
   }
 
   async function handleCancelSubstitute() {
     if (!target?.meetingId) return;
-    await cancel.mutateAsync(target.meetingId);
-    onOpenChange(false);
+    try {
+      await cancel.mutateAsync(target.meetingId);
+      onOpenChange(false);
+    } catch {
+      // Error toast already shown by the mutation's onError.
+    }
   }
 
   const dateLabel = parseLocalDate(target.scheduledDate).toLocaleDateString("id-ID", {

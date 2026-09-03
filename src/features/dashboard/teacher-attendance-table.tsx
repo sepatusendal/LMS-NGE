@@ -1,6 +1,6 @@
 "use client";
 
-import { UserCheck } from "lucide-react";
+import { AlertCircle, UserCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -40,7 +40,7 @@ const DETAIL_COLUMNS: ExcelColumn<TeacherAttendanceDetailRow>[] = [
 ];
 
 export function TeacherAttendanceTable({ days = 30 }: { days?: number }) {
-  const { data, isLoading } = useTeacherAttendance(days);
+  const { data, isLoading, isError } = useTeacherAttendance(days);
 
   return (
     <Card>
@@ -64,7 +64,12 @@ export function TeacherAttendanceTable({ days = 30 }: { days?: number }) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {isError ? (
+          <p className="text-destructive flex items-center gap-1.5 text-sm">
+            <AlertCircle className="size-4" />
+            Gagal memuat data absensi teacher.
+          </p>
+        ) : isLoading ? (
           <p className="text-muted-foreground text-sm">Memuat data...</p>
         ) : !data || data.length === 0 ? (
           <p className="text-muted-foreground text-sm">Belum ada data check-in.</p>

@@ -10,7 +10,7 @@ import { UserEditDialog } from "@/features/users/user-edit-dialog";
 import type { AppUser } from "@/features/users/schema";
 
 export default function UsersPage() {
-  const { data: users, isLoading } = useAppUsers();
+  const { data: users, isLoading, isError } = useAppUsers();
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<AppUser | undefined>();
@@ -40,6 +40,7 @@ export default function UsersPage() {
         columns={columns}
         data={users ?? []}
         isLoading={isLoading}
+        isError={isError}
         searchPlaceholder="Cari akun..."
       />
 
