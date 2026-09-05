@@ -14,6 +14,7 @@ import { roleLandingPath } from "@/features/auth/role-routes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LanguageSwitcher } from "@/components/shared/language-switcher";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -136,11 +137,14 @@ export default function LoginPage() {
         />
 
         <div className="w-full max-w-sm rounded-[1.75rem] border-2 border-primary/10 bg-card p-7 shadow-[0_20px_50px_-20px_rgba(75,96,172,0.35)] sm:p-8">
-          <div className="mb-6 space-y-1.5">
-            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
-              {t("welcomeTitle")} 👋
-            </h1>
-            <p className="text-muted-foreground text-sm">{t("welcomeSubtitle")}</p>
+          <div className="mb-6 flex items-start justify-between gap-3">
+            <div className="space-y-1.5">
+              <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+                {t("welcomeTitle")} 👋
+              </h1>
+              <p className="text-muted-foreground text-sm">{t("welcomeSubtitle")}</p>
+            </div>
+            <LanguageSwitcher className="w-auto shrink-0" />
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

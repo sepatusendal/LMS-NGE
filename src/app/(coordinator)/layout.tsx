@@ -22,7 +22,7 @@ export default function CoordinatorLayout({
   return (
     <div className="flex min-h-dvh w-full flex-col md:flex-row">
       <MobileTopbar roleLabel={tRole("coordinator")} />
-      <AppSidebar roleLabel={tRole("coordinator")} navItems={navItems} />
+      <AppSidebar roleLabel={tRole("coordinator")} navItems={navItems} showLanguageSwitcher />
       <main className="flex-1 overflow-x-auto p-4 pb-20 md:p-8 md:pb-8">
         {children}
       </main>
