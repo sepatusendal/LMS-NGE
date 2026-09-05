@@ -9,10 +9,12 @@ export function Providers({
   children,
   locale,
   messages,
+  timeZone,
 }: {
   children: React.ReactNode;
   locale: string;
   messages: AbstractIntlMessages;
+  timeZone: string;
 }) {
   const [queryClient] = useState(
     () =>
@@ -27,8 +29,8 @@ export function Providers({
   );
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <NextIntlClientProvider locale={locale} messages={messages}>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+      <NextIntlClientProvider locale={locale} messages={messages} timeZone={timeZone}>
         <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
       </NextIntlClientProvider>
     </ThemeProvider>
