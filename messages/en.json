@@ -10,6 +10,7 @@
       "profile": "Profile"
     },
     "logout": "Log out",
+    "openMenu": "Open menu",
     "language": "Language",
     "languageIndonesian": "Indonesian",
     "languageEnglish": "English",
@@ -669,7 +670,8 @@
         "hasSubstitute": "Has substitute",
         "allHolidayTitle": "All of this teacher's classes are on holiday this date",
         "markAbsent": "Mark Absent",
-        "moreTeachers": "+{count} more teachers scheduled today."
+        "moreTeachers": "+{count} more teachers scheduled today.",
+        "loadError": "Failed to load the teacher schedule."
       },
       "absenceDialog": {
         "ineligibleHoliday": "Holiday",
@@ -794,6 +796,7 @@
       "subtitle": "Send announcements that appear as a banner on every user's dashboard.",
       "createTitle": "Create Announcement",
       "empty": "No announcements have been created yet.",
+      "loadError": "Failed to load announcements.",
       "expired": "Expired",
       "allRoles": "All roles",
       "byAuthor": "By {author}",
@@ -889,6 +892,7 @@
       "classTypeRegular": "Regular Class",
       "classTypeTraining": "Teacher & Staff Class",
       "empty": "No reports yet.",
+      "loadError": "Failed to load reports.",
       "date": "Date",
       "class": "Class",
       "attendance": "Attendance",
@@ -902,6 +906,7 @@
       "detail": {
         "back": "← Back to Daily Teaching Report",
         "notFound": "Report not found.",
+        "loadError": "Failed to load report details.",
         "classTypeTraining": "Teacher & Staff",
         "classSummary": "Class Summary",
         "attendanceValue": "{present} / {total} students",
@@ -922,6 +927,7 @@
       "year": "Year",
       "continueToReview": "Continue to Review",
       "empty": "No parent reports created yet.",
+      "loadError": "Failed to load parent reports.",
       "period": "Period",
       "generatedAt": "Generated",
       "generated": "Generated",
@@ -953,6 +959,7 @@
       "review": {
         "back": "← Back to Parent Reports",
         "incompleteParams": "Report parameters are incomplete.",
+        "loadError": "Failed to load the report draft.",
         "generated": "Generated",
         "periodLabel": "Period {period}",
         "downloadPdf": "Download PDF",
@@ -1120,6 +1127,7 @@
     },
     "analyticsCharts": {
       "loadingAnalytics": "Loading analytics...",
+      "loadError": "Failed to load analytics.",
       "studentAttendanceRate": "Student Attendance Rate ({days} days)",
       "teachingCompletionRate": "Teaching Completion Rate ({days} days)"
     }

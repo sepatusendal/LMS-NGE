@@ -68,7 +68,10 @@ function StatBlock({
 export function OverviewStats() {
   const t = useTranslations("admin.dashboard");
   const { data: schools, isError: schoolsError } = useSchools();
-  const { data: students, isError: studentsError } = useStudents();
+  // Excludes teacher-training trainees (scripts/seed-teacher-training.ts) —
+  // they live in the `students` table too, but aren't real K-12 students and
+  // would otherwise inflate this headcount.
+  const { data: students, isError: studentsError } = useStudents(undefined, { excludeTeacherTraining: true });
   const { data: teachers, isError: teachersError } = useTeachers();
   const { data: classes, isError: classesError } = useClasses();
 

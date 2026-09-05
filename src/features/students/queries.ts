@@ -1,15 +1,29 @@
 import { createClient } from "@/lib/supabase/client";
 import { enrollStudent } from "@/features/classes/roster-queries";
-import type { Student, StudentInput } from "./schema";
+import type { Student, StudentInput, StudentType } from "./schema";
 
 interface StudentRow {
   id: string;
   fullName: string;
   schoolId: string;
   nis: string | null;
+  studentType: StudentType;
   isActive: boolean;
   createdAt: string;
   schools: { name: string } | null;
+}
+
+function mapStudentRow(row: StudentRow): Student {
+  return {
+    id: row.id,
+    fullName: row.fullName,
+    schoolId: row.schoolId,
+    schoolName: row.schools?.name ?? "-",
+    nis: row.nis,
+    studentType: row.studentType,
+    isActive: row.isActive,
+    createdAt: row.createdAt,
+  };
 }
 
 /** Search-as-you-type lookup, capped at `limit` results — for pickers where
@@ -31,7 +45,7 @@ export async function searchStudents({
   const supabase = createClient();
   let dbQuery = supabase
     .from("students")
-    .select("id, fullName, schoolId, nis, isActive, createdAt, schools(name)")
+    .select("id, fullName, schoolId, nis, studentType, isActive, createdAt, schools(name)")
     .is("deletedAt", null)
     .ilike("fullName", `%${q}%`)
     .order("fullName")
@@ -44,41 +58,36 @@ export async function searchStudents({
   const { data, error } = await dbQuery;
   if (error) throw error;
 
-  return (data as unknown as StudentRow[]).map((row) => ({
-    id: row.id,
-    fullName: row.fullName,
-    schoolId: row.schoolId,
-    schoolName: row.schools?.name ?? "-",
-    nis: row.nis,
-    isActive: row.isActive,
-    createdAt: row.createdAt,
-  }));
+  return (data as unknown as StudentRow[]).map(mapStudentRow);
 }
 
-export async function fetchStudents(schoolId?: string): Promise<Student[]> {
+/** `excludeTeacherTraining` drops Guru & Staff English-course trainees (see
+ * scripts/seed-teacher-training.ts) — rows that live in the same `students`
+ * table but aren't real K-12 students. Pass it for headcount-style
+ * aggregates (e.g. dashboard "Siswa Aktif"); leave it off for
+ * management/roster views that legitimately need to see every row. */
+export async function fetchStudents(
+  schoolId?: string,
+  options?: { excludeTeacherTraining?: boolean },
+): Promise<Student[]> {
   const supabase = createClient();
   let query = supabase
     .from("students")
-    .select("id, fullName, schoolId, nis, isActive, createdAt, schools(name)")
+    .select("id, fullName, schoolId, nis, studentType, isActive, createdAt, schools(name)")
     .is("deletedAt", null)
     .order("fullName");
 
   if (schoolId) {
     query = query.eq("schoolId", schoolId);
   }
+  if (options?.excludeTeacherTraining) {
+    query = query.eq("studentType", "REGULAR");
+  }
 
   const { data, error } = await query;
   if (error) throw error;
 
-  return (data as unknown as StudentRow[]).map((row) => ({
-    id: row.id,
-    fullName: row.fullName,
-    schoolId: row.schoolId,
-    schoolName: row.schools?.name ?? "-",
-    nis: row.nis,
-    isActive: row.isActive,
-    createdAt: row.createdAt,
-  }));
+  return (data as unknown as StudentRow[]).map(mapStudentRow);
 }
 
 function toPayload(input: StudentInput) {

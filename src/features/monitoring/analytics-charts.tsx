@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { AlertCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseLocalDate } from "@/lib/date";
@@ -24,10 +25,21 @@ function latestValue(points: (number | null)[]): number | null {
 export function AnalyticsCharts() {
   const t = useTranslations("admin.analyticsCharts");
   const locale = useLocale();
-  const { data, isLoading } = useMonitoringAnalytics(14);
+  const { data, isLoading, isError, error } = useMonitoringAnalytics(14);
 
   const formatDateLabel = (dateStr: string) =>
     parseLocalDate(dateStr).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short" });
+
+  if (isError) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+          <AlertCircle className="text-destructive mb-2 size-6" />
+          <p className="text-muted-foreground text-sm">{error?.message || t("loadError")}</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading || !data) {
     return (

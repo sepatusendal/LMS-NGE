@@ -148,15 +148,21 @@ model Holiday {
   @@map("holidays")
 }
 
+enum StudentType {
+  REGULAR
+  TEACHER_TRAINING
+}
+
 model Student {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schoolId  String    @db.Uuid
-  fullName  String
-  nis       String?
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime  @updatedAt @db.Timestamptz(3)
-  deletedAt DateTime? @db.Timestamptz(3)
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId    String      @db.Uuid
+  fullName    String
+  nis         String?
+  studentType StudentType @default(REGULAR) // REGULAR = K-12 student, TEACHER_TRAINING = Guru & Staff English course trainee (scripts/seed-teacher-training.ts) — excluded from admin "active students" dashboard counts so trainees don't inflate real headcount
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime    @updatedAt @db.Timestamptz(3)
+  deletedAt   DateTime?   @db.Timestamptz(3)
 
   school          School            @relation(fields: [schoolId], references: [id])
   enrollments     ClassEnrollment[]
@@ -291,6 +297,7 @@ model ClassEnrollment {
   class   Class   @relation(fields: [classId], references: [id])
 
   @@unique([studentId, classId])
+  @@index([classId])
   @@map("class_enrollments")
 }
 
@@ -345,6 +352,7 @@ model LessonPlan {
 
   @@unique([classId, meetingNumber])
   @@index([classId, scheduledDate])
+  @@index([createdByTeacherId])
   @@map("lesson_plans")
 }
 
@@ -368,6 +376,8 @@ model Meeting {
   teachingReport TeachingReport?
 
   @@index([status])
+  @@index([assignedTeacherId])
+  @@index([actualTeacherId])
   @@map("meetings")
 }
 
@@ -391,6 +401,7 @@ model CheckIn {
   meeting Meeting @relation(fields: [meetingId], references: [id])
   teacher Teacher @relation(fields: [teacherId], references: [id])
 
+  @@index([teacherId])
   @@map("check_ins")
 }
 
@@ -408,6 +419,7 @@ model CheckOut {
   meeting Meeting @relation(fields: [meetingId], references: [id])
   teacher Teacher @relation(fields: [teacherId], references: [id])
 
+  @@index([teacherId])
   @@map("check_outs")
 }
 
@@ -470,6 +482,8 @@ model TeachingReport {
   objectives        ReportLearningObjective[]
 
   @@index([actualTeachingDate])
+  @@index([originalTeacherId])
+  @@index([substituteTeacherId])
   @@map("teaching_reports")
 }
 

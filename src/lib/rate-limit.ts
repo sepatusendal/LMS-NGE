@@ -68,3 +68,25 @@ export function rateLimit(
   existing.count += 1;
   return { ok: true, retryAfterSeconds: 0 };
 }
+
+/**
+ * Read-only version of `rateLimit`: reports whether `key` is currently over
+ * `limit` without consuming an attempt. Use this to gate a request on a
+ * counter that should only be incremented by a separate, more selective call
+ * (e.g. only on failed attempts) — see the parent-report NIS lockout tier,
+ * which must not punish a real owner for repeated successful lookups.
+ */
+export function peekRateLimit(
+  key: string,
+  { limit }: { limit: number; windowMs: number },
+): RateLimitResult {
+  const now = Date.now();
+  const existing = buckets.get(key);
+  if (!existing || existing.resetAt <= now) {
+    return { ok: true, retryAfterSeconds: 0 };
+  }
+  if (existing.count >= limit) {
+    return { ok: false, retryAfterSeconds: Math.ceil((existing.resetAt - now) / 1000) };
+  }
+  return { ok: true, retryAfterSeconds: 0 };
+}

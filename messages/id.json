@@ -10,6 +10,7 @@
       "profile": "Profil"
     },
     "logout": "Keluar",
+    "openMenu": "Buka menu",
     "language": "Bahasa",
     "languageIndonesian": "Indonesia",
     "languageEnglish": "Inggris",
@@ -669,7 +670,8 @@
         "hasSubstitute": "Ada pengganti",
         "allHolidayTitle": "Semua kelas guru ini libur di tanggal ini",
         "markAbsent": "Tandai Absen",
-        "moreTeachers": "+{count} guru lain terjadwal hari ini."
+        "moreTeachers": "+{count} guru lain terjadwal hari ini.",
+        "loadError": "Gagal memuat jadwal guru."
       },
       "absenceDialog": {
         "ineligibleHoliday": "Libur",
@@ -794,6 +796,7 @@
       "subtitle": "Kirim pengumuman yang muncul sebagai banner di dashboard semua user.",
       "createTitle": "Buat Pengumuman",
       "empty": "Belum ada pengumuman yang pernah dibuat.",
+      "loadError": "Gagal memuat pengumuman.",
       "expired": "Kadaluarsa",
       "allRoles": "Semua peran",
       "byAuthor": "Oleh {author}",
@@ -889,6 +892,7 @@
       "classTypeRegular": "Kelas Reguler",
       "classTypeTraining": "Kelas Guru & Staff",
       "empty": "Belum ada report.",
+      "loadError": "Gagal memuat report.",
       "date": "Tanggal",
       "class": "Kelas",
       "attendance": "Hadir",
@@ -902,6 +906,7 @@
       "detail": {
         "back": "← Kembali ke Daily Teaching Report",
         "notFound": "Report tidak ditemukan.",
+        "loadError": "Gagal memuat detail report.",
         "classTypeTraining": "Guru & Staff",
         "classSummary": "Ringkasan Kelas",
         "attendanceValue": "{present} / {total} siswa",
@@ -922,6 +927,7 @@
       "year": "Tahun",
       "continueToReview": "Lanjut Review",
       "empty": "Belum ada laporan orang tua dibuat.",
+      "loadError": "Gagal memuat laporan orang tua.",
       "period": "Periode",
       "generatedAt": "Digenerate",
       "generated": "Sudah Digenerate",
@@ -953,6 +959,7 @@
       "review": {
         "back": "← Kembali ke Laporan Orang Tua",
         "incompleteParams": "Parameter laporan tidak lengkap.",
+        "loadError": "Gagal memuat draft laporan.",
         "generated": "Sudah Digenerate",
         "periodLabel": "Periode {period}",
         "downloadPdf": "Unduh PDF",
@@ -1120,6 +1127,7 @@
     },
     "analyticsCharts": {
       "loadingAnalytics": "Memuat analytics...",
+      "loadError": "Gagal memuat analytics.",
       "studentAttendanceRate": "Student Attendance Rate ({days} hari)",
       "teachingCompletionRate": "Teaching Completion Rate ({days} hari)"
     }

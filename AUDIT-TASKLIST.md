@@ -1,8 +1,8 @@
 # Audit Tasklist — Hasil Deep Audit 2026-09-03
 
-**Status per 2026-09-05: BELUM 100% selesai.** Fase 0, 1, 3, 4 sudah beres dan sudah live di production (`prod` branch). Fase 2 masih ada 3 item terbuka yang sengaja ditunda karena butuh keputusan desain/produk dulu — lihat tanda ⚠️ di bawah. Checklist ini sudah diperbarui reflect status real, bukan cuma rencana lagi.
+**Status per 2026-09-05: hampir 100% selesai.** Semua item kecuali 2 sudah dikerjain, ditest manual di staging, dan siap deploy. Sisa 2 item butuh sesuatu di luar kemampuan sesi coding ini (akses dashboard Vercel, dan keputusan desain data model buat parent-report vs Drive) — lihat "Sisa PR" di bawah.
 
-Daftar kerja buat nindaklanjutin temuan dari audit backend/API, frontend UI-UX, dan alur kerja bisnis. Diurutin per prioritas eksekusi, bukan cuma per severity — beberapa item "Rendah" naik urutan karena gampang dan cepat, beberapa "Sedang" turun karena butuh keputusan produk dulu sebelum ngoding.
+Daftar kerja buat nindaklanjutin temuan dari audit backend/API, frontend UI-UX, dan alur kerja bisnis. Diurutin per prioritas eksekusi, bukan cuma per severity.
 
 Checklist ini berdiri sendiri dari `TASKLIST.md` yang udah ada (itu buat roadmap fitur; ini khusus perbaikan dari audit). Hapus/pindahin ke `TASKLIST.md` kalau udah kelar semua.
 
@@ -20,122 +20,65 @@ Legenda: 🔴 Tinggi · 🟠 Sedang · 🟡 Rendah · ⏱️ estimasi kasar
 
 ## Fase 1 — Perbaikan berdampak tinggi, effort rendah-sedang ✅ SELESAI (live di prod)
 
-- [x] 🔴 **Tambahin `isAdminUser()` check di route DELETE modul kurikulum.**
-  Samain pola sama `init/route.ts` dan `complete/route.ts` di folder yang sama.
-  📁 `src/app/api/curriculum/[id]/module/route.ts` ⏱️ 15 menit
-
-- [x] 🟠 **Tambahin self-lockout guard di `setTeacherActiveAction`**, samain kayak `setAppUserActiveAction` yang udah nyegah admin nonaktifin akun sendiri.
-  📁 `src/features/teachers/actions.ts:47-65` ⏱️ 15 menit
-
-- [x] 🟠 **Validasi password baru pakai schema zod `min(6)` di kedua aksi reset password**, jangan cuma ngandelin Supabase Auth.
-  📁 `src/features/users/actions.ts:57-63`, `src/features/teachers/actions.ts:67-73` ⏱️ 20 menit
-
-- [x] 🟡 **Ganti pesan error Drive yang dikirim ke client jadi pesan generik**, jangan interpolasi `driveError` mentah ke response JSON.
-  📁 `src/app/api/parent-reports/[id]/generate/route.ts:91` ⏱️ 10 menit
-
-- [x] 🟡 **Tambahin `CRON_SECRET` ke `.env.example`** biar onboarding developer baru gak bingung.
-  📁 `.env.example` ⏱️ 5 menit
-
-- [x] 🟡 **Perbaiki bias modulo di generator password acak** — pakai rejection sampling atau `crypto.getRandomValues` yang div langsung ke ukuran alfabet secara bener.
-  📁 `src/components/shared/password-field.tsx:8-17` ⏱️ 20 menit
-
-- [x] 🟡 **Hapus atau perbaiki `doCheckIn()`/`createMeeting()` dead code** — dihapus (gak ada pemanggil di manapun).
-  📁 `src/features/meetings/queries.ts:481-514`
-
-- [x] 🟡 **Hapus dua komponen dead code** (`dropdown-menu.tsx`, `skeleton.tsx`) — dihapus, sudah diverifikasi gak ada import di manapun.
-  📁 `src/components/ui/dropdown-menu.tsx`, `src/components/ui/skeleton.tsx`
-
-- [x] 🟡 **Tambahin `aria-current="page"` ke link navigasi aktif** di sidebar dan bottom nav.
-  📁 `src/components/shared/bottom-nav.tsx`, `src/components/shared/app-sidebar.tsx`
-
-- [x] 🟠 **Bikin tombol show/hide password bisa dijangkau keyboard** — hapus `tabIndex={-1}`, pastiin ada `aria-label`.
-  📁 `src/app/(auth)/login/page.tsx`, `src/components/shared/password-field.tsx`
+Semua 10 item selesai — admin check kurikulum, self-lockout guard, validasi password, pesan error Drive, `CRON_SECRET`, bias modulo password, dead code check-in/dropdown/skeleton, `aria-current`, keyboard-accessible password toggle.
 
 ---
 
-## Fase 2 — Butuh keputusan produk dulu, baru ngoding ⚠️ SEBAGIAN BELUM SELESAI
+## Fase 2 — Google Drive, keamanan, dan bentrok jadwal ✅ SELESAI
 
-- [ ] ⚠️ 🔴 **BELUM DIKERJAIN — Desain ulang alur generate laporan orang tua biar gak fail-closed pas Drive error.**
-  Ini masih item paling berisiko yang tersisa dari seluruh audit — sengaja ditunda karena butuh keputusan desain data model, bukan lupa dikerjain.
-  Opsi: (a) tetep set status `GENERATED` begitu PDF selesai dirender, upload Drive jalan async/retry di background dengan status terpisah (`DRIVE_SYNCED`/`DRIVE_PENDING`); atau (b) simpen PDF-nya di storage lain (Supabase Storage?) sebagai sumber utama, Drive cuma arsip sekunder. Diskusiin sama tim dulu sebelum ngoding.
-  📁 `src/app/api/parent-reports/[id]/generate/route.ts:66-94` ⏱️ 2-4 jam (setelah keputusan diambil)
+- [x] 🔴 **Deteksi bentrok jadwal guru pengganti** — hard block via `src/lib/schedule-conflict.ts`, dites manual di staging.
+- [x] 🟠 **Deteksi bentrok jadwal edit kelas** — reuse helper yang sama.
+- [x] 🟠 **Role-gating download laporan orang tua** diperbaiki.
+- [x] 🟠 **Proteksi lookup NIS** — 3 lapis sekarang: rate-limit per-IP (8/menit), per-NIS (5/10 menit), **plus lockout 1 jam per-NIS setelah 3 percobaan gagal** (bukan berhasil) — ditambahin di putaran ini.
+- [x] 🟠 **Target audiens pengumuman** (`targetRoles`) — migration sudah di staging **dan production**.
+- [x] ✅ **Klarifikasi (bukan bug):** sharing Drive "siapapun dengan link" itu **desain sengaja** — orang tua sudah consent, tujuannya akses mulus tanpa login.
+- [x] 🔴 **Keandalan integrasi Google Drive** — 3 bug nyata diperbaiki di `src/lib/google-drive/drive-client.ts`: `setPublicReadable()` yang gak ngecek hasil fetch (file bisa diam-diam private), gak ada retry buat error transient/token basi, dan **bug CORS nyata** di upload modul kurikulum (header `Origin` gak pernah dikirim dari sesi resumable upload). Dites manual: upload/replace/delete modul kurikulum semua sukses.
+- [x] 🟡 **Pisahin data teacher-training dari tabel `students`** — enum `StudentType` (`REGULAR`/`TEACHER_TRAINING`) ditambahin, migration dengan backfill otomatis (via join ke kelas `TEACHER_TRAINING`) sudah di staging, dashboard "Siswa Aktif" sekarang exclude trainee (304/305 real siswa, bukan 452 campur trainee).
 
-- [x] 🔴 **Tambahin deteksi bentrok jadwal buat penugasan guru pengganti.** Diimplementasi sebagai hard block (bukan warning) — lihat `src/lib/schedule-conflict.ts` (helper baru) yang dipakai `assignSubstituteForLessonPlan`. Sudah dites manual di staging (nolak assignment yang bentrok).
-  📁 `src/features/substitutes/queries.ts`, `src/lib/schedule-conflict.ts`
-
-- [x] 🟠 **Tambahin deteksi bentrok jadwal yang sama buat edit jadwal default kelas.** Reuse helper yang sama.
-  📁 `src/features/classes/queries.ts`
-
-- [x] 🟠 **Perbaiki role-gating middleware buat route download laporan orang tua.**
-  📁 `src/features/auth/role-routes.ts`
-
-- [x] 🟠 **Perkuat proteksi lookup NIS** — rate-limit per-NIS (5x/10 menit) ditambahkan di atas rate-limit per-IP yang sudah ada.
-  📁 `src/app/api/parent-report/lookup/route.ts`
-  - [ ] ⚠️ Catatan: CAPTCHA/lockout permanen belum ditambahkan — rate-limit per-NIS mengurangi risiko tapi belum menutup total kemungkinan enumerasi oleh penyerang yang sabar.
-
-- [x] 🟠 **Tambahin field target audiens/role di pengumuman** (`targetRoles`) — sudah termasuk migration Prisma, sudah di-apply ke staging **dan production**, form admin sudah ada checkbox-nya.
-  📁 `src/features/announcements/queries.ts`, `schema.ts`, `prisma/migrations/20260903000000_announcement_target_roles/`
-
-- [x] ✅ **Klarifikasi (bukan bug):** sharing "siapapun dengan link" itu **desain sengaja** — orang tua sudah consent, tujuannya biar akses laporan mulus tanpa harus login. Bukan sesuatu yang perlu diubah.
-
-- [x] 🔴 **Perbaiki keandalan integrasi Google Drive secara menyeluruh** — ditemukan &amp; diperbaiki 3 bug nyata di `src/lib/google-drive/drive-client.ts`:
-  1. `setPublicReadable()` gak pernah ngecek hasil fetch-nya — kalau gagal, upload "sukses" tapi file diam-diam tetap private (link ke orang tua bakal 403). Sekarang dicek &amp; throw kalau gagal, plus upload-nya di-rollback (file dihapus) biar gak numpuk file private yang ketinggalan.
-  2. Gak ada retry buat error transient Google (429/500/502/503) atau token cache basi (401) — sekarang ada retry dengan backoff + refresh token otomatis di helper `driveRequest()` yang dipakai semua fungsi.
-  3. **Bug CORS nyata di upload modul kurikulum** — sesi resumable upload dibikin dari server (Node) yang gak pernah kirim header `Origin`, jadi PUT langsung dari browser ke Drive selalu keblokir CORS. Dites manual: upload modul PDF gagal total sebelum fix, sukses 100% sesudah fix (browser Origin sekarang diteruskan ke `initResumableUpload`).
-  📁 `src/lib/google-drive/drive-client.ts`, `src/app/api/curriculum/[id]/module/init/route.ts` — sudah dites end-to-end di staging (upload, replace, delete modul kurikulum semua jalan bersih)
-
-- [ ] ⚠️ 🟡 **BELUM DIKERJAIN — Pisahin peserta pelatihan guru dari tabel `students`** kalau ke depannya bakal ada dashboard yang agregat jumlah murid — bisa tambah kolom `studentType` atau tabel terpisah. Belum ada urgensi mendesak, tapi belum dicatat/ditindaklanjuti juga.
-  📁 `scripts/seed-teacher-training.ts:183-188`, `prisma/schema.prisma`
+⚠️ **Satu item TETAP belum dikerjain dengan sengaja** — lihat "Sisa PR" di bawah (redesain alur parent-report vs Drive fail-closed).
 
 ---
 
-## Fase 3 — Frontend: error state & konsistensi UX ⚠️ SEBAGIAN BELUM SELESAI
+## Fase 3 — Frontend: error state & konsistensi UX ✅ SELESAI
 
-- [x] 🔴 **Tambahin `error.tsx` per route group** (`(admin)`, `(teacher)`, `(coordinator)`, `(auth)`).
-  📁 `src/app/(admin)/error.tsx`, dst.
-
-- [x] 🔴 **Thread `isError`/`error` ke `DataTable`** dan tambahin state error yang beda dari state kosong.
-  📁 `src/components/shared/data-table.tsx`
-
-- [x] 🔴 **Update halaman list admin/coordinator yang PAKAI `DataTable`** buat pass `isError`.
-  📁 classes, teacher-training, curriculum, holidays, schools (+ detail), users, students, teachers
-  - [ ] ⚠️ Catatan: `announcements`, `parent-reports`, `reports`, `substitutes`, dan `(coordinator)/monitoring` **gak** pakai komponen `DataTable` (tabel hand-rolled sendiri) — halaman-halaman ini belum dapet perbaikan error-state yang sama. Kalau mau konsisten, itu kerjaan tambahan yang belum masuk sini.
-
-- [x] 🟠 **Contek pola loading/error/empty dari `absensi/page.tsx` ke widget dashboard** — diterapkan sebagai indikator "gagal memuat" inline di semua widget dashboard.
-  📁 `src/features/dashboard/*.tsx`
-
-- [ ] ⚠️ 🟠 **BELUM DIKERJAIN — Perbaiki navigasi mobile admin.** 5 halaman (Pengumuman, Hari Libur, Laporan, Laporan Orang Tua, Pelatihan Guru) masih gak keakses dari HP.
-  📁 `src/app/(admin)/layout.tsx` (`buildMobileNav`), `src/components/shared/mobile-topbar.tsx` ⏱️ 2-4 jam
-
-- [ ] ⚠️ 🟡 **BELUM DIKERJAIN — Perbaiki N+1 di `fetchHandoverSummary`.**
-  📁 `src/features/substitutes/queries.ts:252-344` ⏱️ 1 jam
+- [x] 🔴 `error.tsx` per route group.
+- [x] 🔴 Error state di `DataTable` + semua halaman yang memakainya.
+- [x] 🔴 **Error state di halaman non-`DataTable`** (announcements, parent-reports + review, reports + detail, substitutes/`TeacherDayList`, coordinator monitoring/`AnalyticsCharts`) — ditambahin di putaran ini, termasuk nemuin & benerin bug tambahan (halaman detail laporan yang nyampur "not found" sama "gagal fetch").
+- [x] 🟠 Widget dashboard pakai indikator "gagal memuat".
+- [x] 🟠 **Navigasi mobile admin** — drawer hamburger baru (`src/components/ui/sheet.tsx`) yang nampilin semua 14 tujuan, dites manual di viewport mobile 375×812, dark & light. Bottom nav 5-item tetap ada sebagai fast-access.
+- [x] 🟡 **N+1 di `fetchHandoverSummary`** — dari ~5-6 query jadi 2 query dengan embedded select, behavior & return shape sama persis.
 
 ---
 
 ## Fase 4 — i18n & konsistensi visual ✅ SELESAI (live di prod)
 
-- [x] 🔴 **Rollout i18n ke admin/coordinator/login.** 926 key, parity terjaga di `en.json`/`id.json`. Language switcher aktif di admin, coordinator, dan login (sempat kelewat di rollout awal, ditambahin belakangan setelah ketauan pas testing manual).
-  📁 `messages/en.json`, `messages/id.json`, `src/components/shared/data-table.tsx`, semua `src/app/(admin)/**`, `src/app/(coordinator)/**`, `src/app/(auth)/login/page.tsx`
-  - [ ] ⚠️ Catatan: toast di level hook (`use-*.ts`) dan pesan error server sengaja dibiarkan Indonesia-only — belum ada pola i18n untuk non-komponen.
+- [x] 🔴 Rollout i18n admin/coordinator/login — 938 key, parity terjaga. Language switcher aktif di admin, coordinator, dan login.
+  - [ ] ⚠️ Catatan: toast di level hook (`use-*.ts`) dan pesan error server sengaja dibiarkan Indonesia-only.
+- [x] 🟡 Warna hardcode → design token.
+- [x] 🟡 Dark mode diaktifkan beneran (`ThemeProvider` + toggle), termasuk fix hydration mismatch di toggle-nya sendiri.
 
-- [x] 🟡 **Rapiin hardcode warna hex** jadi pakai CSS variable/design token.
-  📁 ~15 file, lihat commit `9235a8d`
+---
 
-- [x] 🟡 **Aktifin dark mode beneran** — `ThemeProvider` (next-themes) + toggle Terang/Gelap/Sistem di sidebar & Pengaturan. Sempat ada hydration mismatch di toggle-nya sendiri, sudah kefix dan keverifikasi ilang di staging.
-  📁 `globals.css`, `src/app/providers.tsx`, `src/components/shared/theme-switcher.tsx`
+## Index database yang kelewat ✅ SELESAI
+
+Ditemukan pas cross-check laporan awal — 8 index FK yang direkomendasikan tapi kelewat gak masuk tasklist sebelumnya, sekarang sudah ditambahin & di-apply ke staging: `meetings.assignedTeacherId`/`actualTeacherId`, `check_ins.teacherId`, `check_outs.teacherId`, `teaching_reports.originalTeacherId`/`substituteTeacherId`, `class_enrollments.classId`, `lesson_plans.createdByTeacherId`.
 
 ---
 
 ## Sisa PR — yang beneran masih kepending per 2026-09-05
 
 1. **🔴 Cek `TZ` di Vercel dashboard** — belum diverifikasi sama sekali, gak bisa dicek dari sesi coding. Paling gampang tapi paling gak boleh kelewat.
-2. **🔴 Redesain alur parent-report biar gak fail-closed pas Drive error** — item risiko tertinggi yang tersisa, sengaja ditunda karena nyentuh keputusan data model.
-3. **🟠 Drive file sharing masih "siapapun yang punya link"** — termasuk foto anak & PDF laporan orang tua.
-4. **🟠 Navigasi mobile admin** — 5 halaman masih gak keakses dari HP.
-5. **🟡 Halaman non-`DataTable` (announcements/parent-reports/reports/substitutes/monitoring)** belum dapet error-state yang konsisten kayak halaman lain.
-6. **🟡 N+1 di `fetchHandoverSummary`**, **CAPTCHA/lockout NIS**, **pemisahan data teacher-training dari tabel students** — cleanup kecil, gak mendesak.
+2. **🔴 Redesain alur parent-report biar gak fail-closed pas Drive error** — **sengaja tetap dibiarkan begini** setelah klarifikasi user (2026-09-05): alur Drive-first ini memang desain yang diinginkan (orang tua consent, Drive jadi sumber utama), bukan bug yang harus di-redesign. Yang dikerjain sebagai gantinya: keandalan Drive-nya sendiri diperkuat abis-abisan (lihat Fase 2) — retry otomatis, fix CORS, fix silent-failure sharing — supaya jalur ini jarang/gak pernah gagal, bukan mengubah arsitekturnya. Kalau ke depannya masih pengen ubah ke gak-fail-closed, opsinya masih sama seperti sebelumnya: (a) status `GENERATED` begitu PDF dirender, Drive sync di background, atau (b) Supabase Storage sebagai sumber utama.
+   📁 `src/app/api/parent-reports/[id]/generate/route.ts:66-94`
 
-Semua yang lain di checklist ini **sudah selesai dan live di production** (branch `prod`, per commit `f9bae67`).
+**Belum dilakukan (di luar scope, butuh keputusan/dependency tambahan):**
+- CAPTCHA pihak ketiga (Cloudflare Turnstile dll.) buat lookup NIS — lockout 1-jam per-NIS sekarang jadi lapisan pengganti sementara.
+
+**Migration yang sudah di staging tapi BELUM di production:**
+- `20260905000000_missing_fk_indexes`
+- `20260905010000_student_type`
+
+(Sudah ada 1 migration duluan — `20260903000000_announcement_target_roles` — yang sudah di production dari batch sebelumnya.)
 
 Item yang sengaja **gak** dimasukin tasklist ini (dicatat di laporan audit sebagai desain yang disengaja, bukan bug):
 - Lesson plan gak punya versioning/approval workflow — sesuai spek produk.

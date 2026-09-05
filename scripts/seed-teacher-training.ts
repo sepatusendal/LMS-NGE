@@ -182,7 +182,7 @@ async function main() {
     }
     const { data, error } = await supabase
       .from("students")
-      .insert({ schoolId, fullName, isActive: true })
+      .insert({ schoolId, fullName, isActive: true, studentType: "TEACHER_TRAINING" })
       .select("id")
       .single();
     if (error) throw error;

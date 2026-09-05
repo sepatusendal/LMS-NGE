@@ -24,7 +24,7 @@ export default function SubstitutesPage() {
   const [search, setSearch] = useState("");
 
   const { data: schools } = useSchools();
-  const { data: rows, isLoading } = useStatusBoard(date);
+  const { data: rows, isLoading, isError, error } = useStatusBoard(date);
 
   const filtered = useMemo(() => {
     if (!rows) return [];
@@ -90,7 +90,13 @@ export default function SubstitutesPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <TeacherDayList date={date} rows={filtered} isLoading={isLoading} />
+          <TeacherDayList
+            date={date}
+            rows={filtered}
+            isLoading={isLoading}
+            isError={isError}
+            errorMessage={error?.message}
+          />
         </CardContent>
       </Card>
     </div>
