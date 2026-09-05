@@ -76,8 +76,13 @@ Legenda: 🔴 Tinggi · 🟠 Sedang · 🟡 Rendah · ⏱️ estimasi kasar
 - [x] 🟠 **Tambahin field target audiens/role di pengumuman** (`targetRoles`) — sudah termasuk migration Prisma, sudah di-apply ke staging **dan production**, form admin sudah ada checkbox-nya.
   📁 `src/features/announcements/queries.ts`, `schema.ts`, `prisma/migrations/20260903000000_announcement_target_roles/`
 
-- [ ] ⚠️ 🟠 **BELUM DIKERJAIN — Ganti Drive file sharing dari "siapapun yang punya link" jadi lebih terbatas**, khususnya buat PDF laporan orang tua dan foto check-in/out anak. Opsi: domain-restricted sharing, atau proxy signed-URL lewat aplikasi sendiri. Butuh diskusi karena nyentuh cara semua fitur Drive kerja — belum disentuh sama sekali.
-  📁 `src/lib/google-drive/drive-client.ts:84-91,130` ⏱️ 3-6 jam tergantung opsi
+- [x] ✅ **Klarifikasi (bukan bug):** sharing "siapapun dengan link" itu **desain sengaja** — orang tua sudah consent, tujuannya biar akses laporan mulus tanpa harus login. Bukan sesuatu yang perlu diubah.
+
+- [x] 🔴 **Perbaiki keandalan integrasi Google Drive secara menyeluruh** — ditemukan &amp; diperbaiki 3 bug nyata di `src/lib/google-drive/drive-client.ts`:
+  1. `setPublicReadable()` gak pernah ngecek hasil fetch-nya — kalau gagal, upload "sukses" tapi file diam-diam tetap private (link ke orang tua bakal 403). Sekarang dicek &amp; throw kalau gagal, plus upload-nya di-rollback (file dihapus) biar gak numpuk file private yang ketinggalan.
+  2. Gak ada retry buat error transient Google (429/500/502/503) atau token cache basi (401) — sekarang ada retry dengan backoff + refresh token otomatis di helper `driveRequest()` yang dipakai semua fungsi.
+  3. **Bug CORS nyata di upload modul kurikulum** — sesi resumable upload dibikin dari server (Node) yang gak pernah kirim header `Origin`, jadi PUT langsung dari browser ke Drive selalu keblokir CORS. Dites manual: upload modul PDF gagal total sebelum fix, sukses 100% sesudah fix (browser Origin sekarang diteruskan ke `initResumableUpload`).
+  📁 `src/lib/google-drive/drive-client.ts`, `src/app/api/curriculum/[id]/module/init/route.ts` — sudah dites end-to-end di staging (upload, replace, delete modul kurikulum semua jalan bersih)
 
 - [ ] ⚠️ 🟡 **BELUM DIKERJAIN — Pisahin peserta pelatihan guru dari tabel `students`** kalau ke depannya bakal ada dashboard yang agregat jumlah murid — bisa tambah kolom `studentType` atau tabel terpisah. Belum ada urgensi mendesak, tapi belum dicatat/ditindaklanjuti juga.
   📁 `scripts/seed-teacher-training.ts:183-188`, `prisma/schema.prisma`

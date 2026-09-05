@@ -49,10 +49,19 @@ export async function POST(
     return NextResponse.json({ error: "Kurikulum tidak ditemukan" }, { status: 404 });
   }
 
+  // The browser will PUT the file bytes directly to Google after this route
+  // returns — Google only allows that cross-origin PUT to succeed if this
+  // session-creation call itself declares the same origin (see the
+  // `browserOrigin` comment on initResumableUpload). `request.headers.get("origin")`
+  // is what the browser's own fetch/XHR actually sent; falling back to the
+  // request's own resolved origin covers same-origin requests, where
+  // browsers omit the `Origin` header entirely.
+  const browserOrigin = request.headers.get("origin") ?? request.nextUrl.origin;
+
   try {
     const modulesRoot = await findOrCreateFolder("Modul Kelas", getRootFolderId());
     const folderId = await findOrCreateFolder(curriculum.name, modulesRoot);
-    const uploadUrl = await initResumableUpload(fileName, "application/pdf", fileSize, folderId);
+    const uploadUrl = await initResumableUpload(fileName, "application/pdf", fileSize, folderId, browserOrigin);
     return NextResponse.json({ uploadUrl });
   } catch (err) {
     console.error("Curriculum module upload init error:", err);
