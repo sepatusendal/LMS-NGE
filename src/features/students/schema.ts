@@ -13,12 +13,15 @@ export function buildStudentSchema(t: (key: string) => string) {
 
 export type StudentInput = z.infer<ReturnType<typeof buildStudentSchema>>;
 
+export type StudentType = "REGULAR" | "TEACHER_TRAINING";
+
 export interface Student {
   id: string;
   fullName: string;
   schoolId: string;
   schoolName: string;
   nis: string | null;
+  studentType: StudentType;
   isActive: boolean;
   createdAt: string;
 }

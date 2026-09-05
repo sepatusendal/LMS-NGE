@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ExternalLink, Check, X as XIcon } from "lucide-react";
+import { AlertCircle, ExternalLink, Check, X as XIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,13 +31,23 @@ export default function ReportDetailPage() {
   const tObjectives = useTranslations("reportForm.objectivesStatus");
   const locale = useLocale();
   const params = useParams<{ id: string }>();
-  const { data: report, isLoading } = useAdminReportDetail(params.id);
+  const { data: report, isLoading, isError, error } = useAdminReportDetail(params.id);
   const objectivesLabel = buildObjectivesLabel(tObjectives);
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "long", year: "numeric" });
 
   if (isLoading) {
     return <p className="text-muted-foreground text-sm">{tCommon("dataTable.loading")}</p>;
+  }
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <AlertCircle className="text-destructive mb-2 size-6" />
+        <p className="text-muted-foreground text-center text-sm">
+          {error?.message || t("loadError")}
+        </p>
+      </div>
+    );
   }
   if (!report) {
     return <p className="text-muted-foreground text-sm">{t("notFound")}</p>;

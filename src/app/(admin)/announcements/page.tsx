@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Megaphone, Trash2 } from "lucide-react";
+import { AlertCircle, Megaphone, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -19,7 +19,7 @@ import { LoadingState } from "@/components/shared/loading-state";
 
 export default function AnnouncementsPage() {
   const t = useTranslations("admin.announcements");
-  const { data: announcements, isLoading } = useAnnouncementsAdmin();
+  const { data: announcements, isLoading, isError, error } = useAnnouncementsAdmin();
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const isExpired = (a: Announcement) => Boolean(a.expiresAt && new Date(a.expiresAt) < new Date());
@@ -39,14 +39,23 @@ export default function AnnouncementsPage() {
 
       {isLoading && <LoadingState />}
 
-      {!isLoading && (!announcements || announcements.length === 0) && (
+      {!isLoading && isError && (
+        <div className="flex flex-col items-center justify-center rounded-3xl bg-white px-6 py-16 text-center shadow-sm">
+          <AlertCircle className="text-destructive mb-2 size-6" />
+          <p className="text-muted-foreground text-center text-sm">
+            {error?.message || t("loadError")}
+          </p>
+        </div>
+      )}
+
+      {!isLoading && !isError && (!announcements || announcements.length === 0) && (
         <div className="flex flex-col items-center justify-center rounded-3xl bg-white px-6 py-16 text-center shadow-sm">
           <Megaphone className="text-muted-foreground/40 mb-3 size-10" />
           <p className="text-muted-foreground text-sm">{t("empty")}</p>
         </div>
       )}
 
-      {!isLoading && announcements && announcements.length > 0 && (
+      {!isLoading && !isError && announcements && announcements.length > 0 && (
         <div className="space-y-3">
           {announcements.map((a) => (
             <AnnouncementRow key={a.id} announcement={a} expired={isExpired(a)} />

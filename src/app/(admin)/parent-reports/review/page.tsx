@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ExternalLink, FileDown } from "lucide-react";
+import { AlertCircle, ExternalLink, FileDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,7 @@ function ParentReportReviewInner() {
   const month = Number(params.get("month") ?? 0);
   const year = Number(params.get("year") ?? 0);
 
-  const { data: draft, isLoading } = useParentReportDraft(studentId, month, year);
+  const { data: draft, isLoading, isError, error } = useParentReportDraft(studentId, month, year);
   const updateComment = useUpdateDraftComment();
   const generate = useGenerateParentReport();
 
@@ -71,6 +71,16 @@ function ParentReportReviewInner() {
 
   if (!studentId || !month || !year) {
     return <p className="text-muted-foreground text-sm">{t("incompleteParams")}</p>;
+  }
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <AlertCircle className="text-destructive mb-2 size-6" />
+        <p className="text-muted-foreground text-center text-sm">
+          {error?.message || t("loadError")}
+        </p>
+      </div>
+    );
   }
   if (isLoading || !draft) {
     return <p className="text-muted-foreground text-sm">{tCommon("dataTable.loading")}</p>;

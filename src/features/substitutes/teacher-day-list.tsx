@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { UserRoundX } from "lucide-react";
+import { AlertCircle, UserRoundX } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,12 +38,16 @@ export function TeacherDayList({
   date,
   rows,
   isLoading,
+  isError,
+  errorMessage,
   emptyLabel,
   limit,
 }: {
   date: string;
   rows: ClassStatusRow[];
   isLoading?: boolean;
+  isError?: boolean;
+  errorMessage?: string;
   emptyLabel?: string;
   /** Cap the number of teachers shown (e.g. for a compact dashboard panel). */
   limit?: number;
@@ -65,6 +69,17 @@ export function TeacherDayList({
 
   if (isLoading) {
     return <p className="text-muted-foreground text-sm">{tCommon("dataTable.loading")}</p>;
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8">
+        <AlertCircle className="text-destructive mb-2 size-6" />
+        <p className="text-muted-foreground text-center text-sm">
+          {errorMessage || t("loadError")}
+        </p>
+      </div>
+    );
   }
 
   if (groups.length === 0) {

@@ -364,6 +364,14 @@ export async function cancelSubstitute(meetingId: string): Promise<void> {
   if (error) throw checkInGuardError(error);
 }
 
+/** Fetches everything Handover needs in two round-trips instead of the
+ * original five: one for the class's lesson plans (with the class's
+ * teacher embedded via nested select, the same pattern
+ * resolveEffectiveTeacherForDate uses), and one for all of those lesson
+ * plans' meetings with their teaching_reports and student_follow_ups
+ * embedded — so the previous meeting's report and every plan's follow-ups
+ * come back together instead of the old id -> id -> id chain of
+ * meetings -> teaching_reports -> student_follow_ups queries. */
 export async function fetchHandoverSummary(
   classId: string,
   currentLessonPlanId: string,
@@ -372,74 +380,70 @@ export async function fetchHandoverSummary(
 
   const { data: plans, error: lpErr } = await supabase
     .from("lesson_plans")
-    .select("id, meetingNumber, topic, scheduledDate")
+    .select("id, meetingNumber, topic, scheduledDate, classes(teacherId, teachers(users(fullName)))")
     .eq("classId", classId)
     .is("deletedAt", null)
     .order("meetingNumber");
   if (lpErr) throw lpErr;
 
-  const sorted = plans as unknown as LessonPlanRow[];
+  const rawPlans = plans as unknown as (LessonPlanRow & {
+    classes: { teachers: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null } | { teachers: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null }[] | null;
+  })[];
+  const sorted: LessonPlanRow[] = rawPlans.map((p) => ({
+    id: p.id,
+    meetingNumber: p.meetingNumber,
+    topic: p.topic,
+    scheduledDate: p.scheduledDate,
+  }));
+  const originalTeacherName = toOne(toOne(rawPlans[0]?.classes)?.teachers)?.users?.fullName ?? "-";
+
   const currentIndex = sorted.findIndex((p) => p.id === currentLessonPlanId);
   const current = sorted[currentIndex] ?? null;
   const previous = currentIndex > 0 ? sorted[currentIndex - 1] : null;
   const next = currentIndex >= 0 && currentIndex < sorted.length - 1 ? sorted[currentIndex + 1] : null;
 
-  const { data: cls, error: clsErr } = await supabase
-    .from("classes")
-    .select("teacherId, teachers(users(fullName))")
-    .eq("id", classId)
-    .single();
-  if (clsErr) throw clsErr;
-  const c = cls as unknown as { teachers: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null };
-  const originalTeacherName = toOne(c.teachers)?.users?.fullName ?? "-";
-
   let previousReport: HandoverSummary["previousReport"] = null;
-  if (previous) {
-    const { data: meeting } = await supabase
-      .from("meetings")
-      .select("teaching_reports(whatWentWell, whatNeedsImprovement, nextLessonNotes, homeworkAssigned)")
-      .eq("lessonPlanId", previous.id)
-      .maybeSingle();
-    const report = toOne(
-      (meeting as { teaching_reports: HandoverSummary["previousReport"] | HandoverSummary["previousReport"][] | null } | null)
-        ?.teaching_reports,
-    );
-    previousReport = report;
-  }
+  let followUps: HandoverSummary["followUps"] = [];
 
   const lessonPlanIds = sorted.map((p) => p.id);
-  let followUps: HandoverSummary["followUps"] = [];
   if (lessonPlanIds.length > 0) {
+    type FollowUpRow = { note: string; resolvedAt: string | null; createdAt: string; students: { fullName: string } | { fullName: string }[] | null };
+    type ReportRow = HandoverSummary["previousReport"] & { student_follow_ups: FollowUpRow[] | FollowUpRow | null };
     const { data: meetingRows, error: meetErr } = await supabase
       .from("meetings")
-      .select("id")
+      .select(
+        "lessonPlanId, teaching_reports(whatWentWell, whatNeedsImprovement, nextLessonNotes, homeworkAssigned, student_follow_ups(note, resolvedAt, createdAt, students(fullName)))",
+      )
       .in("lessonPlanId", lessonPlanIds);
     if (meetErr) throw meetErr;
-    const meetingIds = (meetingRows as unknown as { id: string }[]).map((m) => m.id);
 
-    if (meetingIds.length > 0) {
-      const { data: reportRows, error: reportErr } = await supabase
-        .from("teaching_reports")
-        .select("id")
-        .in("meetingId", meetingIds);
-      if (reportErr) throw reportErr;
-      const reportIds = (reportRows as unknown as { id: string }[]).map((r) => r.id);
+    const rows = meetingRows as unknown as { lessonPlanId: string; teaching_reports: ReportRow | ReportRow[] | null }[];
 
-      if (reportIds.length > 0) {
-        const { data: followUpRows, error: fuErr } = await supabase
-          .from("student_follow_ups")
-          .select("note, students(fullName)")
-          .in("teachingReportId", reportIds)
-          .is("resolvedAt", null)
-          .order("createdAt", { ascending: false })
-          .limit(10);
-        if (fuErr) throw fuErr;
-
-        followUps = (
-          followUpRows as unknown as { note: string; students: { fullName: string } | { fullName: string }[] | null }[]
-        ).map((row) => ({ studentName: toOne(row.students)?.fullName ?? "-", note: row.note }));
-      }
+    if (previous) {
+      const previousRow = rows.find((r) => r.lessonPlanId === previous.id);
+      const report = toOne(previousRow?.teaching_reports ?? null);
+      previousReport = report
+        ? {
+            whatWentWell: report.whatWentWell,
+            whatNeedsImprovement: report.whatNeedsImprovement,
+            nextLessonNotes: report.nextLessonNotes,
+            homeworkAssigned: report.homeworkAssigned,
+          }
+        : null;
     }
+
+    const allFollowUps = rows.flatMap((r) => {
+      const report = toOne(r.teaching_reports);
+      if (!report) return [];
+      const fus = report.student_follow_ups;
+      return Array.isArray(fus) ? fus : fus ? [fus] : [];
+    });
+
+    followUps = allFollowUps
+      .filter((f) => !f.resolvedAt)
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0))
+      .slice(0, 10)
+      .map((row) => ({ studentName: toOne(row.students)?.fullName ?? "-", note: row.note }));
   }
 
   return {

@@ -42,7 +42,9 @@ function SidebarCard({
  * "Earning" card pada kolom samping). */
 export function RevenueCard() {
   const t = useTranslations("admin.dashboard");
-  const { data: students, isError } = useStudents();
+  // Excludes teacher-training trainees (scripts/seed-teacher-training.ts) so
+  // the revenue estimate isn't based on non-fee-paying trainee headcount.
+  const { data: students, isError } = useStudents(undefined, { excludeTeacherTraining: true });
   const [pricePerStudent, setPricePerStudent] = useState(300000);
 
   const activeStudents = students?.filter((s) => s.isActive).length ?? 0;

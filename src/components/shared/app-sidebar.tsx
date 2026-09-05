@@ -40,12 +40,15 @@ function NavBadge({ count }: { count?: number }) {
   );
 }
 
-function NavSection({
+export function NavSection({
   item,
   pathname,
+  onNavigate,
 }: {
   item: NavItem;
   pathname: string;
+  /** Called when a leaf link is clicked — used to close a mobile drawer. */
+  onNavigate?: () => void;
 }) {
   const hasChildren = Boolean(item.children?.length);
 
@@ -65,6 +68,7 @@ function NavSection({
       <Link
         href={item.href}
         aria-current={isDirectActive ? "page" : undefined}
+        onClick={onNavigate}
         className={cn(
           "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap",
           isDirectActive
@@ -112,6 +116,7 @@ function NavSection({
                 key={child.href}
                 href={child.href}
                 aria-current={isChildActive ? "page" : undefined}
+                onClick={onNavigate}
                 className={cn(
                   "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm whitespace-nowrap",
                   isChildActive
@@ -179,6 +184,24 @@ export function AppSidebar({
         </Button>
       </div>
     </aside>
+  );
+}
+
+export function MobileNavDrawerList({
+  navItems,
+  pathname,
+  onNavigate,
+}: {
+  navItems: NavItem[];
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <nav className="flex flex-col gap-1 overflow-y-auto">
+      {navItems.map((item) => (
+        <NavSection key={item.label} item={item} pathname={pathname} onNavigate={onNavigate} />
+      ))}
+    </nav>
   );
 }
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText } from "lucide-react";
+import { AlertCircle, FileText } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -77,7 +77,7 @@ export default function AdminReportsPage() {
   const tObjectives = useTranslations("reportForm.objectivesStatus");
   const locale = useLocale();
   const router = useRouter();
-  const { data: reports, isLoading } = useAdminReports();
+  const { data: reports, isLoading, isError, error } = useAdminReports();
   const { data: schools } = useSchools();
   const { data: classes } = useClasses();
   const [schoolId, setSchoolId] = useState("");
@@ -179,6 +179,11 @@ export default function AdminReportsPage() {
       <div className="rounded-lg border">
         {isLoading ? (
           <p className="text-muted-foreground p-4 text-sm">{tCommon("dataTable.loading")}</p>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="text-destructive mb-2 size-6" />
+            <p className="text-muted-foreground text-sm">{error?.message || t("loadError")}</p>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <FileText className="text-muted-foreground mb-2 size-6" />

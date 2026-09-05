@@ -11,10 +11,10 @@ import type { StudentInput } from "./schema";
 
 const STUDENTS_KEY = ["students"];
 
-export function useStudents(schoolId?: string) {
+export function useStudents(schoolId?: string, options?: { excludeTeacherTraining?: boolean }) {
   return useQuery({
-    queryKey: [...STUDENTS_KEY, schoolId || "all"],
-    queryFn: () => fetchStudents(schoolId),
+    queryKey: [...STUDENTS_KEY, schoolId || "all", options?.excludeTeacherTraining ? "regular-only" : "all-types"],
+    queryFn: () => fetchStudents(schoolId, options),
   });
 }
 

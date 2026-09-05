@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileHeart, Plus } from "lucide-react";
+import { AlertCircle, FileHeart, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -189,7 +189,7 @@ export default function ParentReportsPage() {
   const tMonths = useTranslations("admin.parentReports.months");
   const locale = useLocale();
   const router = useRouter();
-  const { data: reports, isLoading } = useParentReports();
+  const { data: reports, isLoading, isError, error } = useParentReports();
   const { data: schools } = useSchools();
 
   const [open, setOpen] = useState(false);
@@ -334,6 +334,11 @@ export default function ParentReportsPage() {
       <div className="rounded-lg border">
         {isLoading ? (
           <p className="text-muted-foreground p-4 text-sm">{tCommon("dataTable.loading")}</p>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="text-destructive mb-2 size-6" />
+            <p className="text-muted-foreground text-sm">{error?.message || t("loadError")}</p>
+          </div>
         ) : !reports || reports.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <FileHeart className="text-muted-foreground mb-2 size-6" />
