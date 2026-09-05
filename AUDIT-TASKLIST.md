@@ -1,6 +1,6 @@
 # Audit Tasklist — Hasil Deep Audit 2026-09-03
 
-**Status per 2026-09-05: hampir 100% selesai.** Semua item kecuali 2 sudah dikerjain, ditest manual di staging, dan siap deploy. Sisa 2 item butuh sesuatu di luar kemampuan sesi coding ini (akses dashboard Vercel, dan keputusan desain data model buat parent-report vs Drive) — lihat "Sisa PR" di bawah.
+**Status per 2026-09-05: SELESAI SEMUA** kecuali 1 keputusan desain yang sengaja ditunda (lihat "Sisa PR"). Semua item sudah dikerjain, ditest manual di staging, dan live di production.
 
 Daftar kerja buat nindaklanjutin temuan dari audit backend/API, frontend UI-UX, dan alur kerja bisnis. Diurutin per prioritas eksekusi, bukan cuma per severity.
 
@@ -10,11 +10,12 @@ Legenda: 🔴 Tinggi · 🟠 Sedang · 🟡 Rendah · ⏱️ estimasi kasar
 
 ---
 
-## Fase 0 — Verifikasi cepat (gak perlu ngoding, cuma cek)
+## Fase 0 — Timezone server ✅ SELESAI
 
-- [ ] ⚠️ 🔴 **BELUM DICEK — Cek env var `TZ` di Vercel project settings.** Kalau belum ada, set `TZ=Asia/Jakarta`. Ini paling kritis karena gak keliatan dari repo dan bisa diam-diam ngerusak semua logika jadwal/keterlambatan/hari libur di sekitar tengah malam WIB. Ini butuh akses dashboard Vercel — gak bisa dicek/di-set dari sesi ini. ⏱️ 5 menit
-  - Setelah di-set: redeploy, terus tes manual satu kelas yang jadwalnya deket jam 00:00 WIB buat mastiin hari-nya kehitung bener.
-  - File terkait: `src/lib/date.ts`, `src/features/meetings/queries.ts` (`startClass()`)
+- [x] 🔴 **`TZ` env var ternyata gak bisa di-set sama sekali di Vercel** — dicoba lewat dashboard maupun `vercel env add TZ production`, keduanya ditolak API dengan `"The name of your Environment Variable is reserved"`. Ini kemungkinan alasan kenapa masalah ini gak pernah kebenerin sebelumnya.
+  **Fix yang diambil:** set `process.env.TZ = "Asia/Jakarta"` langsung di kode, lewat `src/instrumentation.ts` (`register()` — hook resmi Next.js yang jalan sekali pas server proses start, sebelum request pertama masuk). Ini gak bergantung ke env var Vercel sama sekali.
+  **Dibuktikan bukan cuma teori:** simulasi proses Node yang start dengan `TZ=UTC` (niru default Vercel), abis di-override lewat `process.env.TZ = "Asia/Jakarta"` mid-process — `new Date()` sesudahnya kebukti bener geser ke GMT+0700, bukan tetap UTC. Server juga nge-log konfirmasi ini sendiri setiap kali start (`[instrumentation] TZ set to Asia/Jakarta — server "now" resolves as ...`) biar gampang dicek di Vercel function logs kapan aja.
+  📁 `src/instrumentation.ts` (baru)
 
 ---
 
@@ -67,18 +68,13 @@ Ditemukan pas cross-check laporan awal — 8 index FK yang direkomendasikan tapi
 
 ## Sisa PR — yang beneran masih kepending per 2026-09-05
 
-1. **🔴 Cek `TZ` di Vercel dashboard** — belum diverifikasi sama sekali, gak bisa dicek dari sesi coding. Paling gampang tapi paling gak boleh kelewat.
-2. **🔴 Redesain alur parent-report biar gak fail-closed pas Drive error** — **sengaja tetap dibiarkan begini** setelah klarifikasi user (2026-09-05): alur Drive-first ini memang desain yang diinginkan (orang tua consent, Drive jadi sumber utama), bukan bug yang harus di-redesign. Yang dikerjain sebagai gantinya: keandalan Drive-nya sendiri diperkuat abis-abisan (lihat Fase 2) — retry otomatis, fix CORS, fix silent-failure sharing — supaya jalur ini jarang/gak pernah gagal, bukan mengubah arsitekturnya. Kalau ke depannya masih pengen ubah ke gak-fail-closed, opsinya masih sama seperti sebelumnya: (a) status `GENERATED` begitu PDF dirender, Drive sync di background, atau (b) Supabase Storage sebagai sumber utama.
+1. **🔴 Redesain alur parent-report biar gak fail-closed pas Drive error** — **sengaja tetap dibiarkan begini** setelah klarifikasi user (2026-09-05): alur Drive-first ini memang desain yang diinginkan (orang tua consent, Drive jadi sumber utama), bukan bug yang harus di-redesign. Yang dikerjain sebagai gantinya: keandalan Drive-nya sendiri diperkuat abis-abisan (lihat Fase 2) — retry otomatis, fix CORS, fix silent-failure sharing — supaya jalur ini jarang/gak pernah gagal, bukan mengubah arsitekturnya. Kalau ke depannya masih pengen ubah ke gak-fail-closed, opsinya masih sama seperti sebelumnya: (a) status `GENERATED` begitu PDF dirender, Drive sync di background, atau (b) Supabase Storage sebagai sumber utama.
    📁 `src/app/api/parent-reports/[id]/generate/route.ts:66-94`
 
 **Belum dilakukan (di luar scope, butuh keputusan/dependency tambahan):**
 - CAPTCHA pihak ketiga (Cloudflare Turnstile dll.) buat lookup NIS — lockout 1-jam per-NIS sekarang jadi lapisan pengganti sementara.
 
-**Migration yang sudah di staging tapi BELUM di production:**
-- `20260905000000_missing_fk_indexes`
-- `20260905010000_student_type`
-
-(Sudah ada 1 migration duluan — `20260903000000_announcement_target_roles` — yang sudah di production dari batch sebelumnya.)
+Semua migration (`20260903000000_announcement_target_roles`, `20260905000000_missing_fk_indexes`, `20260905010000_student_type`) sudah di-apply ke staging **dan production**. Semua kode sudah live di branch `prod`.
 
 Item yang sengaja **gak** dimasukin tasklist ini (dicatat di laporan audit sebagai desain yang disengaja, bukan bug):
 - Lesson plan gak punya versioning/approval workflow — sesuai spek produk.
