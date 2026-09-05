@@ -42,7 +42,13 @@ export function ThemeSwitcher({ className }: { className?: string }) {
       value={mounted ? (theme ?? "system") : "system"}
       onValueChange={(value) => value && setTheme(value)}
     >
-      <SelectTrigger className={className ?? "w-full sm:w-36"} size="sm">
+      {/* base-ui generates this trigger's `id` via React's useId, whose
+          counter depends on how many other useId-based components (this
+          page's other Selects) hydrate before it — a page can legitimately
+          render a different count of those between the server pass and the
+          client pass, so the id itself (not the selected value, already
+          guarded above) can mismatch on first paint. */}
+      <SelectTrigger className={className ?? "w-full sm:w-36"} size="sm" suppressHydrationWarning>
         <CurrentIcon className="size-3.5 shrink-0" aria-hidden="true" />
         <SelectValue placeholder={t("label")} />
       </SelectTrigger>

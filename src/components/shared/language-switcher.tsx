@@ -40,7 +40,11 @@ export function LanguageSwitcher({ className }: { className?: string }) {
       onValueChange={handleChange}
       disabled={isPending}
     >
-      <SelectTrigger className={className ?? "w-full sm:w-36"} size="sm">
+      {/* See the matching comment in theme-switcher.tsx: this trigger's
+          auto-generated `id` (from useId) can legitimately mismatch between
+          server and client when the page also renders other Select-based
+          switchers — the selected value itself is unaffected. */}
+      <SelectTrigger className={className ?? "w-full sm:w-36"} size="sm" suppressHydrationWarning>
         <Globe className="size-3.5 shrink-0" aria-hidden="true" />
         <SelectValue placeholder={t("language")} />
       </SelectTrigger>

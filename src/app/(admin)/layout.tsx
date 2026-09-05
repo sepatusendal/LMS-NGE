@@ -75,7 +75,11 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-dvh w-full flex-col md:flex-row">
       <MobileTopbar roleLabel={tRole("admin")} />
-      <AppSidebar roleLabel={tRole("admin")} navItems={buildAdminNavItems(t, lessonPlanBadge)} />
+      <AppSidebar
+        roleLabel={tRole("admin")}
+        navItems={buildAdminNavItems(t, lessonPlanBadge)}
+        showLanguageSwitcher
+      />
       <main className="flex-1 overflow-x-auto bg-muted p-4 pb-20 md:p-8 md:pb-8">
         {children}
       </main>
