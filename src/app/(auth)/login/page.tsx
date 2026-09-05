@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, LogIn } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
-import { loginSchema, type LoginInput } from "@/features/auth/login-schema";
+import { buildLoginSchema, type LoginInput } from "@/features/auth/login-schema";
 import { roleLandingPath } from "@/features/auth/role-routes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +17,11 @@ import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const router = useRouter();
+  const t = useTranslations("auth.login");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const loginSchema = useMemo(() => buildLoginSchema(t), [t]);
 
   const {
     register,
@@ -35,8 +39,8 @@ export default function LoginPage() {
       await supabase.auth.signInWithPassword(values);
 
     if (authError || !authData.user) {
-      toast.error("Login gagal", {
-        description: authError?.message ?? "Email atau password salah.",
+      toast.error(t("loginFailed"), {
+        description: authError?.message ?? t("invalidCredentials"),
       });
       setIsSubmitting(false);
       return;
@@ -49,8 +53,8 @@ export default function LoginPage() {
       .single();
 
     if (profileError || !profile) {
-      toast.error("Login gagal", {
-        description: "Profil user tidak ditemukan. Hubungi Administrator.",
+      toast.error(t("loginFailed"), {
+        description: t("profileNotFound"),
       });
       await supabase.auth.signOut();
       setIsSubmitting(false);
@@ -63,12 +67,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-dvh overflow-hidden bg-[#fbf7ef]">
+    <div className="relative flex min-h-dvh overflow-hidden bg-muted">
       {/* Decorative blobs — visual only */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <svg className="absolute -top-28 -left-28 size-80 opacity-70 sm:size-104" viewBox="0 0 200 200">
           <path
-            fill="#4b60ac"
+            fill="var(--primary)"
             fillOpacity="0.10"
             d="M45.3,-58.6C58.5,-49.9,68.6,-35.5,72.8,-19.5C77,-3.5,75.3,14.1,68.1,29.3C60.9,44.5,48.2,57.3,33.2,64.8C18.2,72.3,0.9,74.5,-16.9,71.8C-34.7,69.1,-53,61.5,-64.5,47.9C-76,34.3,-80.7,14.7,-78.4,-3.6C-76.1,-21.9,-66.8,-38.9,-53.2,-47.9C-39.6,-56.9,-21.7,-57.9,-3.3,-54.1C15.1,-50.3,32.1,-67.3,45.3,-58.6Z"
             transform="translate(100 100)"
@@ -76,7 +80,7 @@ export default function LoginPage() {
         </svg>
         <svg className="absolute -right-32 -bottom-24 size-96 opacity-70 sm:size-120" viewBox="0 0 200 200">
           <path
-            fill="#f15c5d"
+            fill="var(--destructive)"
             fillOpacity="0.10"
             d="M39.6,-51.2C52.6,-43.5,65.4,-33.4,70.8,-19.9C76.2,-6.5,74.2,10.3,66.9,24.2C59.6,38.1,47,49.1,32.7,57.2C18.4,65.3,2.4,70.5,-13.9,68.9C-30.2,67.3,-46.8,58.9,-58.4,45.6C-70,32.3,-76.6,14.1,-75.8,-3.7C-75,-21.5,-66.8,-38.9,-53.9,-46.9C-41,-54.9,-23.4,-53.5,-6.9,-45.7C9.6,-37.9,26.6,-58.9,39.6,-51.2Z"
             transform="translate(100 100)"
@@ -85,18 +89,18 @@ export default function LoginPage() {
       </div>
 
       {/* Left brand panel — desktop only */}
-      <div className="relative hidden w-[46%] flex-col justify-between overflow-hidden bg-[#4b60ac] p-10 text-white lg:flex xl:w-[42%]">
+      <div className="relative hidden w-[46%] flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex xl:w-[42%]">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <svg className="absolute -top-10 -right-16 size-72 opacity-30" viewBox="0 0 200 200">
             <path
-              fill="#ffffff"
+              fill="var(--primary-foreground)"
               d="M45.3,-58.6C58.5,-49.9,68.6,-35.5,72.8,-19.5C77,-3.5,75.3,14.1,68.1,29.3C60.9,44.5,48.2,57.3,33.2,64.8C18.2,72.3,0.9,74.5,-16.9,71.8C-34.7,69.1,-53,61.5,-64.5,47.9C-76,34.3,-80.7,14.7,-78.4,-3.6C-76.1,-21.9,-66.8,-38.9,-53.2,-47.9C-39.6,-56.9,-21.7,-57.9,-3.3,-54.1C15.1,-50.3,32.1,-67.3,45.3,-58.6Z"
               transform="translate(100 100)"
             />
           </svg>
           <svg className="absolute -bottom-16 -left-12 size-64 opacity-20" viewBox="0 0 200 200">
             <path
-              fill="#f15c5d"
+              fill="var(--destructive)"
               d="M39.6,-51.2C52.6,-43.5,65.4,-33.4,70.8,-19.9C76.2,-6.5,74.2,10.3,66.9,24.2C59.6,38.1,47,49.1,32.7,57.2C18.4,65.3,2.4,70.5,-13.9,68.9C-30.2,67.3,-46.8,58.9,-58.4,45.6C-70,32.3,-76.6,14.1,-75.8,-3.7C-75,-21.5,-66.8,-38.9,-53.9,-46.9C-41,-54.9,-23.4,-53.5,-6.9,-45.7C9.6,-37.9,26.6,-58.9,39.6,-51.2Z"
               transform="translate(100 100)"
             />
@@ -109,15 +113,13 @@ export default function LoginPage() {
           <WelcomeIllustration className="h-auto w-full max-w-sm" />
           <div>
             <h2 className="text-2xl font-extrabold tracking-tight xl:text-3xl">
-              Kelola kelas, lesson plan, dan laporan — semua di satu tempat.
+              {t("brandHeadline")}
             </h2>
-            <p className="mt-3 text-sm text-white/75">
-              Portal terpadu untuk tutor, koordinator, dan admin NUFA Global Education.
-            </p>
+            <p className="mt-3 text-sm text-primary-foreground/75">{t("brandSubtitle")}</p>
           </div>
         </div>
 
-        <p className="relative text-xs text-white/50">
+        <p className="relative text-xs text-primary-foreground/50">
           &copy; {new Date().getFullYear()} NUFA Global Education
         </p>
       </div>
@@ -133,27 +135,25 @@ export default function LoginPage() {
           className="h-auto w-44 sm:w-48"
         />
 
-        <div className="w-full max-w-sm rounded-[1.75rem] border-2 border-[#4b60ac]/10 bg-white p-7 shadow-[0_20px_50px_-20px_rgba(75,96,172,0.35)] sm:p-8">
+        <div className="w-full max-w-sm rounded-[1.75rem] border-2 border-primary/10 bg-card p-7 shadow-[0_20px_50px_-20px_rgba(75,96,172,0.35)] sm:p-8">
           <div className="mb-6 space-y-1.5">
-            <h1 className="text-2xl font-extrabold tracking-tight text-[#1e3a5f]">
-              Selamat Datang 👋
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
+              {t("welcomeTitle")} 👋
             </h1>
-            <p className="text-muted-foreground text-sm">
-              Masuk ke Portal NUFA untuk melanjutkan
-            </p>
+            <p className="text-muted-foreground text-sm">{t("welcomeSubtitle")}</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-[#1e3a5f]">
-                Email
+              <Label htmlFor="email" className="text-foreground">
+                {t("emailLabel")}
               </Label>
               <Input
                 id="email"
                 type="email"
                 autoComplete="email"
                 placeholder="nama@nufaglobaledu.com"
-                className="h-11 rounded-xl border-2 focus-visible:border-[#4b60ac] focus-visible:ring-[#4b60ac]/20"
+                className="h-11 rounded-xl border-2 focus-visible:border-primary focus-visible:ring-primary/20"
                 {...register("email")}
               />
               {errors.email && (
@@ -161,26 +161,26 @@ export default function LoginPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-[#1e3a5f]">
-                Password
+              <Label htmlFor="password" className="text-foreground">
+                {t("passwordLabel")}
               </Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
-                  className="h-11 rounded-xl border-2 pr-10 focus-visible:border-[#4b60ac] focus-visible:ring-[#4b60ac]/20"
+                  className="h-11 rounded-xl border-2 pr-10 focus-visible:border-primary focus-visible:ring-primary/20"
                   {...register("password")}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   className="text-muted-foreground hover:text-foreground absolute inset-y-0 right-0 flex items-center px-3"
-                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                  aria-label={showPassword ? t("hidePassword") : t("showPassword")}
                 >
                   {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   <span className="sr-only">
-                    {showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                    {showPassword ? t("hidePassword") : t("showPassword")}
                   </span>
                 </button>
               </div>
@@ -191,14 +191,14 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="h-11 w-full rounded-xl bg-[#4b60ac] font-semibold shadow-[0_6px_16px_-4px_rgba(75,96,172,0.5)] transition-transform hover:scale-[1.01] hover:bg-[#3d4f92] active:scale-95"
+              className="h-11 w-full rounded-xl bg-primary font-semibold shadow-[0_6px_16px_-4px_rgba(75,96,172,0.5)] transition-transform hover:scale-[1.01] hover:bg-primary/80 active:scale-95"
             >
               {isSubmitting ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
                 <>
                   <LogIn className="size-4" />
-                  <span className="ml-1.5">Masuk</span>
+                  <span className="ml-1.5">{t("submit")}</span>
                 </>
               )}
             </Button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/data-table";
 import { useCurriculums } from "@/features/curriculum/use-curriculum";
@@ -10,6 +11,8 @@ import { CurriculumModuleDialog } from "@/features/curriculum/curriculum-module-
 import type { Curriculum } from "@/features/curriculum/schema";
 
 export default function CurriculumPage() {
+  const t = useTranslations("admin.curriculum");
+  const tCommon = useTranslations("common");
   const { data: curriculums, isLoading, isError } = useCurriculums();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Curriculum | undefined>();
@@ -23,6 +26,8 @@ export default function CurriculumPage() {
   const columns = useMemo(
     () =>
       createCurriculumColumns(
+        t,
+        tCommon,
         (curriculum) => {
           setEditing(curriculum);
           setDialogOpen(true);
@@ -32,17 +37,15 @@ export default function CurriculumPage() {
           setModuleDialogOpen(true);
         },
       ),
-    [],
+    [t, tCommon],
   );
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Kurikulum</h1>
-          <p className="text-muted-foreground text-sm">
-            Kelola level dan kurikulum yang digunakan di kelas.
-          </p>
+          <h1 className="text-xl font-semibold">{t("title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
         </div>
         <Button
           onClick={() => {
@@ -50,7 +53,7 @@ export default function CurriculumPage() {
             setDialogOpen(true);
           }}
         >
-          Tambah Kurikulum
+          {t("addTitle")}
         </Button>
       </div>
 
@@ -59,7 +62,7 @@ export default function CurriculumPage() {
         data={curriculums ?? []}
         isLoading={isLoading}
         isError={isError}
-        searchPlaceholder="Cari kurikulum..."
+        searchPlaceholder={t("searchPlaceholder")}
       />
 
       <CurriculumFormDialog

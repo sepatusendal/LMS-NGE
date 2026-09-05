@@ -9,13 +9,10 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseLocalDate } from "@/lib/date";
 import { useMonitoringAnalytics } from "./use-monitoring";
-
-function formatDateLabel(dateStr: string) {
-  return parseLocalDate(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
-}
 
 function latestValue(points: (number | null)[]): number | null {
   for (let i = points.length - 1; i >= 0; i--) {
@@ -25,13 +22,18 @@ function latestValue(points: (number | null)[]): number | null {
 }
 
 export function AnalyticsCharts() {
+  const t = useTranslations("admin.analyticsCharts");
+  const locale = useLocale();
   const { data, isLoading } = useMonitoringAnalytics(14);
+
+  const formatDateLabel = (dateStr: string) =>
+    parseLocalDate(dateStr).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short" });
 
   if (isLoading || !data) {
     return (
       <Card>
         <CardContent className="text-muted-foreground py-8 text-center text-sm">
-          Memuat analytics...
+          {t("loadingAnalytics")}
         </CardContent>
       </Card>
     );
@@ -50,7 +52,7 @@ export function AnalyticsCharts() {
     <div className="grid gap-4 sm:grid-cols-2">
       <Card>
         <CardHeader className="flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm">Student Attendance Rate (14 hari)</CardTitle>
+          <CardTitle className="text-sm">{t("studentAttendanceRate", { days: 14 })}</CardTitle>
           {attendanceLatest !== null && (
             <span className="text-lg font-semibold" style={{ color: "var(--chart-1)" }}>
               {attendanceLatest}%
@@ -82,7 +84,7 @@ export function AnalyticsCharts() {
 
       <Card>
         <CardHeader className="flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm">Teaching Completion Rate (14 hari)</CardTitle>
+          <CardTitle className="text-sm">{t("teachingCompletionRate", { days: 14 })}</CardTitle>
           {completionLatest !== null && (
             <span className="text-lg font-semibold" style={{ color: "var(--chart-3)" }}>
               {completionLatest}%

@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { useSchools } from "@/features/schools/use-schools";
 import { useClasses } from "@/features/classes/use-classes";
-import { studentSchema, type Student, type StudentInput } from "./schema";
+import { buildStudentSchema, type Student, type StudentInput } from "./schema";
 import { useCreateStudent, useUpdateStudent } from "./use-students";
 
 export function StudentFormDialog({
@@ -36,11 +37,15 @@ export function StudentFormDialog({
   student?: Student;
   defaultSchoolId?: string;
 }) {
+  const t = useTranslations("admin.students");
+  const tCommon = useTranslations("common");
   const isEdit = Boolean(student);
   const { data: schools } = useSchools();
   const { data: classes } = useClasses(undefined, open && !isEdit);
   const createStudent = useCreateStudent();
   const updateStudent = useUpdateStudent();
+
+  const studentSchema = useMemo(() => buildStudentSchema(t), [t]);
 
   const {
     register,
@@ -90,11 +95,11 @@ export function StudentFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Siswa" : "Tambah Siswa"}</DialogTitle>
+          <DialogTitle>{isEdit ? t("editTitle") : t("addTitle")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="fullName">Nama Siswa</Label>
+            <Label htmlFor="fullName">{t("nameHeader")}</Label>
             <Input id="fullName" {...register("fullName")} />
             {errors.fullName && (
               <p className="text-destructive text-sm">
@@ -103,11 +108,11 @@ export function StudentFormDialog({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="nis">NIS (opsional)</Label>
+            <Label htmlFor="nis">{t("nisOptional")}</Label>
             <Input id="nis" {...register("nis")} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="schoolId">Sekolah</Label>
+            <Label htmlFor="schoolId">{tCommon("school")}</Label>
             <Controller
               control={control}
               name="schoolId"
@@ -118,7 +123,7 @@ export function StudentFormDialog({
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger id="schoolId" className="w-full">
-                    <SelectValue placeholder="Pilih sekolah" />
+                    <SelectValue placeholder={t("selectSchool")} />
                   </SelectTrigger>
                   <SelectContent>
                     {schools?.map((school) => (
@@ -138,7 +143,7 @@ export function StudentFormDialog({
           </div>
           {!isEdit && (
             <div className="space-y-2">
-              <Label htmlFor="classId">Assign ke Kelas (opsional)</Label>
+              <Label htmlFor="classId">{t("assignClassOptional")}</Label>
               <Controller
                 control={control}
                 name="classId"
@@ -153,8 +158,8 @@ export function StudentFormDialog({
                       <SelectValue
                         placeholder={
                           selectedSchoolId
-                            ? "Pilih kelas (opsional)"
-                            : "Pilih sekolah dulu"
+                            ? t("selectClassOptional")
+                            : t("selectSchoolFirst")
                         }
                       />
                     </SelectTrigger>
@@ -168,14 +173,12 @@ export function StudentFormDialog({
                   </Select>
                 )}
               />
-              <p className="text-muted-foreground text-xs">
-                Siswa akan otomatis terdaftar ke kelas ini setelah disimpan.
-              </p>
+              <p className="text-muted-foreground text-xs">{t("autoEnrollHint")}</p>
             </div>
           )}
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Menyimpan..." : "Simpan"}
+              {isSubmitting ? tCommon("saving") : tCommon("save")}
             </Button>
           </DialogFooter>
         </form>

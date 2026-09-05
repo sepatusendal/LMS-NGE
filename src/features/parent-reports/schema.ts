@@ -86,3 +86,11 @@ export const MONTH_LABEL: Record<number, string> = {
   11: "November",
   12: "Desember",
 };
+
+/** Build translated month labels. Pass a t scoped to
+ * "admin.parentReports.months". */
+export function buildMonthLabel(t: (key: string) => string): Record<number, string> {
+  const result: Record<number, string> = {};
+  for (let m = 1; m <= 12; m++) result[m] = t(String(m));
+  return result;
+}

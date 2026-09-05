@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordField, generateRandomPassword } from "@/components/shared/password-field";
-import { teacherCreateSchema, type TeacherCreateInput } from "./schema";
+import { buildTeacherCreateSchema, type TeacherCreateInput } from "./schema";
 import { useCreateTeacher } from "./use-teachers";
 
 export function TeacherCreateDialog({
@@ -25,7 +26,11 @@ export function TeacherCreateDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useTranslations("admin.teachers");
+  const tCommon = useTranslations("common");
   const createTeacher = useCreateTeacher();
+
+  const teacherCreateSchema = useMemo(() => buildTeacherCreateSchema(t), [t]);
 
   const {
     register,
@@ -56,15 +61,12 @@ export function TeacherCreateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Tambah Teacher</DialogTitle>
-          <DialogDescription>
-            Tentukan password akunnya sendiri, atau klik ikon dadu untuk generate
-            acak.
-          </DialogDescription>
+          <DialogTitle>{t("addTitle")}</DialogTitle>
+          <DialogDescription>{t("passwordHint")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="fullName">Nama</Label>
+            <Label htmlFor="fullName">{tCommon("name")}</Label>
             <Input id="fullName" {...register("fullName")} />
             {errors.fullName && (
               <p className="text-destructive text-sm">{errors.fullName.message}</p>
@@ -78,21 +80,21 @@ export function TeacherCreateDialog({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="tutorId">Tutor ID (opsional)</Label>
+            <Label htmlFor="tutorId">{t("tutorIdOptional")}</Label>
             <Input id="tutorId" {...register("tutorId")} />
             {errors.tutorId && (
               <p className="text-destructive text-sm">{errors.tutorId.message}</p>
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="feePerMeeting">Fee per Meeting (Rp, opsional)</Label>
+            <Label htmlFor="feePerMeeting">{t("feePerMeetingOptional")}</Label>
             <Input
               id="feePerMeeting"
               type="number"
               inputMode="numeric"
               min={0}
               step={1}
-              placeholder="Contoh: 100000"
+              placeholder={t("feePerMeetingPlaceholder")}
               {...register("feePerMeeting")}
             />
             {errors.feePerMeeting && (
@@ -100,7 +102,7 @@ export function TeacherCreateDialog({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">No. HP (opsional)</Label>
+            <Label htmlFor="phone">{t("phoneOptional")}</Label>
             <Input id="phone" {...register("phone")} />
           </div>
           <div className="space-y-2">
@@ -118,7 +120,7 @@ export function TeacherCreateDialog({
           </div>
           <DialogFooter>
             <Button type="submit" disabled={createTeacher.isPending}>
-              {createTeacher.isPending ? "Membuat akun..." : "Buat Akun Teacher"}
+              {createTeacher.isPending ? t("creatingAccount") : t("createAccount")}
             </Button>
           </DialogFooter>
         </form>

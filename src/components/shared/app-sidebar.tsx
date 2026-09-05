@@ -10,6 +10,7 @@ import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
+import { ThemeSwitcher } from "@/components/shared/theme-switcher";
 import { cn } from "@/lib/utils";
 
 export interface NavChild {
@@ -172,6 +173,7 @@ export function AppSidebar({
       </div>
       <div className="space-y-2">
         {showLanguageSwitcher && <LanguageSwitcher className="w-full" />}
+        <ThemeSwitcher className="w-full" />
         <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
           {t("logout")}
         </Button>

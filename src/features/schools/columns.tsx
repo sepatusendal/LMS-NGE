@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import type { School } from "./schema";
 import { useSetSchoolActive } from "./use-schools";
 
 function ActiveToggleCell({ school }: { school: School }) {
+  const tCommon = useTranslations("common");
   const setActive = useSetSchoolActive();
   return (
     <div className="flex items-center gap-2">
@@ -20,19 +22,21 @@ function ActiveToggleCell({ school }: { school: School }) {
         }
       />
       <Badge variant={school.isActive ? "default" : "secondary"}>
-        {school.isActive ? "Aktif" : "Nonaktif"}
+        {school.isActive ? tCommon("active") : tCommon("inactive")}
       </Badge>
     </div>
   );
 }
 
 export function createSchoolColumns(
+  t: (key: string) => string,
+  tCommon: (key: string) => string,
   onEdit: (school: School) => void,
 ): ColumnDef<School>[] {
   return [
     {
       accessorKey: "name",
-      header: "Nama Sekolah",
+      header: t("nameHeader"),
       cell: ({ row }) => (
         <Link
           href={`/schools/${row.original.id}`}
@@ -44,7 +48,7 @@ export function createSchoolColumns(
     },
     {
       accessorKey: "address",
-      header: "Alamat",
+      header: t("address"),
       cell: ({ row }) => row.original.address || "-",
     },
     {
@@ -57,7 +61,7 @@ export function createSchoolColumns(
     },
     {
       accessorKey: "isActive",
-      header: "Status",
+      header: tCommon("status"),
       cell: ({ row }) => <ActiveToggleCell school={row.original} />,
     },
     {
@@ -65,7 +69,7 @@ export function createSchoolColumns(
       header: "",
       cell: ({ row }) => (
         <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
-          Edit
+          {tCommon("edit")}
         </Button>
       ),
     },

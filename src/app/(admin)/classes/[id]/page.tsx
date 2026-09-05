@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserPlus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,13 +41,14 @@ import { ClassTimeline } from "@/features/meetings/class-timeline";
 import { ClassAttendanceSummary } from "@/features/attendances/class-attendance-summary";
 
 export default function ClassDetailPage() {
+  const t = useTranslations("admin.classes.detail");
   const params = useParams<{ id: string }>();
   const classId = params.id;
   const router = useRouter();
 
   const { data: classItem } = useClass(classId);
   const backHref = classItem?.classType === "TEACHER_TRAINING" ? "/teacher-training" : "/classes";
-  const rosterLabel = classItem?.classType === "TEACHER_TRAINING" ? "Roster Peserta" : "Roster Siswa";
+  const rosterLabel = classItem?.classType === "TEACHER_TRAINING" ? t("rosterParticipants") : t("rosterStudents");
 
   const { data: roster, isLoading: rosterLoading } = useClassRoster(classId);
   const enrollStudent = useEnrollStudent(classId);
@@ -69,9 +71,9 @@ export default function ClassDetailPage() {
     return (
       <div className="space-y-4">
         <Button variant="ghost" size="sm" onClick={() => router.push(backHref)}>
-          ← Kembali
+          {t("back")}
         </Button>
-        <p className="text-muted-foreground text-sm">Memuat data kelas...</p>
+        <p className="text-muted-foreground text-sm">{t("loading")}</p>
       </div>
     );
   }
@@ -83,17 +85,17 @@ export default function ClassDetailPage() {
           href={backHref}
           className="text-muted-foreground text-sm hover:underline"
         >
-          ← Kembali ke Kelas
+          {t("backToClasses")}
         </Link>
         <div className="mt-1 flex items-center gap-2">
           <h1 className="text-xl font-semibold">{classItem.name}</h1>
           <Badge variant={classItem.classType === "TEACHER_TRAINING" ? "secondary" : "outline"}>
-            {classItem.classType === "TEACHER_TRAINING" ? "Kelas Guru & Staff" : "Kelas Reguler"}
+            {classItem.classType === "TEACHER_TRAINING" ? t("classTypeTraining") : t("classTypeRegular")}
           </Badge>
         </div>
         <p className="text-muted-foreground text-sm">
           {classItem.schoolName} · {classItem.teacherName}
-          {classItem.room ? ` · Ruang ${classItem.room}` : ""} ·{" "}
+          {classItem.room ? ` · ${t("roomLabel")} ${classItem.room}` : ""} ·{" "}
           {formatScheduleSlots(classItem.scheduleSlots)}
           {classItem.curriculumName ? ` · ${classItem.curriculumName}` : ""}
         </p>
@@ -121,7 +123,7 @@ export default function ClassDetailPage() {
             }}
           >
             <ComboboxInputGroup className="w-72">
-              <ComboboxInput placeholder="Cari nama siswa untuk ditambahkan..." />
+              <ComboboxInput placeholder={t("searchStudentToAddPlaceholder")} />
               <ComboboxLoadingIcon loading={searching || enrollStudent.isPending} />
               <ComboboxClear />
             </ComboboxInputGroup>
@@ -129,11 +131,11 @@ export default function ClassDetailPage() {
               {searchInput.trim().length === 0 ? (
                 <ComboboxStatus>
                   <UserPlus className="size-3.5" />
-                  Ketik nama siswa untuk mencari
+                  {t("typeToSearch")}
                 </ComboboxStatus>
               ) : (
                 <ComboboxEmpty>
-                  Tidak ada siswa dengan nama &quot;{searchInput}&quot;
+                  {t("noStudentsNamed", { search: searchInput })}
                 </ComboboxEmpty>
               )}
               {enrollableResults.map((s) => (
@@ -150,7 +152,7 @@ export default function ClassDetailPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nama Siswa</TableHead>
+                <TableHead>{t("studentNameHeader")}</TableHead>
                 <TableHead className="w-24" />
               </TableRow>
             </TableHeader>
@@ -158,7 +160,7 @@ export default function ClassDetailPage() {
               {rosterLoading ? (
                 <TableRow>
                   <TableCell colSpan={2} className="text-muted-foreground h-24 text-center">
-                    Memuat data...
+                    {t("loadingData")}
                   </TableCell>
                 </TableRow>
               ) : roster && roster.length > 0 ? (
@@ -171,16 +173,12 @@ export default function ClassDetailPage() {
                         size="sm"
                         disabled={unenrollStudent.isPending}
                         onClick={() => {
-                          if (
-                            window.confirm(
-                              `Keluarkan ${r.fullName} dari kelas ini?`,
-                            )
-                          ) {
+                          if (window.confirm(t("removeConfirm", { name: r.fullName }))) {
                             unenrollStudent.mutate(r.enrollmentId);
                           }
                         }}
                       >
-                        Keluarkan
+                        {t("remove")}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -188,7 +186,7 @@ export default function ClassDetailPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={2} className="text-muted-foreground h-24 text-center">
-                    Belum ada siswa di kelas ini.
+                    {t("noStudentsInClass")}
                   </TableCell>
                 </TableRow>
               )}
@@ -200,7 +198,7 @@ export default function ClassDetailPage() {
       <ClassAttendanceSummary classId={classItem.id} />
 
       <div className="space-y-3">
-        <h2 className="font-medium">Timeline Kelas</h2>
+        <h2 className="font-medium">{t("classTimeline")}</h2>
         <ClassTimeline classId={classItem.id} classDisplayName={classItem.name} />
       </div>
     </div>

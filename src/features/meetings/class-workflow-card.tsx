@@ -23,20 +23,20 @@ export const STATUS_CONFIG: Record<
   { labelKey: string; variant: "default" | "secondary" | "destructive" | "outline"; accent: string; barColor: string }
 > = {
   not_started: { labelKey: "notStarted", variant: "secondary", accent: "text-slate-500", barColor: "bg-slate-300" },
-  checked_in: { labelKey: "fillAttendance", variant: "outline", accent: "text-[#eda100]", barColor: "bg-[#eda100]" },
-  attendance_done: { labelKey: "checkOut", variant: "outline", accent: "text-[#eda100]", barColor: "bg-[#eda100]" },
-  checked_out: { labelKey: "fillReport", variant: "outline", accent: "text-[#4b60ac]", barColor: "bg-[#4b60ac]" },
+  checked_in: { labelKey: "fillAttendance", variant: "outline", accent: "text-chart-4", barColor: "bg-chart-4" },
+  attendance_done: { labelKey: "checkOut", variant: "outline", accent: "text-chart-4", barColor: "bg-chart-4" },
+  checked_out: { labelKey: "fillReport", variant: "outline", accent: "text-primary", barColor: "bg-primary" },
   report_submitted: {
     labelKey: "done",
     variant: "outline",
-    accent: "border-transparent bg-[#1baf7a] px-2.5 py-1 text-[13px] font-semibold text-white",
-    barColor: "bg-[#1baf7a]",
+    accent: "border-transparent bg-chart-3 px-2.5 py-1 text-[13px] font-semibold text-primary-foreground",
+    barColor: "bg-chart-3",
   },
   course_completed: {
     labelKey: "courseCompleted",
     variant: "outline",
-    accent: "border-transparent bg-[#1baf7a] px-2.5 py-1 text-[13px] font-semibold text-white",
-    barColor: "bg-[#1baf7a]",
+    accent: "border-transparent bg-chart-3 px-2.5 py-1 text-[13px] font-semibold text-primary-foreground",
+    barColor: "bg-chart-3",
   },
 };
 
@@ -64,7 +64,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
       <Card
         className={cn(
           "overflow-hidden border-2 border-transparent py-0 shadow-sm transition-shadow",
-          expanded && "border-[#4b60ac]/25 shadow-md",
+          expanded && "border-primary/25 shadow-md",
         )}
       >
         <div className={cn("h-1.5 w-full", status.barColor)} />
@@ -168,7 +168,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
             {!noLp && c.meetingStatus === "not_started" && (
               <Button
                 size="sm"
-                className="w-full bg-[#4b60ac] hover:bg-[#3d4f92]"
+                className="w-full bg-primary hover:bg-primary/80"
                 disabled={startClass.isPending}
                 onClick={() =>
                   startClass.mutate(c.lessonPlanId!, {
@@ -185,7 +185,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
               <div className="w-full space-y-2">
                 <Button
                   size="sm"
-                  className="w-full bg-[#eda100] hover:bg-[#c98500]"
+                  className="w-full bg-chart-4 hover:bg-chart-4/80"
                   onClick={() => setExpanded((prev) => !prev)}
                 >
                   <ClipboardCheck className="size-4" />
@@ -201,7 +201,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
                 </Button>
                 <Button
                   size="sm"
-                  className="flex-1 bg-[#eda100] hover:bg-[#c98500]"
+                  className="flex-1 bg-chart-4 hover:bg-chart-4/80"
                   disabled={checkOut.isPending}
                   onClick={() => checkOut.mutate(c.meetingId!)}
                 >
@@ -215,7 +215,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
               <Button
                 size="sm"
                 variant="outline"
-                className="w-full border-[#4b60ac]/40 text-[#4b60ac] hover:bg-[#4b60ac]/10"
+                className="w-full border-primary/40 text-primary hover:bg-primary/10"
                 onClick={() => setExpanded((prev) => !prev)}
               >
                 {expanded ? (
@@ -230,16 +230,16 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
             )}
 
             {c.meetingStatus === "report_submitted" && (
-              <div className="flex w-full items-center gap-2 rounded-md bg-[#1baf7a]/10 px-3 py-2 text-sm">
-                <CheckCircle className="size-4 text-[#1baf7a]" />
-                <span className="font-medium text-[#0e7a53]">{t("classDone")}</span>
+              <div className="flex w-full items-center gap-2 rounded-md bg-chart-3/10 px-3 py-2 text-sm">
+                <CheckCircle className="size-4 text-chart-3" />
+                <span className="font-medium text-chart-3">{t("classDone")}</span>
               </div>
             )}
 
             {c.meetingStatus === "course_completed" && (
-              <div className="flex w-full items-center gap-2 rounded-md bg-[#1baf7a]/10 px-3 py-2 text-sm">
-                <CheckCircle className="size-4 text-[#1baf7a]" />
-                <span className="font-medium text-[#0e7a53]">{t("courseAllDone")}</span>
+              <div className="flex w-full items-center gap-2 rounded-md bg-chart-3/10 px-3 py-2 text-sm">
+                <CheckCircle className="size-4 text-chart-3" />
+                <span className="font-medium text-chart-3">{t("courseAllDone")}</span>
               </div>
             )}
           </div>
@@ -272,7 +272,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
             </button>
           </div>
           {showPhotoUpload && (
-            <div className="border-t bg-[#eda100]/5 px-4 py-4">
+            <div className="border-t bg-chart-4/5 px-4 py-4">
               <FileUpload
                 label={t("uploadClassPhoto")}
                 onUploaded={(driveFileId, fileName) => {

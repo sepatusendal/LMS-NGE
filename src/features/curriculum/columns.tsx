@@ -2,6 +2,7 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { FileText } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import type { Curriculum } from "./schema";
 import { useSetCurriculumActive } from "./use-curriculum";
 
 function ActiveToggleCell({ curriculum }: { curriculum: Curriculum }) {
+  const tCommon = useTranslations("common");
   const setActive = useSetCurriculumActive();
   return (
     <div className="flex items-center gap-2">
@@ -19,32 +21,34 @@ function ActiveToggleCell({ curriculum }: { curriculum: Curriculum }) {
         }
       />
       <Badge variant={curriculum.isActive ? "default" : "secondary"}>
-        {curriculum.isActive ? "Aktif" : "Nonaktif"}
+        {curriculum.isActive ? tCommon("active") : tCommon("inactive")}
       </Badge>
     </div>
   );
 }
 
 export function createCurriculumColumns(
+  t: (key: string) => string,
+  tCommon: (key: string) => string,
   onEdit: (curriculum: Curriculum) => void,
   onModule: (curriculum: Curriculum) => void,
 ): ColumnDef<Curriculum>[] {
   return [
-    { accessorKey: "name", header: "Nama Kurikulum" },
+    { accessorKey: "name", header: t("nameHeader") },
     { accessorKey: "gradeLevel", header: "Grade Level" },
     {
       accessorKey: "description",
-      header: "Deskripsi",
+      header: t("description"),
       cell: ({ row }) => row.original.description || "-",
     },
     {
       accessorKey: "isActive",
-      header: "Status",
+      header: tCommon("status"),
       cell: ({ row }) => <ActiveToggleCell curriculum={row.original} />,
     },
     {
       id: "module",
-      header: "Modul",
+      header: t("module"),
       cell: ({ row }) => (
         <Button
           variant={row.original.moduleDriveFileId ? "secondary" : "outline"}
@@ -53,7 +57,7 @@ export function createCurriculumColumns(
         >
           <FileText className="size-3.5" />
           <span className="ml-1.5">
-            {row.original.moduleDriveFileId ? "Modul" : "Upload"}
+            {row.original.moduleDriveFileId ? t("module") : t("upload")}
           </span>
         </Button>
       ),
@@ -63,7 +67,7 @@ export function createCurriculumColumns(
       header: "",
       cell: ({ row }) => (
         <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
-          Edit
+          {tCommon("edit")}
         </Button>
       ),
     },

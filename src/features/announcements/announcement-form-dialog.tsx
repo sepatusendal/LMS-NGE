@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -18,13 +19,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import {
-  announcementSchema,
+  buildAnnouncementSchema,
   ANNOUNCEMENT_THEME,
   ANNOUNCEMENT_TYPES,
   ANNOUNCEMENT_DISPLAY_MODES,
   ANNOUNCEMENT_TARGET_ROLES,
-  TARGET_ROLE_LABEL,
-  DISPLAY_MODE_INFO,
+  buildTargetRoleLabel,
+  buildDisplayModeInfo,
+  buildThemeLabel,
 } from "./schema";
 import type { AnnouncementInput } from "./schema";
 import { useCreateAnnouncement } from "./use-announcements";
@@ -45,7 +47,13 @@ export function AnnouncementFormDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useTranslations("admin.announcements");
   const createAnnouncement = useCreateAnnouncement();
+
+  const announcementSchema = useMemo(() => buildAnnouncementSchema(t), [t]);
+  const targetRoleLabel = useMemo(() => buildTargetRoleLabel(t), [t]);
+  const displayModeInfo = useMemo(() => buildDisplayModeInfo(t), [t]);
+  const themeLabel = useMemo(() => buildThemeLabel(t), [t]);
 
   const {
     register,
@@ -79,25 +87,25 @@ export function AnnouncementFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Buat Pengumuman</DialogTitle>
+          <DialogTitle>{t("createTitle")}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label>Jenis Pengumuman</Label>
+            <Label>{t("typeLabel")}</Label>
             <Controller
               control={control}
               name="type"
               render={({ field }) => (
                 <div className="grid grid-cols-4 gap-2">
-                  {ANNOUNCEMENT_TYPES.map((t) => {
-                    const theme = ANNOUNCEMENT_THEME[t];
-                    const selected = field.value === t;
+                  {ANNOUNCEMENT_TYPES.map((ty) => {
+                    const theme = ANNOUNCEMENT_THEME[ty];
+                    const selected = field.value === ty;
                     return (
                       <button
-                        key={t}
+                        key={ty}
                         type="button"
-                        onClick={() => field.onChange(t)}
+                        onClick={() => field.onChange(ty)}
                         className={cn(
                           "relative flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-2.5 transition-all",
                           selected ? "border-current shadow-sm" : "border-transparent bg-muted/40 hover:bg-muted/70",
@@ -114,11 +122,11 @@ export function AnnouncementFormDialog({
                         )}
                         <span
                           className="flex size-8 items-center justify-center rounded-full"
-                          style={{ backgroundColor: `${theme.swatch}1a` }}
+                          style={{ backgroundColor: `color-mix(in srgb, ${theme.swatch} 10%, transparent)` }}
                         >
                           <span className="size-3 rounded-full" style={{ backgroundColor: theme.swatch }} />
                         </span>
-                        <span className="text-[11px] font-medium text-foreground">{theme.label}</span>
+                        <span className="text-[11px] font-medium text-foreground">{themeLabel[ty]}</span>
                       </button>
                     );
                   })}
@@ -128,14 +136,14 @@ export function AnnouncementFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Tampilan</Label>
+            <Label>{t("displayLabel")}</Label>
             <Controller
               control={control}
               name="displayMode"
               render={({ field }) => (
                 <div className="grid grid-cols-2 gap-2">
                   {ANNOUNCEMENT_DISPLAY_MODES.map((mode) => {
-                    const info = DISPLAY_MODE_INFO[mode];
+                    const info = displayModeInfo[mode];
                     const selected = field.value === mode;
                     return (
                       <button
@@ -164,10 +172,10 @@ export function AnnouncementFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="title">Judul</Label>
+            <Label htmlFor="title">{t("titleLabel")}</Label>
             <Input
               id="title"
-              placeholder="Contoh: Aplikasi sudah bisa dipakai lagi"
+              placeholder={t("titlePlaceholder")}
               aria-invalid={!!errors.title}
               {...register("title")}
             />
@@ -175,11 +183,11 @@ export function AnnouncementFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="body">Isi Pengumuman</Label>
+            <Label htmlFor="body">{t("bodyLabel")}</Label>
             <Textarea
               id="body"
               rows={4}
-              placeholder="Tulis pengumuman dengan jelas dan singkat..."
+              placeholder={t("bodyPlaceholder")}
               aria-invalid={!!errors.body}
               {...register("body")}
             />
@@ -187,7 +195,7 @@ export function AnnouncementFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Target Audiens</Label>
+            <Label>{t("targetAudience")}</Label>
             <Controller
               control={control}
               name="targetRoles"
@@ -206,30 +214,26 @@ export function AnnouncementFormDialog({
                             );
                           }}
                         />
-                        {TARGET_ROLE_LABEL[role]}
+                        {targetRoleLabel[role]}
                       </label>
                     );
                   })}
                 </div>
               )}
             />
-            <p className="text-muted-foreground text-xs">
-              Kosongkan semua (tidak dicentang) supaya pengumuman tampil untuk semua peran.
-            </p>
+            <p className="text-muted-foreground text-xs">{t("targetAudienceHint")}</p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="expiresAt">Berlaku Sampai (opsional)</Label>
+            <Label htmlFor="expiresAt">{t("expiresAtOptional")}</Label>
             <Input id="expiresAt" type="date" {...register("expiresAt")} />
-            <p className="text-muted-foreground text-xs">
-              Kosongkan kalau pengumuman ini gak perlu kadaluarsa otomatis.
-            </p>
+            <p className="text-muted-foreground text-xs">{t("expiresAtHint")}</p>
           </div>
 
           {(title || body) && (
             <div className="space-y-1.5">
               <Label className="text-muted-foreground text-xs">
-                Pratinjau — {DISPLAY_MODE_INFO[displayMode].label}
+                {t("previewLabel")} — {displayModeInfo[displayMode].label}
               </Label>
 
               {displayMode === "BANNER" ? (
@@ -243,10 +247,10 @@ export function AnnouncementFormDialog({
                   <div className="flex items-start gap-3">
                     <div className="min-w-0 flex-1">
                       <p className={cn("text-sm font-bold", previewTheme.titleColor)}>
-                        {title || "Judul pengumuman"}
+                        {title || t("previewTitlePlaceholder")}
                       </p>
                       <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed whitespace-pre-line">
-                        {body || "Isi pengumuman akan tampil di sini."}
+                        {body || t("previewBodyPlaceholder")}
                       </p>
                     </div>
                     <PreviewIllustration className="hidden h-14 w-14 shrink-0 sm:block" uid="preview-banner" />
@@ -260,10 +264,10 @@ export function AnnouncementFormDialog({
                     >
                       <PreviewIllustration className="h-16 w-16" uid="preview-popup" />
                       <p className={cn("mt-2 text-xs font-extrabold", previewTheme.titleColor)}>
-                        {title || "Judul pengumuman"}
+                        {title || t("previewTitlePlaceholder")}
                       </p>
                       <p className="text-muted-foreground mt-1 text-[10px] leading-snug">
-                        {body || "Isi pengumuman akan tampil di sini."}
+                        {body || t("previewBodyPlaceholder")}
                       </p>
                     </div>
                     <div className="px-4 pb-4">
@@ -271,7 +275,7 @@ export function AnnouncementFormDialog({
                         className="rounded-lg py-1.5 text-center text-[10px] font-semibold text-white"
                         style={{ backgroundColor: previewTheme.swatch }}
                       >
-                        Mengerti
+                        {t("previewGotIt")}
                       </div>
                     </div>
                   </div>
@@ -282,7 +286,7 @@ export function AnnouncementFormDialog({
 
           <DialogFooter>
             <Button type="submit" disabled={createAnnouncement.isPending}>
-              {createAnnouncement.isPending ? "Mempublikasikan..." : "Publikasikan"}
+              {createAnnouncement.isPending ? t("publishing") : t("publish")}
             </Button>
           </DialogFooter>
         </form>

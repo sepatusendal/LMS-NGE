@@ -8,14 +8,27 @@ export const REPORT_FORMAT_LABEL: Record<CurriculumReportFormat, string> = {
   ALBRIGHT: "Albright (Unit & Topic, Activities, Resources)",
 };
 
-export const curriculumSchema = z.object({
-  name: z.string().min(1, "Nama kurikulum wajib diisi"),
-  gradeLevel: z.string().min(1, "Grade level wajib diisi"),
-  description: z.string().optional(),
-  reportFormat: z.enum(REPORT_FORMAT_OPTIONS),
-});
+/** Build translated report-format labels. Pass a t scoped to
+ * "admin.curriculum". */
+export function buildReportFormatLabel(
+  t: (key: string) => string,
+): Record<CurriculumReportFormat, string> {
+  return {
+    STANDARD: t("reportFormatStandard"),
+    ALBRIGHT: t("reportFormatAlbright"),
+  };
+}
 
-export type CurriculumInput = z.infer<typeof curriculumSchema>;
+export function buildCurriculumSchema(t: (key: string) => string) {
+  return z.object({
+    name: z.string().min(1, t("validation.nameRequired")),
+    gradeLevel: z.string().min(1, t("validation.gradeLevelRequired")),
+    description: z.string().optional(),
+    reportFormat: z.enum(REPORT_FORMAT_OPTIONS),
+  });
+}
+
+export type CurriculumInput = z.infer<ReturnType<typeof buildCurriculumSchema>>;
 
 export interface Curriculum {
   id: string;

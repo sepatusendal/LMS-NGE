@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Activity, LineChart, ListChecks } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { ComplianceAlert } from "@/features/lesson-plans/compliance-alert";
 import { StatusBoard } from "@/features/monitoring/status-board";
 import { AnalyticsCharts } from "@/features/monitoring/analytics-charts";
@@ -22,6 +23,9 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { cn } from "@/lib/utils";
 
 export default function AdminDashboardPage() {
+  const t = useTranslations("admin.dashboard");
+  const tGreeting = useTranslations("today.greeting");
+  const locale = useLocale();
   const { data: user } = useCurrentUser();
   // `new Date()` depends on the reader's local clock (WIB for our users),
   // but this page is server-rendered first — computing it directly during
@@ -37,13 +41,13 @@ export default function AdminDashboardPage() {
 
   const dateLabel = useMemo(
     () =>
-      now?.toLocaleDateString("id-ID", {
+      now?.toLocaleDateString(locale === "en" ? "en-US" : "id-ID", {
         weekday: "long",
         day: "numeric",
         month: "long",
         year: "numeric",
       }) ?? "",
-    [now],
+    [now, locale],
   );
 
   return (
@@ -51,7 +55,8 @@ export default function AdminDashboardPage() {
       <AnnouncementPopup />
 
       <DashboardHero
-        greeting={greeting}
+        greetingText={tGreeting(greeting.key)}
+        greetingEmoji={greeting.emoji}
         firstName={firstName}
         dateLabel={dateLabel}
         hour={now?.getHours() ?? 9}
@@ -66,8 +71,8 @@ export default function AdminDashboardPage() {
       <section className="space-y-3">
         <SectionHeading
           icon={LineChart}
-          title="Tren & Analitik"
-          description="Performa teaching report, kehadiran, dan jadwal dalam 14 hari terakhir."
+          title={t("trendsTitle")}
+          description={t("trendsDescription")}
         />
         <div className="grid gap-5 lg:grid-cols-12">
           <div className="space-y-5 lg:col-span-8">
@@ -86,8 +91,8 @@ export default function AdminDashboardPage() {
       <section className="space-y-3">
         <SectionHeading
           icon={Activity}
-          title="Operasional Hari Ini"
-          description="Status tiap kelas dan guru yang aktif hari ini — check-in, absensi, dan report."
+          title={t("operationsTitle")}
+          description={t("operationsDescription")}
         />
         <StatusBoard />
       </section>
@@ -99,8 +104,8 @@ export default function AdminDashboardPage() {
       <section className="space-y-3">
         <SectionHeading
           icon={ListChecks}
-          title="Perlu Perhatian"
-          description="Kepatuhan lesson plan, kedisiplinan guru, dan follow-up siswa."
+          title={t("attentionTitle")}
+          description={t("attentionDescription")}
         />
         <div className="grid items-start gap-5 lg:grid-cols-2">
           <ComplianceAlert />
@@ -114,16 +119,19 @@ export default function AdminDashboardPage() {
 }
 
 function DashboardHero({
-  greeting,
+  greetingText,
+  greetingEmoji,
   firstName,
   dateLabel,
   hour,
 }: {
-  greeting: { text: string; emoji: string };
+  greetingText: string;
+  greetingEmoji: string;
   firstName: string;
   dateLabel: string;
   hour: number;
 }) {
+  const t = useTranslations("admin.dashboard");
   const isNight = hour >= 18 || hour < 4;
 
   return (
@@ -131,21 +139,21 @@ function DashboardHero({
       className={cn(
         "relative overflow-hidden rounded-3xl px-5 py-6 text-white shadow-[0_16px_40px_-16px_rgba(75,96,172,0.5)] sm:px-7 sm:py-7",
         isNight
-          ? "bg-gradient-to-br from-[#2a3466] via-[#3a4585] to-[#4b60ac]"
-          : "bg-gradient-to-br from-[#4b60ac] via-[#5468b8] to-[#6b83c9]",
+          ? "bg-gradient-to-br from-[#2a3466] via-[#3a4585] to-[var(--brand-blue)]"
+          : "bg-gradient-to-br from-[var(--brand-blue)] via-[#5468b8] to-[#6b83c9]",
       )}
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <svg className="absolute -top-10 -right-10 size-48 opacity-25 sm:size-56" viewBox="0 0 200 200">
           <path
-            fill="#ffffff"
+            fill="var(--primary-foreground)"
             d="M45.3,-58.6C58.5,-49.9,68.6,-35.5,72.8,-19.5C77,-3.5,75.3,14.1,68.1,29.3C60.9,44.5,48.2,57.3,33.2,64.8C18.2,72.3,0.9,74.5,-16.9,71.8C-34.7,69.1,-53,61.5,-64.5,47.9C-76,34.3,-80.7,14.7,-78.4,-3.6C-76.1,-21.9,-66.8,-38.9,-53.2,-47.9C-39.6,-56.9,-21.7,-57.9,-3.3,-54.1C15.1,-50.3,32.1,-67.3,45.3,-58.6Z"
             transform="translate(100 100)"
           />
         </svg>
         <svg className="absolute -bottom-16 left-1/3 size-56 opacity-15" viewBox="0 0 200 200">
           <path
-            fill="#f15c5d"
+            fill="var(--destructive)"
             d="M39.6,-51.2C52.6,-43.5,65.4,-33.4,70.8,-19.9C76.2,-6.5,74.2,10.3,66.9,24.2C59.6,38.1,47,49.1,32.7,57.2C18.4,65.3,2.4,70.5,-13.9,68.9C-30.2,67.3,-46.8,58.9,-58.4,45.6C-70,32.3,-76.6,14.1,-75.8,-3.7C-75,-21.5,-66.8,-38.9,-53.9,-46.9C-41,-54.9,-23.4,-53.5,-6.9,-45.7C9.6,-37.9,26.6,-58.9,39.6,-51.2Z"
             transform="translate(100 100)"
           />
@@ -155,12 +163,12 @@ function DashboardHero({
       <div className="relative flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="text-sm font-medium text-white/80">
-            {greeting.text}
-            {firstName ? `, ${firstName}` : ""} {greeting.emoji}
+            {greetingText}
+            {firstName ? `, ${firstName}` : ""} {greetingEmoji}
           </p>
-          <h1 className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">Admin Dashboard</h1>
+          <h1 className="mt-1 text-xl font-extrabold tracking-tight sm:text-2xl">{t("heroTitle")}</h1>
           <p className="mt-0.5 text-xs text-white/70 sm:text-sm">
-            Ringkasan operasional NUFA Global Education — {dateLabel}
+            {t("heroSubtitle", { date: dateLabel })}
           </p>
         </div>
 

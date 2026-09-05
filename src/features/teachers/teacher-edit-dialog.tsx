@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { KeyRound } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -16,8 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordField, generateRandomPassword } from "@/components/shared/password-field";
 import {
-  teacherEditSchema,
-  teacherResetPasswordSchema,
+  buildTeacherEditSchema,
+  buildTeacherResetPasswordSchema,
   type Teacher,
   type TeacherEditInput,
   type TeacherResetPasswordInput,
@@ -33,8 +34,13 @@ export function TeacherEditDialog({
   onOpenChange: (open: boolean) => void;
   teacher?: Teacher;
 }) {
+  const t = useTranslations("admin.teachers");
+  const tCommon = useTranslations("common");
   const updateTeacher = useUpdateTeacher();
   const resetPassword = useResetTeacherPassword();
+
+  const teacherEditSchema = useMemo(() => buildTeacherEditSchema(t), [t]);
+  const teacherResetPasswordSchema = useMemo(() => buildTeacherResetPasswordSchema(t), [t]);
 
   const {
     register,
@@ -82,13 +88,13 @@ export function TeacherEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Teacher</DialogTitle>
+          <DialogTitle>{t("editTitle")}</DialogTitle>
         </DialogHeader>
         <div className="text-muted-foreground -mt-2 text-sm">{teacher?.email}</div>
 
         <div className="space-y-2 rounded-lg border p-3">
           <Label htmlFor="reset-password" className="text-muted-foreground text-xs">
-            Ganti password
+            {t("changePassword")}
           </Label>
           <div className="flex items-start gap-2">
             <div className="flex-1">
@@ -110,14 +116,14 @@ export function TeacherEditDialog({
               onClick={handlePwSubmit(onResetPassword)}
             >
               <KeyRound className="size-3.5" />
-              {resetPassword.isPending ? "Menyimpan..." : "Simpan"}
+              {resetPassword.isPending ? tCommon("saving") : tCommon("save")}
             </Button>
           </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="fullName">Nama</Label>
+            <Label htmlFor="fullName">{tCommon("name")}</Label>
             <Input id="fullName" aria-invalid={!!errors.fullName} {...register("fullName")} />
             {errors.fullName && (
               <p className="text-destructive text-sm">{errors.fullName.message}</p>
@@ -131,14 +137,14 @@ export function TeacherEditDialog({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="feePerMeeting">Fee per Meeting (Rp, opsional)</Label>
+            <Label htmlFor="feePerMeeting">{t("feePerMeetingOptional")}</Label>
             <Input
               id="feePerMeeting"
               type="number"
               inputMode="numeric"
               min={0}
               step={1}
-              placeholder="Contoh: 100000"
+              placeholder={t("feePerMeetingPlaceholder")}
               {...register("feePerMeeting")}
             />
             {errors.feePerMeeting && (
@@ -146,12 +152,12 @@ export function TeacherEditDialog({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="phone">No. HP</Label>
+            <Label htmlFor="phone">{t("phoneHeader")}</Label>
             <Input id="phone" {...register("phone")} />
           </div>
           <DialogFooter>
             <Button type="submit" disabled={updateTeacher.isPending}>
-              {updateTeacher.isPending ? "Menyimpan..." : "Simpan"}
+              {updateTeacher.isPending ? tCommon("saving") : tCommon("save")}
             </Button>
           </DialogFooter>
         </form>

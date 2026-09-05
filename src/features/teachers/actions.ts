@@ -1,17 +1,19 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { assertIsAdmin } from "@/features/auth/assert-admin";
 import {
-  teacherCreateSchema,
-  teacherResetPasswordSchema,
+  buildTeacherCreateSchema,
+  buildTeacherResetPasswordSchema,
   type TeacherCreateInput,
 } from "./schema";
 
 export async function createTeacherAccount(rawInput: TeacherCreateInput) {
   await assertIsAdmin();
-  const input = teacherCreateSchema.parse(rawInput);
+  const t = await getTranslations("admin.teachers");
+  const input = buildTeacherCreateSchema(t).parse(rawInput);
 
   const admin = createAdminClient();
 
@@ -80,7 +82,8 @@ export async function setTeacherActiveAction(
 
 export async function resetTeacherPassword(userId: string, password: string) {
   await assertIsAdmin();
-  const { password: validatedPassword } = teacherResetPasswordSchema.parse({ password });
+  const t = await getTranslations("admin.teachers");
+  const { password: validatedPassword } = buildTeacherResetPasswordSchema(t).parse({ password });
   const admin = createAdminClient();
 
   const { error } = await admin.auth.admin.updateUserById(userId, {

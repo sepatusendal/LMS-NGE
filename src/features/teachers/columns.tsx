@@ -1,6 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import type { Teacher } from "./schema";
 import { useSetTeacherActive } from "./use-teachers";
 
 function ActiveToggleCell({ teacher }: { teacher: Teacher }) {
+  const tCommon = useTranslations("common");
   const setActive = useSetTeacherActive();
   return (
     <div className="flex items-center gap-2">
@@ -20,17 +22,19 @@ function ActiveToggleCell({ teacher }: { teacher: Teacher }) {
         }
       />
       <Badge variant={teacher.isActive ? "default" : "secondary"}>
-        {teacher.isActive ? "Aktif" : "Nonaktif"}
+        {teacher.isActive ? tCommon("active") : tCommon("inactive")}
       </Badge>
     </div>
   );
 }
 
 export function createTeacherColumns(
+  t: (key: string) => string,
+  tCommon: (key: string) => string,
   onEdit: (teacher: Teacher) => void,
 ): ColumnDef<Teacher>[] {
   return [
-    { accessorKey: "fullName", header: "Nama" },
+    { accessorKey: "fullName", header: tCommon("name") },
     {
       accessorKey: "tutorId",
       header: "Tutor ID",
@@ -39,18 +43,18 @@ export function createTeacherColumns(
     { accessorKey: "email", header: "Email" },
     {
       accessorKey: "feePerMeeting",
-      header: "Fee/Kedatangan",
+      header: t("feePerMeetingHeader"),
       cell: ({ row }) =>
         row.original.feePerMeeting != null ? formatRupiah(row.original.feePerMeeting) : "-",
     },
     {
       accessorKey: "phone",
-      header: "No. HP",
+      header: t("phoneHeader"),
       cell: ({ row }) => row.original.phone || "-",
     },
     {
       accessorKey: "isActive",
-      header: "Status",
+      header: tCommon("status"),
       cell: ({ row }) => <ActiveToggleCell teacher={row.original} />,
     },
     {
@@ -58,7 +62,7 @@ export function createTeacherColumns(
       header: "",
       cell: ({ row }) => (
         <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
-          Edit
+          {tCommon("edit")}
         </Button>
       ),
     },

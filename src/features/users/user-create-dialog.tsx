@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PasswordField, generateRandomPassword } from "@/components/shared/password-field";
-import { userCreateSchema, MANAGEABLE_ROLES, ROLE_LABEL, type UserCreateInput } from "./schema";
+import { buildUserCreateSchema, MANAGEABLE_ROLES, ROLE_LABEL, type UserCreateInput } from "./schema";
 import { useCreateAppUser } from "./use-users";
 
 export function UserCreateDialog({
@@ -32,7 +33,11 @@ export function UserCreateDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useTranslations("admin.users");
+  const tCommon = useTranslations("common");
   const createUser = useCreateAppUser();
+
+  const userCreateSchema = useMemo(() => buildUserCreateSchema(t), [t]);
 
   const {
     register,
@@ -57,15 +62,12 @@ export function UserCreateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Tambah Akun Admin / Coordinator</DialogTitle>
-          <DialogDescription>
-            Tentukan password akunnya sendiri, atau klik ikon dadu untuk generate
-            acak.
-          </DialogDescription>
+          <DialogTitle>{t("addTitle")}</DialogTitle>
+          <DialogDescription>{t("passwordHint")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="fullName">Nama</Label>
+            <Label htmlFor="fullName">{tCommon("name")}</Label>
             <Input id="fullName" {...register("fullName")} />
             {errors.fullName && (
               <p className="text-destructive text-sm">{errors.fullName.message}</p>
@@ -118,7 +120,7 @@ export function UserCreateDialog({
           </div>
           <DialogFooter>
             <Button type="submit" disabled={createUser.isPending}>
-              {createUser.isPending ? "Membuat akun..." : "Buat Akun"}
+              {createUser.isPending ? t("creatingAccount") : t("createAccount")}
             </Button>
           </DialogFooter>
         </form>

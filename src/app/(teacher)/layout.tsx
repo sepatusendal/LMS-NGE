@@ -85,7 +85,7 @@ export default function TeacherLayout({
         navItems={buildTeacherSidebarItems(t, lessonPlanBadge)}
         showLanguageSwitcher
       />
-      <main className="flex-1 overflow-x-auto bg-[#f5f6fb]">
+      <main className="flex-1 overflow-x-auto bg-muted">
         <div className="mx-auto w-full max-w-md px-4 pt-4 pb-24 md:max-w-none md:px-8 md:pb-8 md:pt-8">
           {children}
         </div>

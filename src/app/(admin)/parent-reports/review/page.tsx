@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ExternalLink, FileDown } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,13 +22,8 @@ import {
   useParentReportDraft,
   useUpdateDraftComment,
 } from "@/features/parent-reports/use-parent-reports";
-import { MONTH_LABEL } from "@/features/parent-reports/schema";
+import { buildMonthLabel } from "@/features/parent-reports/schema";
 
-const OBJECTIVES_LABEL: Record<string, string> = {
-  YES: "Tercapai",
-  PARTIALLY: "Sebagian",
-  NO: "Belum Tercapai",
-};
 const OBJECTIVES_BADGE: Record<string, "default" | "secondary" | "destructive"> = {
   YES: "default",
   PARTIALLY: "secondary",
@@ -35,14 +31,25 @@ const OBJECTIVES_BADGE: Record<string, "default" | "secondary" | "destructive"> 
 };
 
 export default function ParentReportReviewPage() {
+  const tCommon = useTranslations("common");
   return (
-    <Suspense fallback={<p className="text-muted-foreground text-sm">Memuat data...</p>}>
+    <Suspense fallback={<p className="text-muted-foreground text-sm">{tCommon("dataTable.loading")}</p>}>
       <ParentReportReviewInner />
     </Suspense>
   );
 }
 
 function ParentReportReviewInner() {
+  const t = useTranslations("admin.parentReports.review");
+  const tCommon = useTranslations("common");
+  const tObjectives = useTranslations("reportForm.objectivesStatus");
+  const tMonths = useTranslations("admin.parentReports.months");
+  const objectivesLabel: Record<string, string> = {
+    YES: tObjectives("achieved"),
+    PARTIALLY: tObjectives("partial"),
+    NO: tObjectives("notAchieved"),
+  };
+  const monthLabel = buildMonthLabel(tMonths);
   const params = useSearchParams();
   const studentId = params.get("studentId") ?? "";
   const month = Number(params.get("month") ?? 0);
@@ -63,10 +70,10 @@ function ParentReportReviewInner() {
   }, [draft]);
 
   if (!studentId || !month || !year) {
-    return <p className="text-muted-foreground text-sm">Parameter laporan tidak lengkap.</p>;
+    return <p className="text-muted-foreground text-sm">{t("incompleteParams")}</p>;
   }
   if (isLoading || !draft) {
-    return <p className="text-muted-foreground text-sm">Memuat data...</p>;
+    return <p className="text-muted-foreground text-sm">{tCommon("dataTable.loading")}</p>;
   }
 
   const { periodData } = draft;
@@ -81,7 +88,7 @@ function ParentReportReviewInner() {
     <div className="space-y-4">
       <div>
         <Link href="/parent-reports" className="text-muted-foreground text-sm hover:underline">
-          ← Kembali ke Laporan Orang Tua
+          {t("back")}
         </Link>
         <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -89,12 +96,12 @@ function ParentReportReviewInner() {
               {periodData.studentName}
               {draft.status === "GENERATED" && (
                 <Badge className="ml-2" variant="default">
-                  Sudah Digenerate
+                  {t("generated")}
                 </Badge>
               )}
             </h1>
             <p className="text-muted-foreground text-sm">
-              {periodData.schoolName} · Periode {MONTH_LABEL[month]} {year}
+              {periodData.schoolName} · {t("periodLabel", { period: `${monthLabel[month]} ${year}` })}
             </p>
           </div>
           <div className="flex gap-2">
@@ -102,7 +109,7 @@ function ParentReportReviewInner() {
               <a href={`/api/parent-reports/${draft.id}/download`}>
                 <Button variant="outline">
                   <FileDown className="size-4" />
-                  Unduh PDF
+                  {t("downloadPdf")}
                 </Button>
               </a>
             )}
@@ -129,10 +136,10 @@ function ParentReportReviewInner() {
             >
               <FileDown className="size-4" />
               {generate.isPending
-                ? "Generating..."
+                ? t("generating")
                 : draft.status === "GENERATED"
-                  ? "Generate Ulang PDF"
-                  : "Generate PDF"}
+                  ? t("regeneratePdf")
+                  : t("generatePdf")}
             </Button>
           </div>
         </div>
@@ -140,7 +147,7 @@ function ParentReportReviewInner() {
 
       {periodData.lessonsCompleted === 0 && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-          Belum ada pertemuan tercatat untuk siswa ini pada periode {MONTH_LABEL[month]} {year}.
+          {t("noMeetingsRecorded", { period: `${monthLabel[month]} ${year}` })}
         </div>
       )}
 
@@ -148,46 +155,46 @@ function ParentReportReviewInner() {
         <Card>
           <CardContent className="p-4">
             <p className="text-2xl font-semibold">{attendanceRate}%</p>
-            <p className="text-muted-foreground text-xs">Tingkat Kehadiran</p>
+            <p className="text-muted-foreground text-xs">{t("attendanceRate")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-2xl font-semibold">{periodData.attendance.present}</p>
-            <p className="text-muted-foreground text-xs">Hadir</p>
+            <p className="text-muted-foreground text-xs">{t("present")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-2xl font-semibold">{periodData.attendance.late}</p>
-            <p className="text-muted-foreground text-xs">Terlambat</p>
+            <p className="text-muted-foreground text-xs">{t("late")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-2xl font-semibold">{periodData.attendance.excused}</p>
-            <p className="text-muted-foreground text-xs">Izin</p>
+            <p className="text-muted-foreground text-xs">{t("excused")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
             <p className="text-2xl font-semibold">{periodData.attendance.absent}</p>
-            <p className="text-muted-foreground text-xs">Tanpa Keterangan</p>
+            <p className="text-muted-foreground text-xs">{t("unexcused")}</p>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Progress & Kemampuan</CardTitle>
+          <CardTitle className="text-base">{t("progressAndSkills")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <p>
-            <span className="text-muted-foreground">Pertemuan selesai: </span>
+            <span className="text-muted-foreground">{t("lessonsCompletedLabel")}: </span>
             {periodData.lessonsCompleted}
           </p>
           <p>
-            <span className="text-muted-foreground">Kemampuan dilatih: </span>
+            <span className="text-muted-foreground">{t("skillsPracticedLabel")}: </span>
             {periodData.skillsCovered.join(", ") || "-"}
           </p>
         </CardContent>
@@ -196,16 +203,16 @@ function ParentReportReviewInner() {
       {periodData.teachingReports.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Rangkuman Pertemuan</CardTitle>
+            <CardTitle className="text-base">{t("meetingsSummary")}</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tanggal</TableHead>
-                  <TableHead>Kelas</TableHead>
-                  <TableHead>Topik</TableHead>
-                  <TableHead className="text-right">Tujuan</TableHead>
+                  <TableHead>{t("date")}</TableHead>
+                  <TableHead>{t("class")}</TableHead>
+                  <TableHead>{t("topic")}</TableHead>
+                  <TableHead className="text-right">{t("objectivesShort")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -217,7 +224,7 @@ function ParentReportReviewInner() {
                     <TableCell className="text-right">
                       {r.objectivesAchieved && (
                         <Badge variant={OBJECTIVES_BADGE[r.objectivesAchieved]} className="text-[10px]">
-                          {OBJECTIVES_LABEL[r.objectivesAchieved]}
+                          {objectivesLabel[r.objectivesAchieved]}
                         </Badge>
                       )}
                     </TableCell>
@@ -231,10 +238,8 @@ function ParentReportReviewInner() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Komentar Guru & Rekomendasi</CardTitle>
-          <p className="text-muted-foreground text-xs">
-            Auto-draft dari Daily Teaching Report periode ini — edit dulu sebelum generate PDF.
-          </p>
+          <CardTitle className="text-base">{t("teacherCommentsTitle")}</CardTitle>
+          <p className="text-muted-foreground text-xs">{t("autoDraftHint")}</p>
         </CardHeader>
         <CardContent>
           <Textarea

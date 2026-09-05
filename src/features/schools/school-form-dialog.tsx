@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { schoolSchema, type School, type SchoolInput } from "./schema";
+import { buildSchoolSchema, type School, type SchoolInput } from "./schema";
 import { useCreateSchool, useUpdateSchool } from "./use-schools";
 
 export function SchoolFormDialog({
@@ -25,9 +26,13 @@ export function SchoolFormDialog({
   onOpenChange: (open: boolean) => void;
   school?: School;
 }) {
+  const t = useTranslations("admin.schools");
+  const tCommon = useTranslations("common");
   const isEdit = Boolean(school);
   const createSchool = useCreateSchool();
   const updateSchool = useUpdateSchool();
+
+  const schoolSchema = useMemo(() => buildSchoolSchema(t), [t]);
 
   const {
     register,
@@ -62,31 +67,31 @@ export function SchoolFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Sekolah" : "Tambah Sekolah"}</DialogTitle>
+          <DialogTitle>{isEdit ? t("editTitle") : t("addTitle")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nama Sekolah</Label>
+            <Label htmlFor="name">{t("nameHeader")}</Label>
             <Input id="name" {...register("name")} />
             {errors.name && (
               <p className="text-destructive text-sm">{errors.name.message}</p>
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="address">Alamat</Label>
+            <Label htmlFor="address">{t("address")}</Label>
             <Input id="address" {...register("address")} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="picName">Nama PIC Sekolah</Label>
+            <Label htmlFor="picName">{t("picName")}</Label>
             <Input id="picName" {...register("picName")} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="picPhone">No. HP PIC</Label>
+            <Label htmlFor="picPhone">{t("picPhone")}</Label>
             <Input id="picPhone" {...register("picPhone")} />
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Menyimpan..." : "Simpan"}
+              {isSubmitting ? tCommon("saving") : tCommon("save")}
             </Button>
           </DialogFooter>
         </form>

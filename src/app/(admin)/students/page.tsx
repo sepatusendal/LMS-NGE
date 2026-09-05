@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Search, School } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -18,6 +19,8 @@ import { StudentFormDialog } from "@/features/students/student-form-dialog";
 import type { Student } from "@/features/students/schema";
 
 export default function StudentsPage() {
+  const t = useTranslations("admin.students");
+  const tCommon = useTranslations("common");
   const { data: schools } = useSchools();
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>("");
   const { data: students, isLoading, isError } = useStudents(
@@ -28,11 +31,11 @@ export default function StudentsPage() {
 
   const columns = useMemo(
     () =>
-      createStudentColumns((student) => {
+      createStudentColumns(t, tCommon, (student) => {
         setEditing(student);
         setDialogOpen(true);
       }),
-    [],
+    [t, tCommon],
   );
 
   const selectedSchool = schools?.find((s) => s.id === selectedSchoolId);
@@ -41,10 +44,8 @@ export default function StudentsPage() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Siswa</h1>
-          <p className="text-muted-foreground text-sm">
-            Kelola daftar siswa per sekolah.
-          </p>
+          <h1 className="text-xl font-semibold">{t("title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
         </div>
         {selectedSchoolId && (
           <Button
@@ -53,7 +54,7 @@ export default function StudentsPage() {
               setDialogOpen(true);
             }}
           >
-            Tambah Siswa
+            {t("addTitle")}
           </Button>
         )}
       </div>
@@ -69,7 +70,7 @@ export default function StudentsPage() {
             onValueChange={(v) => v && setSelectedSchoolId(v)}
           >
             <SelectTrigger className="w-full sm:w-64">
-              <SelectValue placeholder="Pilih sekolah..." />
+              <SelectValue placeholder={t("selectSchoolEllipsis")} />
             </SelectTrigger>
             <SelectContent>
               {schools?.map((s) => (
@@ -87,15 +88,13 @@ export default function StudentsPage() {
           <div className="bg-muted mb-4 flex size-14 items-center justify-center rounded-full">
             <Search className="text-muted-foreground size-6" />
           </div>
-          <p className="text-muted-foreground text-sm">
-            Pilih sekolah terlebih dahulu untuk melihat daftar siswa.
-          </p>
+          <p className="text-muted-foreground text-sm">{t("selectSchoolPrompt")}</p>
         </div>
       ) : (
         <>
           {selectedSchool && (
             <p className="text-muted-foreground text-sm">
-              Menampilkan siswa {selectedSchool.name}
+              {t("showingStudentsOf", { school: selectedSchool.name })}
               {students && ` (${students.length})`}
             </p>
           )}
@@ -104,7 +103,7 @@ export default function StudentsPage() {
             data={students ?? []}
             isLoading={isLoading}
             isError={isError}
-            searchPlaceholder="Cari nama atau NIS..."
+            searchPlaceholder={t("searchPlaceholder")}
           />
         </>
       )}

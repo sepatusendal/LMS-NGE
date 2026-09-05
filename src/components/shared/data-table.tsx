@@ -10,6 +10,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { AlertCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Table,
   TableBody,
@@ -33,11 +34,12 @@ interface DataTableProps<TData, TValue> {
 export function DataTable<TData, TValue>({
   columns,
   data,
-  searchPlaceholder = "Cari...",
+  searchPlaceholder,
   isLoading,
   isError,
-  errorMessage = "Gagal memuat data. Coba muat ulang halaman.",
+  errorMessage,
 }: DataTableProps<TData, TValue>) {
+  const t = useTranslations("common.dataTable");
   const [globalFilter, setGlobalFilter] = useState("");
 
   const table = useReactTable({
@@ -53,7 +55,7 @@ export function DataTable<TData, TValue>({
   return (
     <div className="space-y-3">
       <Input
-        placeholder={searchPlaceholder}
+        placeholder={searchPlaceholder ?? t("searchPlaceholder")}
         value={globalFilter}
         onChange={(e) => setGlobalFilter(e.target.value)}
         className="max-w-sm"
@@ -82,7 +84,9 @@ export function DataTable<TData, TValue>({
                 <TableCell colSpan={columns.length} className="h-24 text-center">
                   <div className="flex flex-col items-center justify-center gap-2 py-4">
                     <AlertCircle className="text-destructive size-6" />
-                    <p className="text-muted-foreground text-sm">{errorMessage}</p>
+                    <p className="text-muted-foreground text-sm">
+                      {errorMessage ?? t("error")}
+                    </p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -92,7 +96,7 @@ export function DataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="text-muted-foreground h-24 text-center"
                 >
-                  Memuat data...
+                  {t("loading")}
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows.length ? (
@@ -111,7 +115,7 @@ export function DataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="text-muted-foreground h-24 text-center"
                 >
-                  Belum ada data.
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             )}
@@ -120,7 +124,7 @@ export function DataTable<TData, TValue>({
       </div>
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground text-sm">
-          {table.getFilteredRowModel().rows.length} baris
+          {t("rowCount", { count: table.getFilteredRowModel().rows.length })}
         </p>
         <div className="flex gap-2">
           <Button
@@ -129,7 +133,7 @@ export function DataTable<TData, TValue>({
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            Sebelumnya
+            {t("previous")}
           </Button>
           <Button
             variant="outline"
@@ -137,7 +141,7 @@ export function DataTable<TData, TValue>({
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            Selanjutnya
+            {t("next")}
           </Button>
         </div>
       </div>

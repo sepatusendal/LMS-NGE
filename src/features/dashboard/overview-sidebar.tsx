@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, CalendarCheck, ClipboardCheck, Wallet } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,9 +11,8 @@ import { useClasses } from "@/features/classes/use-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
 import { useStudents } from "@/features/students/use-students";
 import { computeComplianceRate } from "@/features/lesson-plans/compliance";
+import { buildDayLabelsSundayFirst } from "@/features/classes/schema";
 import { formatRupiah } from "@/lib/currency";
-
-const DAY_LABELS_FULL = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
 function SidebarCard({
   icon: Icon,
@@ -41,6 +41,7 @@ function SidebarCard({
 /** Estimasi pendapatan bulanan = siswa aktif × harga per siswa (wireframe
  * "Earning" card pada kolom samping). */
 export function RevenueCard() {
+  const t = useTranslations("admin.dashboard");
   const { data: students, isError } = useStudents();
   const [pricePerStudent, setPricePerStudent] = useState(300000);
 
@@ -49,24 +50,24 @@ export function RevenueCard() {
 
   if (isError) {
     return (
-      <SidebarCard icon={Wallet} iconColor="var(--primary)" title="Estimasi Pendapatan">
+      <SidebarCard icon={Wallet} iconColor="var(--primary)" title={t("estimatedRevenue")}>
         <p className="text-destructive flex items-center gap-1.5 text-xs font-medium">
           <AlertCircle className="size-3.5" />
-          Gagal memuat data siswa
+          {t("failedToLoadStudents")}
         </p>
       </SidebarCard>
     );
   }
 
   return (
-    <SidebarCard icon={Wallet} iconColor="var(--primary)" title="Estimasi Pendapatan">
+    <SidebarCard icon={Wallet} iconColor="var(--primary)" title={t("estimatedRevenue")}>
       <div>
         <p className="text-2xl font-bold leading-none tracking-tight">{formatRupiah(estimatedRevenue)}</p>
-        <p className="text-muted-foreground mt-1 text-xs">/bulan dari {activeStudents} siswa aktif</p>
+        <p className="text-muted-foreground mt-1 text-xs">{t("perMonthFromActiveStudents", { count: activeStudents })}</p>
       </div>
       <div className="flex items-center gap-1">
         <Label htmlFor="revenue-per-student" className="sr-only">
-          Harga per siswa per bulan
+          {t("pricePerStudentPerMonth")}
         </Label>
         <span className="text-muted-foreground text-[11px]">Rp</span>
         <Input
@@ -76,9 +77,9 @@ export function RevenueCard() {
           onChange={(e) => setPricePerStudent(Number(e.target.value) || 0)}
           className="h-6 w-24 text-[11px]"
         />
-        <span className="text-muted-foreground text-[11px]">/siswa/bln</span>
+        <span className="text-muted-foreground text-[11px]">{t("perStudentPerMonthShort")}</span>
       </div>
-      <p className="text-muted-foreground/70 text-[10px]">Kalkulator lokal, gak tersimpan</p>
+      <p className="text-muted-foreground/70 text-[10px]">{t("localCalculatorHint")}</p>
     </SidebarCard>
   );
 }
@@ -87,6 +88,9 @@ export function RevenueCard() {
  * ini + persentase kepatuhan lesson plan. Owns the "kelas hari ini" metric —
  * `OverviewStats` no longer duplicates it. */
 export function TodayCard() {
+  const t = useTranslations("admin.dashboard");
+  const tDay = useTranslations("jadwal.day");
+  const dayLabelsSundayFirst = useMemo(() => buildDayLabelsSundayFirst(tDay), [tDay]);
   const { data: classes, isError: classesError } = useClasses();
   const { data: lessonPlans, isError: lessonPlansError } = useLessonPlans();
   const isError = classesError || lessonPlansError;
@@ -110,28 +114,28 @@ export function TodayCard() {
 
   if (isError) {
     return (
-      <SidebarCard icon={CalendarCheck} iconColor="var(--chart-4)" title="Hari Ini">
+      <SidebarCard icon={CalendarCheck} iconColor="var(--chart-4)" title={t("today")}>
         <p className="text-destructive flex items-center gap-1.5 text-xs font-medium">
           <AlertCircle className="size-3.5" />
-          Gagal memuat data
+          {t("failedToLoad")}
         </p>
       </SidebarCard>
     );
   }
 
   return (
-    <SidebarCard icon={CalendarCheck} iconColor="var(--chart-4)" title="Hari Ini">
+    <SidebarCard icon={CalendarCheck} iconColor="var(--chart-4)" title={t("today")}>
       <div>
         <p className="text-2xl font-bold leading-none tracking-tight">{todayClasses ?? "-"}</p>
         <p className="text-muted-foreground mt-1 text-xs">
-          kelas aktif pada {today === null ? "-" : DAY_LABELS_FULL[today]}
+          {t("activeClassesOn", { day: today === null ? "-" : dayLabelsSundayFirst[today] })}
         </p>
       </div>
       <div>
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground flex items-center gap-1">
             <ClipboardCheck className="size-3.5" />
-            Kepatuhan Lesson Plan
+            {t("lessonPlanCompliance")}
           </span>
           <span className="font-semibold">{complianceRate === null ? "-" : `${complianceRate}%`}</span>
         </div>
@@ -141,7 +145,7 @@ export function TodayCard() {
             color={getThresholdColor(complianceRate ?? 0, 50)}
           />
         </div>
-        <p className="text-muted-foreground/70 mt-1 text-[10px]">min. 2 minggu ke depan</p>
+        <p className="text-muted-foreground/70 mt-1 text-[10px]">{t("minTwoWeeksAhead")}</p>
       </div>
     </SidebarCard>
   );

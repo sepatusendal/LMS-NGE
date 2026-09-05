@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertCircle, UserRoundSearch } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -13,6 +14,7 @@ import {
 import { useOpenFollowUps } from "./use-dashboard";
 
 export function FollowUpsTable() {
+  const t = useTranslations("admin.dashboard");
   const { data, isLoading, isError } = useOpenFollowUps();
 
   return (
@@ -20,26 +22,26 @@ export function FollowUpsTable() {
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <UserRoundSearch className="size-4" style={{ color: "var(--status-warning)" }} />
-          Siswa Perlu Follow-up
+          {t("studentsNeedingFollowUp")}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isError ? (
           <p className="text-destructive flex items-center gap-1.5 text-sm">
             <AlertCircle className="size-4" />
-            Gagal memuat data follow-up.
+            {t("failedToLoadFollowUps")}
           </p>
         ) : isLoading ? (
-          <p className="text-muted-foreground text-sm">Memuat data...</p>
+          <p className="text-muted-foreground text-sm">{t("loadingData")}</p>
         ) : !data || data.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Tidak ada follow-up terbuka.</p>
+          <p className="text-muted-foreground text-sm">{t("noOpenFollowUps")}</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Siswa</TableHead>
-                <TableHead>Kelas</TableHead>
-                <TableHead>Catatan</TableHead>
+                <TableHead>{t("student")}</TableHead>
+                <TableHead>{t("class")}</TableHead>
+                <TableHead>{t("note")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

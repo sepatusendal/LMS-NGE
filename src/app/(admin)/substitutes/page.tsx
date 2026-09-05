@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,6 +17,8 @@ import { TeacherDayList } from "@/features/substitutes/teacher-day-list";
 import { todayLocalDateStr } from "@/lib/date";
 
 export default function SubstitutesPage() {
+  const t = useTranslations("admin.substitutes");
+  const locale = useLocale();
   const [date, setDate] = useState(todayLocalDateStr());
   const [schoolId, setSchoolId] = useState("");
   const [search, setSearch] = useState("");
@@ -35,12 +38,8 @@ export default function SubstitutesPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Guru Pengganti</h1>
-        <p className="text-muted-foreground text-sm">
-          Tandai guru yang absen/izin di tanggal tertentu — tutor pengganti otomatis
-          diterapkan ke semua kelas guru itu hari itu, dan pertemuan berikutnya kembali
-          ke guru asal dengan sendirinya.
-        </p>
+        <h1 className="text-xl font-semibold">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -52,17 +51,17 @@ export default function SubstitutesPage() {
         />
         <Select
           items={[
-            { value: "", label: "Semua sekolah" },
+            { value: "", label: t("allSchools") },
             ...(schools?.map((s) => ({ value: s.id, label: s.name })) ?? []),
           ]}
           value={schoolId}
           onValueChange={(v) => setSchoolId(v ?? "")}
         >
           <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Semua sekolah" />
+            <SelectValue placeholder={t("allSchools")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Semua sekolah</SelectItem>
+            <SelectItem value="">{t("allSchools")}</SelectItem>
             {schools?.map((s) => (
               <SelectItem key={s.id} value={s.id}>
                 {s.name}
@@ -71,7 +70,7 @@ export default function SubstitutesPage() {
           </SelectContent>
         </Select>
         <Input
-          placeholder="Cari nama guru..."
+          placeholder={t("searchTeacherPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full sm:w-56"
@@ -81,8 +80,8 @@ export default function SubstitutesPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">
-            Guru Terjadwal —{" "}
-            {new Date(date).toLocaleDateString("id-ID", {
+            {t("scheduledTeachers")} —{" "}
+            {new Date(date).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", {
               weekday: "long",
               day: "numeric",
               month: "long",

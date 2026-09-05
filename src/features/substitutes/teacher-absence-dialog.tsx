@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CalendarOff } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -25,13 +26,16 @@ import { useTeachers } from "@/features/teachers/use-teachers";
 import { parseLocalDate } from "@/lib/date";
 import type { ClassStatusRow } from "@/features/monitoring/schema";
 import { useCancelSubstitute, useMarkTeacherAbsent } from "./use-substitutes";
-import { ABSENCE_REASONS, ABSENCE_REASON_LABEL } from "./schema";
+import { ABSENCE_REASONS, ABSENCE_REASON_KEY } from "./schema";
 
-function ineligibleReason(r: ClassStatusRow): string | null {
-  if (r.isHoliday) return "Libur";
-  if (!r.lessonPlanId) return "Belum ada lesson plan";
-  if (r.meetingStatus !== "not_started") return "Sudah dimulai";
-  return null;
+function useIneligibleReason() {
+  const t = useTranslations("admin.substitutes.absenceDialog");
+  return (r: ClassStatusRow): string | null => {
+    if (r.isHoliday) return t("ineligibleHoliday");
+    if (!r.lessonPlanId) return t("ineligibleNoLessonPlan");
+    if (r.meetingStatus !== "not_started") return t("ineligibleAlreadyStarted");
+    return null;
+  };
 }
 
 function ClassRow({
@@ -43,6 +47,8 @@ function ClassRow({
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
 }) {
+  const t = useTranslations("admin.substitutes.absenceDialog");
+  const ineligibleReason = useIneligibleReason();
   // Scoped per-row so cancelling invalidates *this* class's own caches —
   // a single hook call shared across all rows would only ever target
   // whichever class happened to be first in the list.
@@ -67,7 +73,7 @@ function ClassRow({
       {row.isSubstitute ? (
         <div className="flex shrink-0 items-center gap-1.5">
           <Badge variant="outline" className="text-[10px]">
-            Sub: {row.substituteTeacherName}
+            {t("subBadge", { name: row.substituteTeacherName ?? "" })}
           </Badge>
           <Button
             size="sm"
@@ -76,7 +82,7 @@ function ClassRow({
             disabled={cancel.isPending || !row.meetingId}
             onClick={() => row.meetingId && cancel.mutate(row.meetingId)}
           >
-            Batalkan
+            {t("cancelShort")}
           </Button>
         </div>
       ) : reasonBlocked ? (
@@ -103,6 +109,11 @@ export function TeacherAbsenceDialog({
   teacherName: string;
   classes: ClassStatusRow[];
 }) {
+  const t = useTranslations("admin.substitutes.absenceDialog");
+  const tCommon = useTranslations("common");
+  const tReason = useTranslations("workflow.absenceReason");
+  const locale = useLocale();
+  const ineligibleReason = useIneligibleReason();
   const { data: teachers } = useTeachers();
   const markAbsent = useMarkTeacherAbsent();
 
@@ -123,8 +134,9 @@ export function TeacherAbsenceDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, teacherId, date]);
 
-  const teacherOptions = (teachers ?? []).filter((t) => t.id !== teacherId);
-  const dateLabel = parseLocalDate(date).toLocaleDateString("id-ID", {
+  const teacherOptions = (teachers ?? []).filter((te) => te.id !== teacherId);
+  const reasonLabel = (r: string) => (ABSENCE_REASON_KEY[r] ? tReason(ABSENCE_REASON_KEY[r]) : r);
+  const dateLabel = parseLocalDate(date).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -157,9 +169,9 @@ export function TeacherAbsenceDialog({
           <div className="bg-primary/10 text-primary mb-1 flex size-9 items-center justify-center rounded-full">
             <CalendarOff className="size-4.5" />
           </div>
-          <DialogTitle>Tandai {teacherName} Absen</DialogTitle>
+          <DialogTitle>{t("markAbsentTitle", { name: teacherName })}</DialogTitle>
           <DialogDescription>
-            {dateLabel} · {classes.length} kelas terjadwal
+            {dateLabel} · {t("scheduledClassCount", { count: classes.length })}
           </DialogDescription>
         </DialogHeader>
 
@@ -178,19 +190,19 @@ export function TeacherAbsenceDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Tutor Pengganti</Label>
+            <Label>{t("substituteTutor")}</Label>
             <Select
-              items={teacherOptions.map((t) => ({ value: t.id, label: t.fullName }))}
+              items={teacherOptions.map((te) => ({ value: te.id, label: te.fullName }))}
               value={substituteTeacherId}
               onValueChange={(v) => v && setSubstituteTeacherId(v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih tutor pengganti" />
+                <SelectValue placeholder={t("selectSubstituteTutor")} />
               </SelectTrigger>
               <SelectContent>
-                {teacherOptions.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.fullName}
+                {teacherOptions.map((te) => (
+                  <SelectItem key={te.id} value={te.id}>
+                    {te.fullName}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -198,19 +210,19 @@ export function TeacherAbsenceDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Alasan</Label>
+            <Label>{t("reason")}</Label>
             <Select
-              items={ABSENCE_REASONS.map((r) => ({ value: r, label: ABSENCE_REASON_LABEL[r] }))}
+              items={ABSENCE_REASONS.map((r) => ({ value: r, label: reasonLabel(r) }))}
               value={reason}
               onValueChange={(v) => v && setReason(v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih alasan" />
+                <SelectValue placeholder={t("selectReason")} />
               </SelectTrigger>
               <SelectContent>
                 {ABSENCE_REASONS.map((r) => (
                   <SelectItem key={r} value={r}>
-                    {ABSENCE_REASON_LABEL[r]}
+                    {reasonLabel(r)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -218,21 +230,19 @@ export function TeacherAbsenceDialog({
           </div>
 
           <p className="text-muted-foreground text-xs">
-            Tutor pengganti akan diterapkan ke {selectedCount} kelas yang dicentang, khusus{" "}
-            {dateLabel}. Pertemuan berikutnya di masing-masing kelas otomatis kembali ke{" "}
-            {teacherName}.
+            {t("hint", { count: selectedCount, date: dateLabel, teacher: teacherName })}
           </p>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Tutup
+            {tCommon("close")}
           </Button>
           <Button
             disabled={selectedCount === 0 || !substituteTeacherId || !reason || markAbsent.isPending}
             onClick={handleSubmit}
           >
-            {markAbsent.isPending ? "Menyimpan..." : `Simpan untuk ${selectedCount} Kelas`}
+            {markAbsent.isPending ? tCommon("saving") : t("saveForClasses", { count: selectedCount })}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertCircle, NotebookPen } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -13,38 +14,38 @@ import {
 import { parseLocalDate } from "@/lib/date";
 import { useReportNotes } from "./use-dashboard";
 
-function formatDate(dateStr: string) {
-  return parseLocalDate(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
-}
-
 export function ReportNotesTable() {
+  const t = useTranslations("admin.dashboard");
+  const locale = useLocale();
   const { data, isLoading, isError } = useReportNotes();
+  const formatDate = (dateStr: string) =>
+    parseLocalDate(dateStr).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short" });
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <NotebookPen className="size-4" style={{ color: "var(--chart-1)" }} />
-          Catatan Terbaru dari Teaching Report
+          {t("recentTeachingReportNotes")}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isError ? (
           <p className="text-destructive flex items-center gap-1.5 text-sm">
             <AlertCircle className="size-4" />
-            Gagal memuat catatan.
+            {t("failedToLoadNotes")}
           </p>
         ) : isLoading ? (
-          <p className="text-muted-foreground text-sm">Memuat data...</p>
+          <p className="text-muted-foreground text-sm">{t("loadingData")}</p>
         ) : !data || data.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Belum ada catatan.</p>
+          <p className="text-muted-foreground text-sm">{t("noNotesYet")}</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-20">Tanggal</TableHead>
-                <TableHead className="w-28">Kelas</TableHead>
-                <TableHead>Catatan</TableHead>
+                <TableHead className="w-20">{t("date")}</TableHead>
+                <TableHead className="w-28">{t("class")}</TableHead>
+                <TableHead>{t("note")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

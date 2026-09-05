@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { UserRoundCog } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,7 @@ import {
   useAssignSubstituteForLessonPlan,
   useCancelSubstitute,
 } from "./use-substitutes";
-import { ABSENCE_REASONS, ABSENCE_REASON_LABEL } from "./schema";
+import { ABSENCE_REASONS, ABSENCE_REASON_KEY } from "./schema";
 
 export interface ReassignTutorTarget {
   classId: string;
@@ -51,6 +52,10 @@ export function ReassignTutorDialog({
   onOpenChange: (open: boolean) => void;
   target: ReassignTutorTarget | null;
 }) {
+  const t = useTranslations("admin.substitutes.reassignDialog");
+  const tCommon = useTranslations("common");
+  const tReason = useTranslations("workflow.absenceReason");
+  const locale = useLocale();
   const { data: teachers } = useTeachers();
   const assign = useAssignSubstituteForLessonPlan(target?.classId ?? "");
   const cancel = useCancelSubstitute(target?.classId ?? "");
@@ -67,7 +72,8 @@ export function ReassignTutorDialog({
 
   if (!target) return null;
 
-  const teacherOptions = (teachers ?? []).filter((t) => t.id !== target.currentTeacherId);
+  const teacherOptions = (teachers ?? []).filter((te) => te.id !== target.currentTeacherId);
+  const reasonLabel = (r: string) => (ABSENCE_REASON_KEY[r] ? tReason(ABSENCE_REASON_KEY[r]) : r);
 
   async function handleSave() {
     if (!target || !substituteTeacherId || !reason) return;
@@ -96,12 +102,15 @@ export function ReassignTutorDialog({
     }
   }
 
-  const dateLabel = parseLocalDate(target.scheduledDate).toLocaleDateString("id-ID", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const dateLabel = parseLocalDate(target.scheduledDate).toLocaleDateString(
+    locale === "en" ? "en-US" : "id-ID",
+    {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    },
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -110,7 +119,7 @@ export function ReassignTutorDialog({
           <div className="bg-primary/10 text-primary mb-1 flex size-9 items-center justify-center rounded-full">
             <UserRoundCog className="size-4.5" />
           </div>
-          <DialogTitle>Ganti Tutor Pengganti</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>
             {target.className}
             {target.contextLabel ? ` · ${target.contextLabel}` : ""} · {dateLabel}
@@ -119,17 +128,17 @@ export function ReassignTutorDialog({
 
         <div className="space-y-4">
           <div className="rounded-lg border bg-muted/40 px-3 py-2.5">
-            <p className="text-muted-foreground text-xs">Tutor terjadwal</p>
+            <p className="text-muted-foreground text-xs">{t("scheduledTutor")}</p>
             <p className="text-sm font-medium">{target.currentTeacherName}</p>
             {target.isSubstitute && (
               <div className="mt-1.5 flex items-center gap-1.5">
                 <Badge variant="outline" className="text-[10px]">
-                  Sedang digantikan
+                  {t("currentlySubstituted")}
                 </Badge>
                 <span className="text-muted-foreground text-xs">
-                  oleh <span className="font-medium text-foreground">{target.substituteTeacherName}</span>
+                  {t("by")} <span className="font-medium text-foreground">{target.substituteTeacherName}</span>
                   {target.substituteReason
-                    ? ` — ${ABSENCE_REASON_LABEL[target.substituteReason] ?? target.substituteReason}`
+                    ? ` — ${reasonLabel(target.substituteReason)}`
                     : ""}
                 </span>
               </div>
@@ -137,19 +146,19 @@ export function ReassignTutorDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Tutor Pengganti</Label>
+            <Label>{t("substituteTutor")}</Label>
             <Select
-              items={teacherOptions.map((t) => ({ value: t.id, label: t.fullName }))}
+              items={teacherOptions.map((te) => ({ value: te.id, label: te.fullName }))}
               value={substituteTeacherId}
               onValueChange={(v) => v && setSubstituteTeacherId(v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih tutor pengganti" />
+                <SelectValue placeholder={t("selectSubstituteTutor")} />
               </SelectTrigger>
               <SelectContent>
-                {teacherOptions.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.fullName}
+                {teacherOptions.map((te) => (
+                  <SelectItem key={te.id} value={te.id}>
+                    {te.fullName}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -157,19 +166,19 @@ export function ReassignTutorDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Alasan</Label>
+            <Label>{t("reason")}</Label>
             <Select
-              items={ABSENCE_REASONS.map((r) => ({ value: r, label: ABSENCE_REASON_LABEL[r] }))}
+              items={ABSENCE_REASONS.map((r) => ({ value: r, label: reasonLabel(r) }))}
               value={reason}
               onValueChange={(v) => v && setReason(v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih alasan" />
+                <SelectValue placeholder={t("selectReason")} />
               </SelectTrigger>
               <SelectContent>
                 {ABSENCE_REASONS.map((r) => (
                   <SelectItem key={r} value={r}>
-                    {ABSENCE_REASON_LABEL[r]}
+                    {reasonLabel(r)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -177,8 +186,7 @@ export function ReassignTutorDialog({
           </div>
 
           <p className="text-muted-foreground text-xs">
-            Perubahan ini hanya berlaku untuk pertemuan tanggal {dateLabel} — pertemuan
-            berikutnya otomatis kembali ke {target.currentTeacherName}.
+            {t("hint", { date: dateLabel, teacher: target.currentTeacherName })}
           </p>
         </div>
 
@@ -190,20 +198,20 @@ export function ReassignTutorDialog({
               disabled={cancel.isPending || !target.meetingId}
               onClick={handleCancelSubstitute}
             >
-              {cancel.isPending ? "Membatalkan..." : "Batalkan Substitusi"}
+              {cancel.isPending ? t("cancelling") : t("cancelSubstitution")}
             </Button>
           ) : (
             <span />
           )}
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Tutup
+              {tCommon("close")}
             </Button>
             <Button
               disabled={!substituteTeacherId || !reason || assign.isPending}
               onClick={handleSave}
             >
-              {assign.isPending ? "Menyimpan..." : "Simpan"}
+              {assign.isPending ? tCommon("saving") : tCommon("save")}
             </Button>
           </div>
         </DialogFooter>

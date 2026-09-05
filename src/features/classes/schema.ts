@@ -29,37 +29,66 @@ export const DAY_KEY: Record<string, string> = {
   "0": "sunday",
 };
 
+/** DAY_OPTIONS order (Senin..Minggu), for admin i18n displays. */
+export const DAY_VALUES = DAY_OPTIONS.map((d) => d.value);
+
+/** Sunday-first order (0..6), matching dashboard chart/list layouts. */
+export const DAY_VALUES_SUNDAY_FIRST = ["0", "1", "2", "3", "4", "5", "6"];
+
+/** Build translated { value, label } day options. Pass a t scoped to the
+ * "jadwal.day" namespace (e.g. useTranslations("jadwal.day")). */
+export function buildDayOptions(t: (key: string) => string) {
+  return DAY_VALUES.map((value) => ({ value, label: t(DAY_KEY[value]) }));
+}
+
+/** Build a value -> translated label map, in DAY_OPTIONS order. */
+export function buildDayLabel(t: (key: string) => string): Record<string, string> {
+  return Object.fromEntries(DAY_VALUES.map((v) => [v, t(DAY_KEY[v])]));
+}
+
+/** Build a value -> translated short label (first 3 chars) map. */
+export function buildDayLabelShort(t: (key: string) => string): Record<string, string> {
+  return Object.fromEntries(DAY_VALUES.map((v) => [v, t(DAY_KEY[v]).slice(0, 3)]));
+}
+
+/** Sunday-first array of translated full day names, for dashboard charts. */
+export function buildDayLabelsSundayFirst(t: (key: string) => string): string[] {
+  return DAY_VALUES_SUNDAY_FIRST.map((v) => t(DAY_KEY[v]));
+}
+
 export interface ScheduleSlot {
   dayOfWeek: number;
   startTime: string;
   endTime: string;
 }
 
-export const classSchema = z
-  .object({
-    name: z.string().min(1, "Nama kelas wajib diisi"),
-    schoolId: z.string().min(1, "Sekolah wajib dipilih"),
-    teacherId: z.string().min(1, "Teacher wajib dipilih"),
-    curriculumId: z.string().optional(),
-    room: z.string().optional(),
-    scheduleDaysOfWeek: z.array(z.string()).min(1, "Pilih minimal 1 hari"),
-    scheduleTimes: z.record(
-      z.string(),
-      z.object({
-        startTime: z.string().min(1, "Jam mulai wajib diisi"),
-        endTime: z.string().min(1, "Jam selesai wajib diisi"),
-      }),
-    ),
-  })
-  .refine(
-    (data) => data.scheduleDaysOfWeek.every((d) => data.scheduleTimes[d]?.startTime && data.scheduleTimes[d]?.endTime),
-    {
-      message: "Isi jam mulai & selesai untuk setiap hari yang dipilih di atas",
-      path: ["scheduleTimes"],
-    },
-  );
+export function buildClassSchema(t: (key: string) => string) {
+  return z
+    .object({
+      name: z.string().min(1, t("validation.nameRequired")),
+      schoolId: z.string().min(1, t("validation.schoolRequired")),
+      teacherId: z.string().min(1, t("validation.teacherRequired")),
+      curriculumId: z.string().optional(),
+      room: z.string().optional(),
+      scheduleDaysOfWeek: z.array(z.string()).min(1, t("validation.daySelectionRequired")),
+      scheduleTimes: z.record(
+        z.string(),
+        z.object({
+          startTime: z.string().min(1, t("validation.startTimeRequired")),
+          endTime: z.string().min(1, t("validation.endTimeRequired")),
+        }),
+      ),
+    })
+    .refine(
+      (data) => data.scheduleDaysOfWeek.every((d) => data.scheduleTimes[d]?.startTime && data.scheduleTimes[d]?.endTime),
+      {
+        message: t("validation.scheduleTimesRequired"),
+        path: ["scheduleTimes"],
+      },
+    );
+}
 
-export type ClassInput = z.infer<typeof classSchema>;
+export type ClassInput = z.infer<ReturnType<typeof buildClassSchema>>;
 
 export type ClassType = "REGULAR" | "TEACHER_TRAINING";
 
