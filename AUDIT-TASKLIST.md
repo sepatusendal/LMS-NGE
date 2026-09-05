@@ -1,5 +1,7 @@
 # Audit Tasklist — Hasil Deep Audit 2026-09-03
 
+**Status per 2026-09-05: BELUM 100% selesai.** Fase 0, 1, 3, 4 sudah beres dan sudah live di production (`prod` branch). Fase 2 masih ada 3 item terbuka yang sengaja ditunda karena butuh keputusan desain/produk dulu — lihat tanda ⚠️ di bawah. Checklist ini sudah diperbarui reflect status real, bukan cuma rencana lagi.
+
 Daftar kerja buat nindaklanjutin temuan dari audit backend/API, frontend UI-UX, dan alur kerja bisnis. Diurutin per prioritas eksekusi, bukan cuma per severity — beberapa item "Rendah" naik urutan karena gampang dan cepat, beberapa "Sedang" turun karena butuh keputusan produk dulu sebelum ngoding.
 
 Checklist ini berdiri sendiri dari `TASKLIST.md` yang udah ada (itu buat roadmap fitur; ini khusus perbaikan dari audit). Hapus/pindahin ke `TASKLIST.md` kalau udah kelar semua.
@@ -10,118 +12,125 @@ Legenda: 🔴 Tinggi · 🟠 Sedang · 🟡 Rendah · ⏱️ estimasi kasar
 
 ## Fase 0 — Verifikasi cepat (gak perlu ngoding, cuma cek)
 
-- [ ] 🔴 **Cek env var `TZ` di Vercel project settings.** Kalau belum ada, set `TZ=Asia/Jakarta`. Ini paling kritis karena gak keliatan dari repo dan bisa diam-diam ngerusak semua logika jadwal/keterlambatan/hari libur di sekitar tengah malam WIB. ⏱️ 5 menit
+- [ ] ⚠️ 🔴 **BELUM DICEK — Cek env var `TZ` di Vercel project settings.** Kalau belum ada, set `TZ=Asia/Jakarta`. Ini paling kritis karena gak keliatan dari repo dan bisa diam-diam ngerusak semua logika jadwal/keterlambatan/hari libur di sekitar tengah malam WIB. Ini butuh akses dashboard Vercel — gak bisa dicek/di-set dari sesi ini. ⏱️ 5 menit
   - Setelah di-set: redeploy, terus tes manual satu kelas yang jadwalnya deket jam 00:00 WIB buat mastiin hari-nya kehitung bener.
   - File terkait: `src/lib/date.ts`, `src/features/meetings/queries.ts` (`startClass()`)
 
 ---
 
-## Fase 1 — Perbaikan berdampak tinggi, effort rendah-sedang
+## Fase 1 — Perbaikan berdampak tinggi, effort rendah-sedang ✅ SELESAI (live di prod)
 
-- [ ] 🔴 **Tambahin `isAdminUser()` check di route DELETE modul kurikulum.**
+- [x] 🔴 **Tambahin `isAdminUser()` check di route DELETE modul kurikulum.**
   Samain pola sama `init/route.ts` dan `complete/route.ts` di folder yang sama.
   📁 `src/app/api/curriculum/[id]/module/route.ts` ⏱️ 15 menit
 
-- [ ] 🟠 **Tambahin self-lockout guard di `setTeacherActiveAction`**, samain kayak `setAppUserActiveAction` yang udah nyegah admin nonaktifin akun sendiri.
+- [x] 🟠 **Tambahin self-lockout guard di `setTeacherActiveAction`**, samain kayak `setAppUserActiveAction` yang udah nyegah admin nonaktifin akun sendiri.
   📁 `src/features/teachers/actions.ts:47-65` ⏱️ 15 menit
 
-- [ ] 🟠 **Validasi password baru pakai schema zod `min(6)` di kedua aksi reset password**, jangan cuma ngandelin Supabase Auth.
+- [x] 🟠 **Validasi password baru pakai schema zod `min(6)` di kedua aksi reset password**, jangan cuma ngandelin Supabase Auth.
   📁 `src/features/users/actions.ts:57-63`, `src/features/teachers/actions.ts:67-73` ⏱️ 20 menit
 
-- [ ] 🟡 **Ganti pesan error Drive yang dikirim ke client jadi pesan generik**, jangan interpolasi `driveError` mentah ke response JSON.
+- [x] 🟡 **Ganti pesan error Drive yang dikirim ke client jadi pesan generik**, jangan interpolasi `driveError` mentah ke response JSON.
   📁 `src/app/api/parent-reports/[id]/generate/route.ts:91` ⏱️ 10 menit
 
-- [ ] 🟡 **Tambahin `CRON_SECRET` ke `.env.example`** biar onboarding developer baru gak bingung.
+- [x] 🟡 **Tambahin `CRON_SECRET` ke `.env.example`** biar onboarding developer baru gak bingung.
   📁 `.env.example` ⏱️ 5 menit
 
-- [ ] 🟡 **Perbaiki bias modulo di generator password acak** — pakai rejection sampling atau `crypto.getRandomValues` yang div langsung ke ukuran alfabet secara bener.
+- [x] 🟡 **Perbaiki bias modulo di generator password acak** — pakai rejection sampling atau `crypto.getRandomValues` yang div langsung ke ukuran alfabet secara bener.
   📁 `src/components/shared/password-field.tsx:8-17` ⏱️ 20 menit
 
-- [ ] 🟡 **Hapus atau perbaiki `doCheckIn()`/`createMeeting()` dead code** — kalau emang gak dipakai, hapus aja; kalau mau dipertahanin buat fitur masa depan, samain logika `isLate` sama `startClass()`.
-  📁 `src/features/meetings/queries.ts:481-514` ⏱️ 15 menit (hapus) / 30 menit (perbaiki)
+- [x] 🟡 **Hapus atau perbaiki `doCheckIn()`/`createMeeting()` dead code** — dihapus (gak ada pemanggil di manapun).
+  📁 `src/features/meetings/queries.ts:481-514`
 
-- [ ] 🟡 **Hapus dua komponen dead code** (`dropdown-menu.tsx`, `skeleton.tsx`) kalau emang gak dipakai, atau mulai pakai `skeleton.tsx` buat loading state (lihat Fase 3).
-  📁 `src/components/ui/dropdown-menu.tsx`, `src/components/ui/skeleton.tsx` ⏱️ 10 menit
+- [x] 🟡 **Hapus dua komponen dead code** (`dropdown-menu.tsx`, `skeleton.tsx`) — dihapus, sudah diverifikasi gak ada import di manapun.
+  📁 `src/components/ui/dropdown-menu.tsx`, `src/components/ui/skeleton.tsx`
 
-- [ ] 🟡 **Tambahin `aria-current="page"` ke link navigasi aktif** di sidebar dan bottom nav.
-  📁 `src/components/shared/bottom-nav.tsx`, `src/components/shared/app-sidebar.tsx` ⏱️ 20 menit
+- [x] 🟡 **Tambahin `aria-current="page"` ke link navigasi aktif** di sidebar dan bottom nav.
+  📁 `src/components/shared/bottom-nav.tsx`, `src/components/shared/app-sidebar.tsx`
 
-- [ ] 🟠 **Bikin tombol show/hide password bisa dijangkau keyboard** — hapus `tabIndex={-1}`, pastiin ada `aria-label`.
-  📁 `src/app/(auth)/login/page.tsx:175-185`, `src/components/shared/password-field.tsx:41-49` ⏱️ 20 menit
+- [x] 🟠 **Bikin tombol show/hide password bisa dijangkau keyboard** — hapus `tabIndex={-1}`, pastiin ada `aria-label`.
+  📁 `src/app/(auth)/login/page.tsx`, `src/components/shared/password-field.tsx`
 
 ---
 
-## Fase 2 — Butuh keputusan produk dulu, baru ngoding
+## Fase 2 — Butuh keputusan produk dulu, baru ngoding ⚠️ SEBAGIAN BELUM SELESAI
 
-- [ ] 🔴 **Desain ulang alur generate laporan orang tua biar gak fail-closed pas Drive error.**
-  Opsi: (a) tetep set status `GENERATED` begitu PDF selesai dirender, upload Drive jalan async/retry di background dengan status terpisah (`DRIVE_SYNCED`/`DRIVE_PENDING`); atau (b) simpen PDF-nya di storage lain (Supabase Storage?) sebagai sumber utama, Drive cuma arsip sekunder. Diskusiin sama tim dulu sebelum ngoding — ini nyentuh desain data model.
+- [ ] ⚠️ 🔴 **BELUM DIKERJAIN — Desain ulang alur generate laporan orang tua biar gak fail-closed pas Drive error.**
+  Ini masih item paling berisiko yang tersisa dari seluruh audit — sengaja ditunda karena butuh keputusan desain data model, bukan lupa dikerjain.
+  Opsi: (a) tetep set status `GENERATED` begitu PDF selesai dirender, upload Drive jalan async/retry di background dengan status terpisah (`DRIVE_SYNCED`/`DRIVE_PENDING`); atau (b) simpen PDF-nya di storage lain (Supabase Storage?) sebagai sumber utama, Drive cuma arsip sekunder. Diskusiin sama tim dulu sebelum ngoding.
   📁 `src/app/api/parent-reports/[id]/generate/route.ts:66-94` ⏱️ 2-4 jam (setelah keputusan diambil)
 
-- [ ] 🔴 **Tambahin deteksi bentrok jadwal buat penugasan guru pengganti.**
-  Minimal: pas milih guru pengganti di `SubstitutePanel`/`ReassignTutorDialog`/`TeacherAbsenceDialog`, query jadwal guru itu di hari yang sama dan warning (atau block) kalau ada overlap waktu. Tentuin dulu: warning yang bisa di-override, atau hard block?
-  📁 `src/features/substitutes/queries.ts:159-228`, `substitute-panel.tsx`, `teacher-absence-dialog.tsx`, `reassign-tutor-dialog.tsx` ⏱️ 3-5 jam
+- [x] 🔴 **Tambahin deteksi bentrok jadwal buat penugasan guru pengganti.** Diimplementasi sebagai hard block (bukan warning) — lihat `src/lib/schedule-conflict.ts` (helper baru) yang dipakai `assignSubstituteForLessonPlan`. Sudah dites manual di staging (nolak assignment yang bentrok).
+  📁 `src/features/substitutes/queries.ts`, `src/lib/schedule-conflict.ts`
 
-- [ ] 🟠 **Tambahin deteksi bentrok jadwal yang sama buat edit jadwal default kelas** (bukan cuma substitusi). Bisa reuse logic dari item di atas.
-  📁 `src/features/classes/queries.ts:109-134` ⏱️ 2-3 jam
+- [x] 🟠 **Tambahin deteksi bentrok jadwal yang sama buat edit jadwal default kelas.** Reuse helper yang sama.
+  📁 `src/features/classes/queries.ts`
 
-- [ ] 🟠 **Perbaiki role-gating middleware buat route download laporan orang tua** biar Tutor/Coordinator yang login juga bisa akses link publiknya sendiri. Cek ulang seluruh tabel `role-routes.ts` — kemungkinan butuh entri terpisah buat path yang sengaja publik.
-  📁 `src/features/auth/role-routes.ts:31`, `src/middleware.ts:100-103` ⏱️ 1 jam
+- [x] 🟠 **Perbaiki role-gating middleware buat route download laporan orang tua.**
+  📁 `src/features/auth/role-routes.ts`
 
-- [ ] 🟠 **Perkuat proteksi lookup NIS** — tambahin CAPTCHA (misal Cloudflare Turnstile) atau lockout per-NIS setelah beberapa kali gagal, jangan cuma rate-limit per-IP.
-  📁 `src/app/api/parent-report/lookup/route.ts:8,17-23` ⏱️ 2-3 jam
+- [x] 🟠 **Perkuat proteksi lookup NIS** — rate-limit per-NIS (5x/10 menit) ditambahkan di atas rate-limit per-IP yang sudah ada.
+  📁 `src/app/api/parent-report/lookup/route.ts`
+  - [ ] ⚠️ Catatan: CAPTCHA/lockout permanen belum ditambahkan — rate-limit per-NIS mengurangi risiko tapi belum menutup total kemungkinan enumerasi oleh penyerang yang sabar.
 
-- [ ] 🟠 **Tambahin field target audiens/role di pengumuman** (`targetRoles` di schema), filter di `fetchAnnouncementsForCurrentUser` sesuai role user yang login.
-  📁 `src/features/announcements/queries.ts:52-77`, `schema.ts:15-21` ⏱️ 2-3 jam (termasuk migration + update form admin)
+- [x] 🟠 **Tambahin field target audiens/role di pengumuman** (`targetRoles`) — sudah termasuk migration Prisma, sudah di-apply ke staging **dan production**, form admin sudah ada checkbox-nya.
+  📁 `src/features/announcements/queries.ts`, `schema.ts`, `prisma/migrations/20260903000000_announcement_target_roles/`
 
-- [ ] 🟠 **Ganti Drive file sharing dari "siapapun yang punya link" jadi lebih terbatas**, khususnya buat PDF laporan orang tua dan foto check-in/out anak. Opsi: domain-restricted sharing, atau proxy signed-URL lewat aplikasi sendiri. Butuh diskusi karena nyentuh cara semua fitur Drive kerja.
+- [ ] ⚠️ 🟠 **BELUM DIKERJAIN — Ganti Drive file sharing dari "siapapun yang punya link" jadi lebih terbatas**, khususnya buat PDF laporan orang tua dan foto check-in/out anak. Opsi: domain-restricted sharing, atau proxy signed-URL lewat aplikasi sendiri. Butuh diskusi karena nyentuh cara semua fitur Drive kerja — belum disentuh sama sekali.
   📁 `src/lib/google-drive/drive-client.ts:84-91,130` ⏱️ 3-6 jam tergantung opsi
 
-- [ ] 🟡 **Pisahin peserta pelatihan guru dari tabel `students`** kalau ke depannya bakal ada dashboard yang agregat jumlah murid — bisa tambah kolom `studentType` atau tabel terpisah. Kalau belum ada urgensi, cukup dicatat sebagai known limitation.
+- [ ] ⚠️ 🟡 **BELUM DIKERJAIN — Pisahin peserta pelatihan guru dari tabel `students`** kalau ke depannya bakal ada dashboard yang agregat jumlah murid — bisa tambah kolom `studentType` atau tabel terpisah. Belum ada urgensi mendesak, tapi belum dicatat/ditindaklanjuti juga.
   📁 `scripts/seed-teacher-training.ts:183-188`, `prisma/schema.prisma`
 
 ---
 
-## Fase 3 — Frontend: error state & konsistensi UX
+## Fase 3 — Frontend: error state & konsistensi UX ⚠️ SEBAGIAN BELUM SELESAI
 
-- [ ] 🔴 **Tambahin `error.tsx` per route group** (`(admin)`, `(teacher)`, `(coordinator)`, `(auth)`) minimal versi generik dulu (ikon + pesan + tombol reload).
-  📁 `src/app/(admin)/error.tsx`, dst. ⏱️ 1-2 jam
+- [x] 🔴 **Tambahin `error.tsx` per route group** (`(admin)`, `(teacher)`, `(coordinator)`, `(auth)`).
+  📁 `src/app/(admin)/error.tsx`, dst.
 
-- [ ] 🔴 **Thread `isError`/`error` ke `DataTable`** dan tambahin state error yang beda dari state kosong (ikon + pesan + tombol retry). Ini yang paling berdampak karena dipakai di hampir semua halaman admin.
-  📁 `src/components/shared/data-table.tsx` ⏱️ 1-2 jam untuk komponennya
+- [x] 🔴 **Thread `isError`/`error` ke `DataTable`** dan tambahin state error yang beda dari state kosong.
+  📁 `src/components/shared/data-table.tsx`
 
-- [ ] 🔴 **Update semua halaman list admin/coordinator buat destructure dan pass `isError`** ke `DataTable` (setelah komponennya siap nerima prop itu).
-  📁 Semua `src/app/(admin)/*/page.tsx`, `src/app/(coordinator)/monitoring/page.tsx` ⏱️ 2-3 jam total (mekanis, banyak file kecil)
+- [x] 🔴 **Update halaman list admin/coordinator yang PAKAI `DataTable`** buat pass `isError`.
+  📁 classes, teacher-training, curriculum, holidays, schools (+ detail), users, students, teachers
+  - [ ] ⚠️ Catatan: `announcements`, `parent-reports`, `reports`, `substitutes`, dan `(coordinator)/monitoring` **gak** pakai komponen `DataTable` (tabel hand-rolled sendiri) — halaman-halaman ini belum dapet perbaikan error-state yang sama. Kalau mau konsisten, itu kerjaan tambahan yang belum masuk sini.
 
-- [ ] 🟠 **Contek pola loading/error/empty dari `absensi/page.tsx` ke `OverviewStats` dan widget dashboard lain**, jangan cuma fallback ke `0`/string kosong pas gagal fetch.
-  📁 `src/features/dashboard/overview-stats.tsx:56-59`, widget dashboard lainnya ⏱️ 1-2 jam
+- [x] 🟠 **Contek pola loading/error/empty dari `absensi/page.tsx` ke widget dashboard** — diterapkan sebagai indikator "gagal memuat" inline di semua widget dashboard.
+  📁 `src/features/dashboard/*.tsx`
 
-- [ ] 🟠 **Perbaiki navigasi mobile admin** — tambahin drawer/hamburger buat sidebar penuh di mobile, atau minimal tambahin 5 halaman yang sekarang gak keakses (Pengumuman, Hari Libur, Laporan, Laporan Orang Tua, Pelatihan Guru) ke suatu tempat yang kejangkau dari HP.
+- [ ] ⚠️ 🟠 **BELUM DIKERJAIN — Perbaiki navigasi mobile admin.** 5 halaman (Pengumuman, Hari Libur, Laporan, Laporan Orang Tua, Pelatihan Guru) masih gak keakses dari HP.
   📁 `src/app/(admin)/layout.tsx` (`buildMobileNav`), `src/components/shared/mobile-topbar.tsx` ⏱️ 2-4 jam
 
-- [ ] 🟡 **Perbaiki N+1 di `fetchHandoverSummary`** — gabungin jadi 1-2 query pakai embedded select, samain pola yang udah dipakai di `resolveEffectiveTeacherForDate` di file yang sama.
+- [ ] ⚠️ 🟡 **BELUM DIKERJAIN — Perbaiki N+1 di `fetchHandoverSummary`.**
   📁 `src/features/substitutes/queries.ts:252-344` ⏱️ 1 jam
 
 ---
 
-## Fase 4 — i18n & konsistensi visual (lebih besar, rencanain sebagai proyek sendiri)
+## Fase 4 — i18n & konsistensi visual ✅ SELESAI (live di prod)
 
-- [ ] 🔴 **Putusin scope rollout i18n ke admin/coordinator/login.** Kalau iya: tambahin namespace baru di `messages/en.json`/`id.json` per halaman admin, ganti semua string hardcode pakai `useTranslations`. Kalau nggak buat semua sekaligus, urutin: `DataTable` dulu (dipakai semua tabel admin) → login → dashboard → sisanya.
-  📁 `messages/en.json`, `messages/id.json`, `src/components/shared/data-table.tsx`, semua `src/app/(admin)/**`, `src/app/(coordinator)/**`, `src/app/(auth)/login/page.tsx` ⏱️ 1-2 hari kerja, tergantung scope
+- [x] 🔴 **Rollout i18n ke admin/coordinator/login.** 926 key, parity terjaga di `en.json`/`id.json`. Language switcher aktif di admin, coordinator, dan login (sempat kelewat di rollout awal, ditambahin belakangan setelah ketauan pas testing manual).
+  📁 `messages/en.json`, `messages/id.json`, `src/components/shared/data-table.tsx`, semua `src/app/(admin)/**`, `src/app/(coordinator)/**`, `src/app/(auth)/login/page.tsx`
+  - [ ] ⚠️ Catatan: toast di level hook (`use-*.ts`) dan pesan error server sengaja dibiarkan Indonesia-only — belum ada pola i18n untuk non-komponen.
 
-- [ ] 🟡 **Rapiin 12 file yang hardcode warna hex** jadi pakai CSS variable/design token yang ada di `globals.css`.
-  📁 lihat daftar di laporan audit ⏱️ 2-3 jam
+- [x] 🟡 **Rapiin hardcode warna hex** jadi pakai CSS variable/design token.
+  📁 ~15 file, lihat commit `9235a8d`
 
-- [ ] 🟡 **Putusin: aktifin dark mode beneran, atau hapus infrastruktur yang gak kepake.** Kalau aktifin: tambah `ThemeProvider` dari `next-themes` + toggle UI. Kalau hapus: bersihin blok `.dark` di `globals.css` biar gak nyesatin developer lain.
-  📁 `globals.css`, `src/app/providers.tsx` ⏱️ 30 menit (hapus) / 3-4 jam (aktifin beneran, termasuk perbaikan Fase 4 warna hex dulu)
+- [x] 🟡 **Aktifin dark mode beneran** — `ThemeProvider` (next-themes) + toggle Terang/Gelap/Sistem di sidebar & Pengaturan. Sempat ada hydration mismatch di toggle-nya sendiri, sudah kefix dan keverifikasi ilang di staging.
+  📁 `globals.css`, `src/app/providers.tsx`, `src/components/shared/theme-switcher.tsx`
 
 ---
 
-## Ringkasan urutan yang disaranin
+## Sisa PR — yang beneran masih kepending per 2026-09-05
 
-1. **Hari ini:** Fase 0 (cek `TZ`) + item-item cepat di Fase 1 yang ≤ 20 menit.
-2. **Minggu ini:** Sisa Fase 1, plus dua item paling kritis di Fase 2 (fix Drive-blocking parent report, cek bentrok substitusi) — keduanya butuh diskusi desain singkat sebelum ngoding.
-3. **Sprint berikutnya:** Fase 3 (error state) — ini yang paling kerasa buat pengguna admin sehari-hari.
-4. **Rencanain terpisah:** Fase 4 (i18n admin) — ukurannya cukup besar buat jadi proyek sendiri, jangan diselipin di sprint yang udah padat.
+1. **🔴 Cek `TZ` di Vercel dashboard** — belum diverifikasi sama sekali, gak bisa dicek dari sesi coding. Paling gampang tapi paling gak boleh kelewat.
+2. **🔴 Redesain alur parent-report biar gak fail-closed pas Drive error** — item risiko tertinggi yang tersisa, sengaja ditunda karena nyentuh keputusan data model.
+3. **🟠 Drive file sharing masih "siapapun yang punya link"** — termasuk foto anak & PDF laporan orang tua.
+4. **🟠 Navigasi mobile admin** — 5 halaman masih gak keakses dari HP.
+5. **🟡 Halaman non-`DataTable` (announcements/parent-reports/reports/substitutes/monitoring)** belum dapet error-state yang konsisten kayak halaman lain.
+6. **🟡 N+1 di `fetchHandoverSummary`**, **CAPTCHA/lockout NIS**, **pemisahan data teacher-training dari tabel students** — cleanup kecil, gak mendesak.
+
+Semua yang lain di checklist ini **sudah selesai dan live di production** (branch `prod`, per commit `f9bae67`).
 
 Item yang sengaja **gak** dimasukin tasklist ini (dicatat di laporan audit sebagai desain yang disengaja, bukan bug):
 - Lesson plan gak punya versioning/approval workflow — sesuai spek produk.
