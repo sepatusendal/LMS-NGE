@@ -1,34 +1,42 @@
 import { z } from "zod";
 
-const feePerMeetingField = z
-  .string()
-  .optional()
-  .refine((v) => !v || /^\d+$/.test(v), {
-    message: "Fee harus angka Rupiah bulat, tidak boleh negatif",
+function buildFeePerMeetingField(t: (key: string) => string) {
+  return z
+    .string()
+    .optional()
+    .refine((v) => !v || /^\d+$/.test(v), {
+      message: t("validation.feeInvalid"),
+    });
+}
+
+export function buildTeacherCreateSchema(t: (key: string) => string) {
+  return z.object({
+    fullName: z.string().min(1, t("validation.nameRequired")),
+    email: z.string().min(1, t("validation.emailRequired")).email(t("validation.emailInvalid")),
+    tutorId: z.string().optional(),
+    feePerMeeting: buildFeePerMeetingField(t),
+    phone: z.string().optional(),
+    password: z.string().min(6, t("validation.passwordMin")),
   });
+}
+export type TeacherCreateInput = z.infer<ReturnType<typeof buildTeacherCreateSchema>>;
 
-export const teacherCreateSchema = z.object({
-  fullName: z.string().min(1, "Nama wajib diisi"),
-  email: z.string().min(1, "Email wajib diisi").email("Format email salah"),
-  tutorId: z.string().optional(),
-  feePerMeeting: feePerMeetingField,
-  phone: z.string().optional(),
-  password: z.string().min(6, "Password minimal 6 karakter"),
-});
-export type TeacherCreateInput = z.infer<typeof teacherCreateSchema>;
+export function buildTeacherEditSchema(t: (key: string) => string) {
+  return z.object({
+    fullName: z.string().min(1, t("validation.nameRequired")),
+    tutorId: z.string().optional(),
+    feePerMeeting: buildFeePerMeetingField(t),
+    phone: z.string().optional(),
+  });
+}
+export type TeacherEditInput = z.infer<ReturnType<typeof buildTeacherEditSchema>>;
 
-export const teacherEditSchema = z.object({
-  fullName: z.string().min(1, "Nama wajib diisi"),
-  tutorId: z.string().optional(),
-  feePerMeeting: feePerMeetingField,
-  phone: z.string().optional(),
-});
-export type TeacherEditInput = z.infer<typeof teacherEditSchema>;
-
-export const teacherResetPasswordSchema = z.object({
-  password: z.string().min(6, "Password minimal 6 karakter"),
-});
-export type TeacherResetPasswordInput = z.infer<typeof teacherResetPasswordSchema>;
+export function buildTeacherResetPasswordSchema(t: (key: string) => string) {
+  return z.object({
+    password: z.string().min(6, t("validation.passwordMin")),
+  });
+}
+export type TeacherResetPasswordInput = z.infer<ReturnType<typeof buildTeacherResetPasswordSchema>>;
 
 export interface Teacher {
   id: string;

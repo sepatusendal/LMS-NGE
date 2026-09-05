@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { UserRoundX } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ClassStatusRow } from "@/features/monitoring/schema";
@@ -37,7 +38,7 @@ export function TeacherDayList({
   date,
   rows,
   isLoading,
-  emptyLabel = "Tidak ada kelas terjadwal di tanggal ini.",
+  emptyLabel,
   limit,
 }: {
   date: string;
@@ -47,6 +48,8 @@ export function TeacherDayList({
   /** Cap the number of teachers shown (e.g. for a compact dashboard panel). */
   limit?: number;
 }) {
+  const t = useTranslations("admin.substitutes.dayList");
+  const tCommon = useTranslations("common");
   // Track just the id, not the whole group object — deriving the group
   // fresh from `groups` on every render (instead of freezing a snapshot at
   // click time) means the open dialog picks up live data after a mutation
@@ -61,17 +64,17 @@ export function TeacherDayList({
     : null;
 
   if (isLoading) {
-    return <p className="text-muted-foreground text-sm">Memuat data...</p>;
+    return <p className="text-muted-foreground text-sm">{tCommon("dataTable.loading")}</p>;
   }
 
   if (groups.length === 0) {
-    return <p className="text-muted-foreground text-sm">{emptyLabel}</p>;
+    return <p className="text-muted-foreground text-sm">{emptyLabel ?? t("emptyDefault")}</p>;
   }
 
   return (
     <div className="space-y-2">
       {visibleGroups.map((g) => {
-        const classCountLabel = `${g.classes.length} kelas`;
+        const classCountLabel = t("classCount", { count: g.classes.length });
         return (
           <div
             key={g.teacherId}
@@ -82,7 +85,7 @@ export function TeacherDayList({
                 <p className="truncate text-sm font-medium">{g.teacherName}</p>
                 {g.hasSubstitute && (
                   <Badge variant="outline" className="shrink-0 text-[10px]">
-                    Ada pengganti
+                    {t("hasSubstitute")}
                   </Badge>
                 )}
               </div>
@@ -98,18 +101,18 @@ export function TeacherDayList({
               variant="outline"
               className="shrink-0 gap-1.5"
               disabled={g.allHoliday}
-              title={g.allHoliday ? "Semua kelas guru ini libur di tanggal ini" : undefined}
+              title={g.allHoliday ? t("allHolidayTitle") : undefined}
               onClick={() => setActiveTeacherId(g.teacherId)}
             >
               <UserRoundX className="size-3.5" />
-              Tandai Absen
+              {t("markAbsent")}
             </Button>
           </div>
         );
       })}
       {limit && groups.length > limit && (
         <p className="text-muted-foreground text-xs">
-          +{groups.length - limit} guru lain terjadwal hari ini.
+          {t("moreTeachers", { count: groups.length - limit })}
         </p>
       )}
 

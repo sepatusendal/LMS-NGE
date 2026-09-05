@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Megaphone, Trash2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -12,11 +13,12 @@ import {
   useSetAnnouncementActive,
 } from "@/features/announcements/use-announcements";
 import { AnnouncementFormDialog } from "@/features/announcements/announcement-form-dialog";
-import { ANNOUNCEMENT_THEME, TARGET_ROLE_LABEL } from "@/features/announcements/schema";
+import { ANNOUNCEMENT_THEME, buildTargetRoleLabel, buildThemeLabel } from "@/features/announcements/schema";
 import type { Announcement } from "@/features/announcements/schema";
 import { LoadingState } from "@/components/shared/loading-state";
 
 export default function AnnouncementsPage() {
+  const t = useTranslations("admin.announcements");
   const { data: announcements, isLoading } = useAnnouncementsAdmin();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -26,14 +28,12 @@ export default function AnnouncementsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Pengumuman</h1>
-          <p className="text-muted-foreground text-sm">
-            Kirim pengumuman yang muncul sebagai banner di dashboard semua user.
-          </p>
+          <h1 className="text-xl font-semibold">{t("title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
           <Megaphone className="size-4" />
-          Buat Pengumuman
+          {t("createTitle")}
         </Button>
       </div>
 
@@ -42,7 +42,7 @@ export default function AnnouncementsPage() {
       {!isLoading && (!announcements || announcements.length === 0) && (
         <div className="flex flex-col items-center justify-center rounded-3xl bg-white px-6 py-16 text-center shadow-sm">
           <Megaphone className="text-muted-foreground/40 mb-3 size-10" />
-          <p className="text-muted-foreground text-sm">Belum ada pengumuman yang pernah dibuat.</p>
+          <p className="text-muted-foreground text-sm">{t("empty")}</p>
         </div>
       )}
 
@@ -60,9 +60,13 @@ export default function AnnouncementsPage() {
 }
 
 function AnnouncementRow({ announcement: a, expired }: { announcement: Announcement; expired: boolean }) {
+  const t = useTranslations("admin.announcements");
+  const locale = useLocale();
   const setActive = useSetAnnouncementActive();
   const deleteAnnouncement = useDeleteAnnouncement();
   const theme = ANNOUNCEMENT_THEME[a.type];
+  const themeLabel = useMemo(() => buildThemeLabel(t), [t])[a.type];
+  const targetRoleLabel = useMemo(() => buildTargetRoleLabel(t), [t]);
   const Illustration = theme.Illustration;
   const live = a.isActive && !expired;
 
@@ -79,35 +83,37 @@ function AnnouncementRow({ announcement: a, expired }: { announcement: Announcem
               className="text-[10px]"
               style={{ borderColor: theme.swatch, color: theme.swatch }}
             >
-              {theme.label}
+              {themeLabel}
             </Badge>
             <Badge variant="secondary" className="text-[10px]">
               {a.displayMode === "POPUP" ? "Pop-up" : "Banner"}
             </Badge>
             {expired && (
               <Badge variant="secondary" className="text-[10px]">
-                Kadaluarsa
+                {t("expired")}
               </Badge>
             )}
             <Badge variant="outline" className="text-[10px]">
               {a.targetRoles.length === 0
-                ? "Semua peran"
-                : a.targetRoles.map((r) => TARGET_ROLE_LABEL[r]).join(", ")}
+                ? t("allRoles")
+                : a.targetRoles.map((r) => targetRoleLabel[r]).join(", ")}
             </Badge>
           </div>
           <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">{a.body}</p>
           <p className="text-muted-foreground/70 mt-2 text-xs">
-            Oleh {a.createdByName} ·{" "}
-            {new Date(a.createdAt).toLocaleDateString("id-ID", {
+            {t("byAuthor", { author: a.createdByName })} ·{" "}
+            {new Date(a.createdAt).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", {
               day: "numeric",
               month: "short",
               year: "numeric",
             })}
             {a.expiresAt &&
-              ` · Berlaku sampai ${new Date(a.expiresAt).toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
+              ` · ${t("validUntil", {
+                date: new Date(a.expiresAt).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                }),
               })}`}
           </p>
         </div>
@@ -124,13 +130,13 @@ function AnnouncementRow({ announcement: a, expired }: { announcement: Announcem
             className="text-muted-foreground hover:text-destructive size-7"
             disabled={deleteAnnouncement.isPending}
             onClick={() => {
-              if (window.confirm(`Hapus pengumuman "${a.title}"? Tidak bisa dibatalkan.`)) {
+              if (window.confirm(t("deleteConfirm", { title: a.title }))) {
                 deleteAnnouncement.mutate(a.id);
               }
             }}
           >
             <Trash2 className="size-4" />
-            <span className="sr-only">Hapus</span>
+            <span className="sr-only">{t("delete")}</span>
           </Button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertCircle, UserCheck } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -18,28 +19,39 @@ import { fetchTeacherAttendanceDetail } from "./queries";
 import type { TeacherAttendanceDetailRow } from "./queries";
 import type { TeacherAttendanceRow } from "./schema";
 
-const SUMMARY_COLUMNS: ExcelColumn<TeacherAttendanceRow>[] = [
-  { header: "Teacher", key: "teacher", width: 24, value: (r) => r.teacherName },
-  { header: "Sesi", key: "sessions", width: 10, value: (r) => r.totalSessions },
-  { header: "Tepat Waktu", key: "onTime", width: 14, value: (r) => r.onTimeCount },
-  { header: "Terlambat", key: "late", width: 12, value: (r) => r.lateCount },
-  { header: "% Tepat Waktu", key: "rate", width: 16, value: (r) => r.onTimeRate },
-];
+function buildSummaryColumns(t: (key: string) => string): ExcelColumn<TeacherAttendanceRow>[] {
+  return [
+    { header: "Teacher", key: "teacher", width: 24, value: (r) => r.teacherName },
+    { header: t("sessions"), key: "sessions", width: 10, value: (r) => r.totalSessions },
+    { header: t("onTime"), key: "onTime", width: 14, value: (r) => r.onTimeCount },
+    { header: t("late"), key: "late", width: 12, value: (r) => r.lateCount },
+    { header: t("onTimePercent"), key: "rate", width: 16, value: (r) => r.onTimeRate },
+  ];
+}
 
-const DETAIL_COLUMNS: ExcelColumn<TeacherAttendanceDetailRow>[] = [
-  {
-    header: "Tanggal Check-in",
-    key: "date",
-    width: 20,
-    value: (r) => new Date(r.checkInDate).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" }),
-  },
-  { header: "Teacher yang Hadir", key: "teacher", width: 24, value: (r) => r.teacherName },
-  { header: "Terlambat", key: "late", width: 12, value: (r) => (r.isLate ? "Ya" : "Tidak") },
-  { header: "Sebagai Pengganti", key: "substitute", width: 16, value: (r) => (r.isSubstitute ? "Ya" : "-") },
-  { header: "Menggantikan", key: "originalTeacher", width: 24, value: (r) => r.originalTeacherName ?? "-" },
-];
+function buildDetailColumns(
+  t: (key: string) => string,
+  tCommon: (key: string) => string,
+  locale: string,
+): ExcelColumn<TeacherAttendanceDetailRow>[] {
+  return [
+    {
+      header: t("checkInDate"),
+      key: "date",
+      width: 20,
+      value: (r) => new Date(r.checkInDate).toLocaleString(locale === "en" ? "en-US" : "id-ID", { dateStyle: "medium", timeStyle: "short" }),
+    },
+    { header: t("teacherPresent"), key: "teacher", width: 24, value: (r) => r.teacherName },
+    { header: t("late"), key: "late", width: 12, value: (r) => (r.isLate ? tCommon("yes") : tCommon("no")) },
+    { header: t("asSubstitute"), key: "substitute", width: 16, value: (r) => (r.isSubstitute ? tCommon("yes") : "-") },
+    { header: t("substitutingFor"), key: "originalTeacher", width: 24, value: (r) => r.originalTeacherName ?? "-" },
+  ];
+}
 
 export function TeacherAttendanceTable({ days = 30 }: { days?: number }) {
+  const t = useTranslations("admin.dashboard");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const { data, isLoading, isError } = useTeacherAttendance(days);
 
   return (
@@ -48,7 +60,7 @@ export function TeacherAttendanceTable({ days = 30 }: { days?: number }) {
         <CardTitle className="flex items-center justify-between gap-2 text-sm">
           <span className="flex items-center gap-2">
             <UserCheck className="size-4" style={{ color: "var(--chart-5)" }} />
-            Absensi Teacher/Tutor ({days} hari terakhir)
+            {t("teacherAttendanceTitle", { days })}
           </span>
           <ExportExcelButton
             filename={`absensi-teacher-${days}hari`}
@@ -56,8 +68,8 @@ export function TeacherAttendanceTable({ days = 30 }: { days?: number }) {
             getSheets={async () => {
               const detail = await fetchTeacherAttendanceDetail(days);
               return [
-                { name: "Ringkasan", columns: SUMMARY_COLUMNS, rows: data ?? [] },
-                { name: "Detail Check-in", columns: DETAIL_COLUMNS, rows: detail },
+                { name: t("summary"), columns: buildSummaryColumns(t), rows: data ?? [] },
+                { name: t("checkInDetail"), columns: buildDetailColumns(t, tCommon, locale), rows: detail },
               ];
             }}
           />
@@ -67,22 +79,22 @@ export function TeacherAttendanceTable({ days = 30 }: { days?: number }) {
         {isError ? (
           <p className="text-destructive flex items-center gap-1.5 text-sm">
             <AlertCircle className="size-4" />
-            Gagal memuat data absensi teacher.
+            {t("failedToLoadTeacherAttendance")}
           </p>
         ) : isLoading ? (
-          <p className="text-muted-foreground text-sm">Memuat data...</p>
+          <p className="text-muted-foreground text-sm">{t("loadingData")}</p>
         ) : !data || data.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Belum ada data check-in.</p>
+          <p className="text-muted-foreground text-sm">{t("noCheckInData")}</p>
         ) : (
           <div className="max-h-80 overflow-y-auto rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Teacher</TableHead>
-                  <TableHead className="text-right">Sesi</TableHead>
-                  <TableHead className="text-right">Tepat Waktu</TableHead>
-                  <TableHead className="text-right">Terlambat</TableHead>
-                  <TableHead className="text-right">% Tepat Waktu</TableHead>
+                  <TableHead className="text-right">{t("sessions")}</TableHead>
+                  <TableHead className="text-right">{t("onTime")}</TableHead>
+                  <TableHead className="text-right">{t("late")}</TableHead>
+                  <TableHead className="text-right">{t("onTimePercent")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider, type AbstractIntlMessages } from "next-intl";
+import { ThemeProvider } from "next-themes";
 
 export function Providers({
   children,
@@ -26,8 +27,10 @@ export function Providers({
   );
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </NextIntlClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <NextIntlClientProvider locale={locale} messages={messages}>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      </NextIntlClientProvider>
+    </ThemeProvider>
   );
 }

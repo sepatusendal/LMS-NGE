@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -44,12 +45,16 @@ interface TeacherComplianceRow {
   worstDaysLeft: number;
 }
 
-const TEACHER_COMPLIANCE_COLUMNS: ExcelColumn<TeacherComplianceRow>[] = [
-  { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
-  { header: "Jumlah Kelas Telat", key: "count", width: 18, value: (r) => r.lateCount },
-  { header: "Kelas Paling Telat", key: "worstClass", width: 22, value: (r) => r.worstClassName },
-  { header: "Sisa/Telat Hari", key: "worstDays", width: 16, value: (r) => r.worstDaysLeft },
-];
+function buildTeacherComplianceColumns(
+  t: (key: string) => string,
+): ExcelColumn<TeacherComplianceRow>[] {
+  return [
+    { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
+    { header: t("lateClassCount"), key: "count", width: 18, value: (r) => r.lateCount },
+    { header: t("worstClass"), key: "worstClass", width: 22, value: (r) => r.worstClassName },
+    { header: t("daysLeftOrLate"), key: "worstDays", width: 16, value: (r) => r.worstDaysLeft },
+  ];
+}
 
 interface ReportComplianceRow {
   className: string;
@@ -60,26 +65,57 @@ interface ReportComplianceRow {
   daysSinceLastReport: number | null;
 }
 
-const LP_COMPLIANCE_COLUMNS: ExcelColumn<LessonPlanComplianceRow>[] = [
-  { header: "Kelas", key: "class", width: 22, value: (r) => r.name },
-  { header: "Tipe Kelas", key: "type", width: 16, value: (r) => (r.classType === "TEACHER_TRAINING" ? "Guru & Staff" : "Reguler") },
-  { header: "Sekolah", key: "school", width: 22, value: (r) => r.schoolName },
-  { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
-  { header: "Lesson Plan Terjauh", key: "latestDate", width: 18, value: (r) => (r.latestDate ? parseLocalDate(r.latestDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "Belum ada") },
-  { header: "Sisa Hari", key: "daysLeft", width: 12, value: (r) => r.daysLeft },
-  { header: "Status", key: "status", width: 14, value: (r) => (r.isCompliant ? "Patuh" : "Perlu Perhatian") },
-];
+function buildLpComplianceColumns(
+  t: (key: string) => string,
+  tCommon: (key: string) => string,
+  locale: string,
+): ExcelColumn<LessonPlanComplianceRow>[] {
+  return [
+    { header: t("class"), key: "class", width: 22, value: (r) => r.name },
+    { header: t("classTypeHeader"), key: "type", width: 16, value: (r) => (r.classType === "TEACHER_TRAINING" ? t("classTypeTraining") : t("classTypeRegular")) },
+    { header: tCommon("school"), key: "school", width: 22, value: (r) => r.schoolName },
+    { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
+    {
+      header: t("furthestLessonPlan"),
+      key: "latestDate",
+      width: 18,
+      value: (r) =>
+        r.latestDate
+          ? parseLocalDate(r.latestDate).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short", year: "numeric" })
+          : t("none"),
+    },
+    { header: t("daysLeft"), key: "daysLeft", width: 12, value: (r) => r.daysLeft },
+    { header: tCommon("status"), key: "status", width: 14, value: (r) => (r.isCompliant ? t("compliant") : t("needsAttention")) },
+  ];
+}
 
-const REPORT_COMPLIANCE_COLUMNS: ExcelColumn<ReportComplianceRow>[] = [
-  { header: "Kelas", key: "class", width: 22, value: (r) => r.className },
-  { header: "Sekolah", key: "school", width: 22, value: (r) => r.schoolName },
-  { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
-  { header: "Total Report", key: "total", width: 14, value: (r) => r.totalReports },
-  { header: "Report Terakhir", key: "latest", width: 18, value: (r) => (r.latestReportDate ? parseLocalDate(r.latestReportDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "Belum pernah") },
-  { header: "Hari Sejak Report Terakhir", key: "daysSince", width: 20, value: (r) => r.daysSinceLastReport ?? "-" },
-];
+function buildReportComplianceColumns(
+  t: (key: string) => string,
+  tCommon: (key: string) => string,
+  locale: string,
+): ExcelColumn<ReportComplianceRow>[] {
+  return [
+    { header: t("class"), key: "class", width: 22, value: (r) => r.className },
+    { header: tCommon("school"), key: "school", width: 22, value: (r) => r.schoolName },
+    { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
+    { header: t("totalReports"), key: "total", width: 14, value: (r) => r.totalReports },
+    {
+      header: t("lastReport"),
+      key: "latest",
+      width: 18,
+      value: (r) =>
+        r.latestReportDate
+          ? parseLocalDate(r.latestReportDate).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short", year: "numeric" })
+          : t("never"),
+    },
+    { header: t("daysSinceLastReport"), key: "daysSince", width: 20, value: (r) => r.daysSinceLastReport ?? "-" },
+  ];
+}
 
 export function ComplianceAlert() {
+  const t = useTranslations("admin.complianceAlert");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const { data: classes, isLoading: classesLoading } = useClasses();
   const { data: lessonPlans, isLoading: plansLoading } = useLessonPlans();
   const { data: reports } = useAdminReports();
@@ -155,36 +191,38 @@ export function ComplianceAlert() {
   }, [classes, reports]);
 
   const isLoading = classesLoading || plansLoading;
+  const daysLeftLabel = (days: number) =>
+    days < 0 ? t("lateByDays", { days: Math.abs(days) }) : t("daysLeftShort", { days });
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <AlertTriangle className="text-destructive size-4" />
-          Kepatuhan Lesson Plan
+          {t("title")}
           {!isLoading && (
             <span className="text-muted-foreground ml-auto text-xs font-normal">
-              {nonCompliant.length}/{classes?.length ?? 0} kelas perlu perhatian
+              {t("needAttentionCount", { count: nonCompliant.length, total: classes?.length ?? 0 })}
             </span>
           )}
           <ExportExcelButton
             filename="kepatuhan-lesson-plan-report"
             disabled={isLoading}
             sheets={[
-              { name: "Kepatuhan Lesson Plan", columns: LP_COMPLIANCE_COLUMNS, rows: allCompliance },
-              { name: "Rekap per Teacher", columns: TEACHER_COMPLIANCE_COLUMNS, rows: byTeacher },
-              { name: "Kepatuhan Daily Teaching Report", columns: REPORT_COMPLIANCE_COLUMNS, rows: reportCompliance },
+              { name: t("title"), columns: buildLpComplianceColumns(t, tCommon, locale), rows: allCompliance },
+              { name: t("recapPerTeacher"), columns: buildTeacherComplianceColumns(t), rows: byTeacher },
+              { name: t("dailyReportComplianceTitle"), columns: buildReportComplianceColumns(t, tCommon, locale), rows: reportCompliance },
             ]}
           />
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <p className="text-muted-foreground text-sm">Memuat data...</p>
+          <p className="text-muted-foreground text-sm">{tCommon("dataTable.loading")}</p>
         ) : nonCompliant.length === 0 ? (
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle className="size-4" style={{ color: "var(--status-good)" }} />
-            <span>Semua kelas aman — lesson plan tersedia min. 2 minggu ke depan.</span>
+            <span>{t("allSafe")}</span>
           </div>
         ) : (
           <div className="space-y-3">
@@ -197,7 +235,7 @@ export function ComplianceAlert() {
                   view === "class" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
                 )}
               >
-                Per Kelas
+                {t("perClass")}
               </button>
               <button
                 type="button"
@@ -207,7 +245,7 @@ export function ComplianceAlert() {
                   view === "teacher" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
                 )}
               >
-                Per Teacher
+                {t("perTeacher")}
               </button>
             </div>
 
@@ -216,9 +254,9 @@ export function ComplianceAlert() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Kelas</TableHead>
+                      <TableHead>{t("class")}</TableHead>
                       <TableHead>Teacher</TableHead>
-                      <TableHead className="text-right">Status</TableHead>
+                      <TableHead className="text-right">{tCommon("status")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -228,7 +266,7 @@ export function ComplianceAlert() {
                           {c.name}
                           {c.classType === "TEACHER_TRAINING" && (
                             <Badge variant="secondary" className="ml-1.5 text-[10px]">
-                              Guru & Staff
+                              {t("classTypeTraining")}
                             </Badge>
                           )}
                         </TableCell>
@@ -237,11 +275,7 @@ export function ComplianceAlert() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Badge variant={c.latestDate === null ? "destructive" : "secondary"} className="text-xs">
-                            {c.latestDate === null
-                              ? "Belum ada"
-                              : c.daysLeft < 0
-                                ? `Telat ${Math.abs(c.daysLeft)}h`
-                                : `${c.daysLeft}h lagi`}
+                            {c.latestDate === null ? t("none") : daysLeftLabel(c.daysLeft)}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -253,21 +287,21 @@ export function ComplianceAlert() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Teacher</TableHead>
-                      <TableHead className="text-right">Jumlah Kelas Telat</TableHead>
-                      <TableHead className="text-right">Paling Telat</TableHead>
+                      <TableHead className="text-right">{t("lateClassCount")}</TableHead>
+                      <TableHead className="text-right">{t("worstClass")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {byTeacher.map((t) => (
-                      <TableRow key={t.teacherId}>
-                        <TableCell className="font-medium whitespace-nowrap">{t.teacherName}</TableCell>
+                    {byTeacher.map((row) => (
+                      <TableRow key={row.teacherId}>
+                        <TableCell className="font-medium whitespace-nowrap">{row.teacherName}</TableCell>
                         <TableCell className="text-right">
-                          <Badge variant={t.lateCount > 1 ? "destructive" : "secondary"} className="text-xs">
-                            {t.lateCount} kelas
+                          <Badge variant={row.lateCount > 1 ? "destructive" : "secondary"} className="text-xs">
+                            {t("classCount", { count: row.lateCount })}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-right whitespace-nowrap text-xs">
-                          {t.worstClassName} ({t.worstDaysLeft < 0 ? `Telat ${Math.abs(t.worstDaysLeft)}h` : `${t.worstDaysLeft}h lagi`})
+                          {row.worstClassName} ({daysLeftLabel(row.worstDaysLeft)})
                         </TableCell>
                       </TableRow>
                     ))}

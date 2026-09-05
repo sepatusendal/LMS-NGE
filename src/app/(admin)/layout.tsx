@@ -17,45 +17,49 @@ import {
   Presentation,
   Megaphone,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { AppSidebar, type NavItem } from "@/components/shared/app-sidebar";
 import { MobileTopbar } from "@/components/shared/mobile-topbar";
 import { BottomNav } from "@/components/shared/bottom-nav";
 import type { BottomNavItem } from "@/components/shared/bottom-nav";
 import { useComplianceCount } from "@/features/lesson-plans/use-compliance-count";
 
-function buildAdminNavItems(lessonPlanBadge: number): NavItem[] {
+function buildAdminNavItems(
+  t: (key: string) => string,
+  lessonPlanBadge: number,
+): NavItem[] {
   return [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/substitutes", label: "Guru Pengganti", icon: UserRoundX },
+    { href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
+    { href: "/substitutes", label: t("substitutes"), icon: UserRoundX },
     {
-      label: "Management",
+      label: t("management"),
       icon: Building2,
       children: [
-        { href: "/schools", label: "Daftar Sekolah", icon: Building2 },
-        { href: "/students", label: "Siswa", icon: Users },
-        { href: "/classes", label: "Kelas", icon: BookOpen },
-        { href: "/teacher-training", label: "Kelas Guru & Staff", icon: Presentation },
-        { href: "/lesson-plans", label: "Lesson Plan", icon: CalendarDays, badge: lessonPlanBadge },
-        { href: "/reports", label: "Daily Teaching Report", icon: NotebookTabs },
-        { href: "/parent-reports", label: "Laporan Orang Tua", icon: FileHeart },
-        { href: "/holidays", label: "Hari Libur", icon: CalendarOff },
+        { href: "/schools", label: t("schools"), icon: Building2 },
+        { href: "/students", label: t("students"), icon: Users },
+        { href: "/classes", label: t("classes"), icon: BookOpen },
+        { href: "/teacher-training", label: t("teacherTraining"), icon: Presentation },
+        { href: "/lesson-plans", label: t("lessonPlans"), icon: CalendarDays, badge: lessonPlanBadge },
+        { href: "/reports", label: t("reports"), icon: NotebookTabs },
+        { href: "/parent-reports", label: t("parentReports"), icon: FileHeart },
+        { href: "/holidays", label: t("holidays"), icon: CalendarOff },
       ],
     },
-    { href: "/teachers", label: "Teacher", icon: GraduationCap },
-    { href: "/users", label: "Admin & Coordinator", icon: ShieldUser },
-    { href: "/curriculum", label: "Kurikulum", icon: ListChecks },
-    { href: "/announcements", label: "Pengumuman", icon: Megaphone },
-    { href: "/settings", label: "Pengaturan", icon: Settings },
+    { href: "/teachers", label: t("teachers"), icon: GraduationCap },
+    { href: "/users", label: t("users"), icon: ShieldUser },
+    { href: "/curriculum", label: t("curriculum"), icon: ListChecks },
+    { href: "/announcements", label: t("announcements"), icon: Megaphone },
+    { href: "/settings", label: t("settings"), icon: Settings },
   ];
 }
 
-function buildMobileNav(managementBadge: number): BottomNavItem[] {
+function buildMobileNav(t: (key: string) => string, managementBadge: number): BottomNavItem[] {
   return [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/substitutes", label: "Pengganti", icon: UserRoundX },
-    { href: "/schools", label: "Management", icon: Building2, badge: managementBadge },
-    { href: "/teachers", label: "Teacher", icon: GraduationCap },
-    { href: "/settings", label: "Atur", icon: Settings },
+    { href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
+    { href: "/substitutes", label: t("substitutesShort"), icon: UserRoundX },
+    { href: "/schools", label: t("management"), icon: Building2, badge: managementBadge },
+    { href: "/teachers", label: t("teachers"), icon: GraduationCap },
+    { href: "/settings", label: t("settingsShort"), icon: Settings },
   ];
 }
 
@@ -64,16 +68,18 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const t = useTranslations("admin.nav");
+  const tRole = useTranslations("common.roles");
   const { count: lessonPlanBadge } = useComplianceCount();
 
   return (
     <div className="flex min-h-dvh w-full flex-col md:flex-row">
-      <MobileTopbar roleLabel="Admin" />
-      <AppSidebar roleLabel="Admin" navItems={buildAdminNavItems(lessonPlanBadge)} />
-      <main className="flex-1 overflow-x-auto bg-[#f5f6fb] p-4 pb-20 md:p-8 md:pb-8">
+      <MobileTopbar roleLabel={tRole("admin")} />
+      <AppSidebar roleLabel={tRole("admin")} navItems={buildAdminNavItems(t, lessonPlanBadge)} />
+      <main className="flex-1 overflow-x-auto bg-muted p-4 pb-20 md:p-8 md:pb-8">
         {children}
       </main>
-      <BottomNav items={buildMobileNav(lessonPlanBadge)} />
+      <BottomNav items={buildMobileNav(t, lessonPlanBadge)} />
     </div>
   );
 }

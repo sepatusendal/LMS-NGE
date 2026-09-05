@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -22,8 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  curriculumSchema,
-  REPORT_FORMAT_LABEL,
+  buildCurriculumSchema,
+  buildReportFormatLabel,
   REPORT_FORMAT_OPTIONS,
   type Curriculum,
   type CurriculumInput,
@@ -39,9 +40,14 @@ export function CurriculumFormDialog({
   onOpenChange: (open: boolean) => void;
   curriculum?: Curriculum;
 }) {
+  const t = useTranslations("admin.curriculum");
+  const tCommon = useTranslations("common");
   const isEdit = Boolean(curriculum);
   const createCurriculum = useCreateCurriculum();
   const updateCurriculum = useUpdateCurriculum();
+
+  const curriculumSchema = useMemo(() => buildCurriculumSchema(t), [t]);
+  const REPORT_FORMAT_LABEL = useMemo(() => buildReportFormatLabel(t), [t]);
 
   const {
     register,
@@ -78,12 +84,12 @@ export function CurriculumFormDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? "Edit Kurikulum" : "Tambah Kurikulum"}
+            {isEdit ? t("editTitle") : t("addTitle")}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nama Kurikulum</Label>
+            <Label htmlFor="name">{t("nameHeader")}</Label>
             <Input id="name" {...register("name")} />
             {errors.name && (
               <p className="text-destructive text-sm">{errors.name.message}</p>
@@ -93,7 +99,7 @@ export function CurriculumFormDialog({
             <Label htmlFor="gradeLevel">Grade Level</Label>
             <Input
               id="gradeLevel"
-              placeholder="mis. Elementary 3"
+              placeholder={t("gradeLevelPlaceholder")}
               {...register("gradeLevel")}
             />
             {errors.gradeLevel && (
@@ -103,11 +109,11 @@ export function CurriculumFormDialog({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Deskripsi</Label>
+            <Label htmlFor="description">{t("description")}</Label>
             <Textarea id="description" {...register("description")} />
           </div>
           <div className="space-y-2">
-            <Label>Format Laporan</Label>
+            <Label>{t("reportFormatLabel")}</Label>
             <Controller
               control={control}
               name="reportFormat"
@@ -130,13 +136,11 @@ export function CurriculumFormDialog({
                 </Select>
               )}
             />
-            <p className="text-muted-foreground text-xs">
-              Albright pakai field teaching report yang beda (Unit &amp; Topic, Activities, Resources) dari format standar NUFA.
-            </p>
+            <p className="text-muted-foreground text-xs">{t("reportFormatHint")}</p>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Menyimpan..." : "Simpan"}
+              {isSubmitting ? tCommon("saving") : tCommon("save")}
             </Button>
           </DialogFooter>
         </form>

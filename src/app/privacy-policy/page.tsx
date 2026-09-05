@@ -92,7 +92,7 @@ export default function PrivacyPolicyPage() {
           href="https://developers.google.com/terms/api-services-user-data-policy"
           target="_blank"
           rel="noreferrer"
-          className="text-[#4b60ac] underline"
+          className="text-primary underline"
         >
           Google API Services User Data Policy
         </a>
@@ -124,7 +124,7 @@ export default function PrivacyPolicyPage() {
       </h2>
       <p className="mb-6">
         Questions about this policy or your data can be sent to{" "}
-        <a href="mailto:ecoursenufaglobal@gmail.com" className="text-[#4b60ac] underline">
+        <a href="mailto:ecoursenufaglobal@gmail.com" className="text-primary underline">
           ecoursenufaglobal@gmail.com
         </a>
         .

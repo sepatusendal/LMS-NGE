@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/data-table";
 import { useTeachers } from "@/features/teachers/use-teachers";
@@ -10,6 +11,8 @@ import { TeacherEditDialog } from "@/features/teachers/teacher-edit-dialog";
 import type { Teacher } from "@/features/teachers/schema";
 
 export default function TeachersPage() {
+  const t = useTranslations("admin.teachers");
+  const tCommon = useTranslations("common");
   const { data: teachers, isLoading, isError } = useTeachers();
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -17,23 +20,21 @@ export default function TeachersPage() {
 
   const columns = useMemo(
     () =>
-      createTeacherColumns((teacher) => {
+      createTeacherColumns(t, tCommon, (teacher) => {
         setEditing(teacher);
         setEditOpen(true);
       }),
-    [],
+    [t, tCommon],
   );
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Teacher</h1>
-          <p className="text-muted-foreground text-sm">
-            Kelola akun dan data teacher NGE.
-          </p>
+          <h1 className="text-xl font-semibold">{t("title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>Tambah Teacher</Button>
+        <Button onClick={() => setCreateOpen(true)}>{t("addTitle")}</Button>
       </div>
 
       <DataTable
@@ -41,7 +42,7 @@ export default function TeachersPage() {
         data={teachers ?? []}
         isLoading={isLoading}
         isError={isError}
-        searchPlaceholder="Cari teacher..."
+        searchPlaceholder={t("searchPlaceholder")}
       />
 
       <TeacherCreateDialog open={createOpen} onOpenChange={setCreateOpen} />

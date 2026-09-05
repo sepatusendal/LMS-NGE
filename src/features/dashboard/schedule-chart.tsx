@@ -12,11 +12,10 @@ import {
   YAxis,
 } from "recharts";
 import { AlertCircle, Clock, MapPin, CalendarRange } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useClasses } from "@/features/classes/use-classes";
-import { getSlotForDay, type Class, type ScheduleSlot } from "@/features/classes/schema";
-
-const DAY_LABELS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+import { buildDayLabelsSundayFirst, getSlotForDay, type Class, type ScheduleSlot } from "@/features/classes/schema";
 
 type ClassWithSlot = Class & { slot: ScheduleSlot | null };
 
@@ -24,11 +23,14 @@ function ScheduleTooltip({
   active,
   payload,
   getClassesForDay,
+  dayLabels,
 }: {
   active?: boolean;
   payload?: Array<{ payload: { dayIndex: number } }>;
   getClassesForDay: (dayIndex: number) => ClassWithSlot[];
+  dayLabels: string[];
 }) {
+  const t = useTranslations("admin.dashboard");
   if (!active || !payload || payload.length === 0) return null;
   const dayIndex = payload[0].payload.dayIndex;
   const list = getClassesForDay(dayIndex);
@@ -36,10 +38,10 @@ function ScheduleTooltip({
   return (
     <div className="max-w-[260px] rounded-lg border bg-popover p-2.5 text-popover-foreground shadow-md">
       <p className="mb-1.5 text-xs font-semibold">
-        {DAY_LABELS[dayIndex]} · {list.length} kelas
+        {dayLabels[dayIndex]} · {t("classCount", { count: list.length })}
       </p>
       {list.length === 0 ? (
-        <p className="text-muted-foreground text-xs">Tidak ada kelas terjadwal.</p>
+        <p className="text-muted-foreground text-xs">{t("noClassesScheduled")}</p>
       ) : (
         <div className="max-h-52 space-y-1.5 overflow-y-auto pr-1">
           {list.map((c) => (
@@ -69,6 +71,9 @@ function ScheduleTooltip({
 }
 
 export function ScheduleChart() {
+  const t = useTranslations("admin.dashboard");
+  const tDay = useTranslations("jadwal.day");
+  const dayLabels = useMemo(() => buildDayLabelsSundayFirst(tDay), [tDay]);
   const { data: classes, isLoading, isError } = useClasses();
   // Deferred to client-only: `new Date().getDay()` reads the viewer's local
   // clock, which can differ from the server's at render time (e.g. near the
@@ -87,8 +92,8 @@ export function ScheduleChart() {
     (classes ?? [])
       .filter((c) => c.isActive)
       .forEach((c) => c.scheduleDaysOfWeek.forEach((d) => (counts[d] += 1)));
-    return DAY_LABELS.map((label, i) => ({ day: label.slice(0, 3), dayIndex: i, Kelas: counts[i] }));
-  }, [classes]);
+    return dayLabels.map((label, i) => ({ day: label.slice(0, 3), dayIndex: i, Kelas: counts[i] }));
+  }, [classes, dayLabels]);
 
   // Kelas untuk satu hari (diurutkan per jam) — dihitung on-demand per hari
   // yang di-hover/di-tap, bukan semua 7 hari sekaligus di setiap render.
@@ -107,11 +112,11 @@ export function ScheduleChart() {
       <CardHeader className="flex-row items-center justify-between pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <CalendarRange className="size-4" style={{ color: "var(--chart-2)" }} />
-          Distribusi Jadwal Mingguan
+          {t("weeklyScheduleDistribution")}
         </CardTitle>
         <span className="text-muted-foreground flex items-center gap-1 text-[11px]">
           <span className="bg-primary size-2 rounded-full" />
-          hari ini
+          {t("todayLower")}
         </span>
       </CardHeader>
       <CardContent>
@@ -119,10 +124,10 @@ export function ScheduleChart() {
           {isError ? (
             <div className="flex h-full flex-col items-center justify-center gap-1.5">
               <AlertCircle className="text-destructive size-5" />
-              <p className="text-muted-foreground text-sm">Gagal memuat data jadwal.</p>
+              <p className="text-muted-foreground text-sm">{t("failedToLoadSchedule")}</p>
             </div>
           ) : isLoading ? (
-            <p className="text-muted-foreground text-sm">Memuat data...</p>
+            <p className="text-muted-foreground text-sm">{t("loadingData")}</p>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
@@ -131,7 +136,7 @@ export function ScheduleChart() {
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                 <Tooltip
                   cursor={{ fill: "color-mix(in oklab, var(--foreground) 6%, transparent)" }}
-                  content={<ScheduleTooltip getClassesForDay={getClassesForDay} />}
+                  content={<ScheduleTooltip getClassesForDay={getClassesForDay} dayLabels={dayLabels} />}
                 />
                 <Bar
                   dataKey="Kelas"
@@ -158,13 +163,13 @@ export function ScheduleChart() {
         {!isLoading && !isError && effectiveSelectedDay !== null && (
           <div className="mt-3 border-t pt-3">
             <p className="text-muted-foreground mb-2 text-xs font-medium">
-              {selectedList.length} kelas pada hari {DAY_LABELS[effectiveSelectedDay]}
-              {effectiveSelectedDay === today && " (hari ini)"}
-              {selectedDay !== null && " · tap lagi untuk tutup"}
+              {t("classesOnDay", { count: selectedList.length, day: dayLabels[effectiveSelectedDay] })}
+              {effectiveSelectedDay === today && ` (${t("todayLower")})`}
+              {selectedDay !== null && ` · ${t("tapAgainToClose")}`}
             </p>
             {selectedList.length === 0 ? (
               <p className="text-muted-foreground py-2 text-center text-xs">
-                Tidak ada kelas terjadwal pada hari {DAY_LABELS[effectiveSelectedDay]}.
+                {t("noClassesScheduledOnDay", { day: dayLabels[effectiveSelectedDay] })}
               </p>
             ) : (
               <div className="max-h-52 space-y-1.5 overflow-y-auto pr-1">

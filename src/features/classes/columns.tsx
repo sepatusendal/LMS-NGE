@@ -2,13 +2,15 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { formatScheduleSlots, type Class, type ClassType } from "./schema";
+import { buildDayLabelShort, formatScheduleSlots, type Class, type ClassType } from "./schema";
 import { useSetClassActive } from "./use-classes";
 
 function ActiveToggleCell({ classItem, classType }: { classItem: Class; classType: ClassType }) {
+  const tCommon = useTranslations("common");
   const setActive = useSetClassActive(classType);
   return (
     <div className="flex items-center gap-2">
@@ -20,20 +22,24 @@ function ActiveToggleCell({ classItem, classType }: { classItem: Class; classTyp
         }
       />
       <Badge variant={classItem.isActive ? "default" : "secondary"}>
-        {classItem.isActive ? "Aktif" : "Nonaktif"}
+        {classItem.isActive ? tCommon("active") : tCommon("inactive")}
       </Badge>
     </div>
   );
 }
 
 export function createClassColumns(
+  t: (key: string) => string,
+  tCommon: (key: string) => string,
+  tDay: (key: string) => string,
   onEdit: (classItem: Class) => void,
   classType: ClassType = "REGULAR",
 ): ColumnDef<Class>[] {
+  const dayLabels = buildDayLabelShort(tDay);
   return [
     {
       accessorKey: "name",
-      header: "Nama Kelas",
+      header: t("nameHeader"),
       cell: ({ row }) => (
         <Link
           href={`/classes/${row.original.id}`}
@@ -43,21 +49,21 @@ export function createClassColumns(
         </Link>
       ),
     },
-    { accessorKey: "schoolName", header: "Sekolah" },
+    { accessorKey: "schoolName", header: tCommon("school") },
     { accessorKey: "teacherName", header: "Teacher" },
     {
       accessorKey: "room",
-      header: "Ruang",
+      header: t("room"),
       cell: ({ row }) => row.original.room || "-",
     },
     {
       id: "schedule",
-      header: "Jadwal",
-      cell: ({ row }) => formatScheduleSlots(row.original.scheduleSlots),
+      header: t("schedule"),
+      cell: ({ row }) => formatScheduleSlots(row.original.scheduleSlots, dayLabels),
     },
     {
       accessorKey: "isActive",
-      header: "Status",
+      header: tCommon("status"),
       cell: ({ row }) => <ActiveToggleCell classItem={row.original} classType={classType} />,
     },
     {
@@ -65,7 +71,7 @@ export function createClassColumns(
       header: "",
       cell: ({ row }) => (
         <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
-          Edit
+          {tCommon("edit")}
         </Button>
       ),
     },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/data-table";
 import { useAppUsers } from "@/features/users/use-users";
@@ -10,6 +11,8 @@ import { UserEditDialog } from "@/features/users/user-edit-dialog";
 import type { AppUser } from "@/features/users/schema";
 
 export default function UsersPage() {
+  const t = useTranslations("admin.users");
+  const tCommon = useTranslations("common");
   const { data: users, isLoading, isError } = useAppUsers();
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -17,23 +20,21 @@ export default function UsersPage() {
 
   const columns = useMemo(
     () =>
-      createUserColumns((user) => {
+      createUserColumns(tCommon, (user) => {
         setEditing(user);
         setEditOpen(true);
       }),
-    [],
+    [tCommon],
   );
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Admin & Coordinator</h1>
-          <p className="text-muted-foreground text-sm">
-            Kelola akun Admin dan Coordinator NUFA.
-          </p>
+          <h1 className="text-xl font-semibold">{t("title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>Tambah Akun</Button>
+        <Button onClick={() => setCreateOpen(true)}>{t("addAccount")}</Button>
       </div>
 
       <DataTable
@@ -41,7 +42,7 @@ export default function UsersPage() {
         data={users ?? []}
         isLoading={isLoading}
         isError={isError}
-        searchPlaceholder="Cari akun..."
+        searchPlaceholder={t("searchPlaceholder")}
       />
 
       <UserCreateDialog open={createOpen} onOpenChange={setCreateOpen} />

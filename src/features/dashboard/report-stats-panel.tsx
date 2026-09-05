@@ -10,11 +10,13 @@ import {
   YAxis,
 } from "recharts";
 import { AlertCircle, TrendingDown, TrendingUp, Minus, NotebookText } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { parseLocalDate } from "@/lib/date";
 import { useReportStats } from "./use-dashboard";
 
 function DeltaBadge({ current, previous }: { current: number; previous: number }) {
+  const t = useTranslations("admin.dashboard");
   if (previous === 0 && current === 0) return null;
   const diff = current - previous;
   const pct = previous === 0 ? 100 : Math.round((diff / previous) * 100);
@@ -23,13 +25,9 @@ function DeltaBadge({ current, previous }: { current: number; previous: number }
   return (
     <span className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${color}`}>
       <Icon className="size-3" />
-      {diff === 0 ? "sama" : `${pct > 0 ? "+" : ""}${pct}%`}
+      {diff === 0 ? t("same") : `${pct > 0 ? "+" : ""}${pct}%`}
     </span>
   );
-}
-
-function formatDateLabel(dateStr: string) {
-  return parseLocalDate(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
 }
 
 const OBJECTIVES_COLOR: Record<string, string> = {
@@ -39,24 +37,38 @@ const OBJECTIVES_COLOR: Record<string, string> = {
 };
 
 export function ReportStatsPanel({ days = 14 }: { days?: number }) {
+  const t = useTranslations("admin.dashboard");
+  const locale = useLocale();
   const { data, isLoading, isError } = useReportStats(days);
+
+  const formatDateLabel = (dateStr: string) =>
+    parseLocalDate(dateStr).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short" });
+
+  // The query layer emits fixed Indonesian strings as stable data keys
+  // (also used for OBJECTIVES_COLOR lookup) — translate only the label
+  // shown to the user, not the key itself.
+  const objectivesLabelText: Record<string, string> = {
+    Tercapai: t("objectivesAchieved"),
+    Sebagian: t("objectivesPartial"),
+    Belum: t("objectivesNotAchieved"),
+  };
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
           <NotebookText className="size-4" style={{ color: "var(--status-good)" }} />
-          Daily Teaching Report ({days} hari terakhir)
+          {t("dailyTeachingReportTitle", { days })}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {isError ? (
           <div className="flex flex-col items-center justify-center gap-1.5 py-6">
             <AlertCircle className="text-destructive size-5" />
-            <p className="text-muted-foreground text-sm">Gagal memuat data report.</p>
+            <p className="text-muted-foreground text-sm">{t("failedToLoadReports")}</p>
           </div>
         ) : isLoading || !data ? (
-          <p className="text-muted-foreground text-sm">Memuat data...</p>
+          <p className="text-muted-foreground text-sm">{t("loadingData")}</p>
         ) : (
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-2">
@@ -67,7 +79,7 @@ export function ReportStatsPanel({ days = 14 }: { days?: number }) {
                 <p className="text-xl font-semibold" style={{ color: "var(--chart-1)" }}>
                   {data.totalCompletedMeetings}
                 </p>
-                <p className="text-muted-foreground text-xs">Kelas Selesai</p>
+                <p className="text-muted-foreground text-xs">{t("classesCompleted")}</p>
               </div>
               <div
                 className="rounded-lg p-3 text-center"
@@ -76,9 +88,9 @@ export function ReportStatsPanel({ days = 14 }: { days?: number }) {
                 <p className="text-xl font-semibold" style={{ color: "var(--status-good)" }}>
                   {data.totalReportsSubmitted}
                 </p>
-                <p className="text-muted-foreground text-xs">Report Masuk</p>
+                <p className="text-muted-foreground text-xs">{t("reportsIn")}</p>
                 <DeltaBadge current={data.totalReportsSubmitted} previous={data.previousReportsSubmitted} />
-                <p className="text-muted-foreground/70 text-[10px]">vs {days} hari sebelumnya</p>
+                <p className="text-muted-foreground/70 text-[10px]">{t("vsPreviousDays", { days })}</p>
               </div>
               <div
                 className="rounded-lg p-3 text-center"
@@ -95,7 +107,7 @@ export function ReportStatsPanel({ days = 14 }: { days?: number }) {
                 >
                   {data.totalPendingReports}
                 </p>
-                <p className="text-muted-foreground text-xs">Belum Ada Report</p>
+                <p className="text-muted-foreground text-xs">{t("noReportYet")}</p>
               </div>
             </div>
 
@@ -115,7 +127,7 @@ export function ReportStatsPanel({ days = 14 }: { days?: number }) {
             </div>
 
             <div>
-              <p className="text-muted-foreground mb-1.5 text-xs">Tujuan Pembelajaran Tercapai</p>
+              <p className="text-muted-foreground mb-1.5 text-xs">{t("learningObjectivesAchieved")}</p>
               <div className="flex h-2 overflow-hidden rounded-full bg-muted">
                 {data.objectives.map((o) => {
                   const total = data.objectives.reduce((sum, x) => sum + x.value, 0) || 1;
@@ -136,7 +148,7 @@ export function ReportStatsPanel({ days = 14 }: { days?: number }) {
                       className="size-2 rounded-full"
                       style={{ backgroundColor: OBJECTIVES_COLOR[o.label] }}
                     />
-                    {o.label}: {o.value}
+                    {objectivesLabelText[o.label] ?? o.label}: {o.value}
                   </span>
                 ))}
               </div>

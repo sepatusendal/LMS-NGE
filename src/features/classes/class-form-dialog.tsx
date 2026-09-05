@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,7 @@ import {
 import { useSchools } from "@/features/schools/use-schools";
 import { useTeachers } from "@/features/teachers/use-teachers";
 import { useCurriculums } from "@/features/curriculum/use-curriculum";
-import { DAY_OPTIONS, classSchema, type Class, type ClassInput, type ClassType } from "./schema";
+import { buildClassSchema, buildDayOptions, type Class, type ClassInput, type ClassType } from "./schema";
 import { useCreateClass, useUpdateClass } from "./use-classes";
 
 export function ClassFormDialog({
@@ -38,12 +39,18 @@ export function ClassFormDialog({
   classItem?: Class;
   classType?: ClassType;
 }) {
+  const t = useTranslations("admin.classes");
+  const tCommon = useTranslations("common");
+  const tDay = useTranslations("jadwal.day");
   const isEdit = Boolean(classItem);
   const { data: schools } = useSchools();
   const { data: teachers } = useTeachers();
   const { data: curriculums } = useCurriculums();
   const createClass = useCreateClass(classType);
   const updateClass = useUpdateClass(classType);
+
+  const classSchema = useMemo(() => buildClassSchema(t), [t]);
+  const DAY_OPTIONS = useMemo(() => buildDayOptions(tDay), [tDay]);
 
   const {
     register,
@@ -86,8 +93,8 @@ export function ClassFormDialog({
   }
 
   function onInvalid() {
-    toast.error("Ada field yang belum lengkap", {
-      description: "Cek bagian yang ditandai merah di form.",
+    toast.error(t("incompleteFieldsTitle"), {
+      description: t("incompleteFieldsDescription"),
     });
   }
 
@@ -100,14 +107,14 @@ export function ClassFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Kelas" : "Tambah Kelas"}</DialogTitle>
+          <DialogTitle>{isEdit ? t("editTitle") : t("addTitle")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nama Kelas</Label>
+            <Label htmlFor="name">{t("nameHeader")}</Label>
             <Input
               id="name"
-              placeholder="mis. Grade 5A"
+              placeholder={t("namePlaceholder")}
               aria-invalid={!!errors.name}
               {...register("name")}
             />
@@ -117,7 +124,7 @@ export function ClassFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Sekolah</Label>
+            <Label>{tCommon("school")}</Label>
             <Controller
               control={control}
               name="schoolId"
@@ -128,7 +135,7 @@ export function ClassFormDialog({
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className="w-full" aria-invalid={!!errors.schoolId}>
-                    <SelectValue placeholder="Pilih sekolah" />
+                    <SelectValue placeholder={t("selectSchool")} />
                   </SelectTrigger>
                   <SelectContent>
                     {schools?.map((s) => (
@@ -154,17 +161,17 @@ export function ClassFormDialog({
               name="teacherId"
               render={({ field }) => (
                 <Select
-                  items={teachers?.map((t) => ({ value: t.id, label: t.fullName }))}
+                  items={teachers?.map((te) => ({ value: te.id, label: te.fullName }))}
                   value={field.value}
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className="w-full" aria-invalid={!!errors.teacherId}>
-                    <SelectValue placeholder="Pilih teacher" />
+                    <SelectValue placeholder={t("selectTeacher")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {teachers?.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.fullName}
+                    {teachers?.map((te) => (
+                      <SelectItem key={te.id} value={te.id}>
+                        {te.fullName}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -179,7 +186,7 @@ export function ClassFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Kurikulum (opsional)</Label>
+            <Label>{t("curriculumOptional")}</Label>
             <Controller
               control={control}
               name="curriculumId"
@@ -190,7 +197,7 @@ export function ClassFormDialog({
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih kurikulum" />
+                    <SelectValue placeholder={t("selectCurriculum")} />
                   </SelectTrigger>
                   <SelectContent>
                     {curriculums?.map((c) => (
@@ -205,12 +212,12 @@ export function ClassFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="room">Ruang (opsional)</Label>
-            <Input id="room" placeholder="mis. 2 A" {...register("room")} />
+            <Label htmlFor="room">{t("roomOptional")}</Label>
+            <Input id="room" placeholder={t("roomPlaceholder")} {...register("room")} />
           </div>
 
           <div className="space-y-2">
-            <Label>Hari (kelas bisa ketemu lebih dari 1x/minggu)</Label>
+            <Label>{t("daysLabel")}</Label>
             <div className="grid grid-cols-4 gap-2">
               {DAY_OPTIONS.map((d) => (
                 <label
@@ -236,7 +243,7 @@ export function ClassFormDialog({
 
           {orderedSelectedDays.length > 0 && (
             <div className="space-y-2">
-              <Label>Jam per hari</Label>
+              <Label>{t("timePerDay")}</Label>
               <div className="space-y-2">
                 {orderedSelectedDays.map((d) => (
                   <div key={d.value} className="flex items-center gap-2">
@@ -273,7 +280,7 @@ export function ClassFormDialog({
 
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Menyimpan..." : "Simpan"}
+              {isSubmitting ? tCommon("saving") : tCommon("save")}
             </Button>
           </DialogFooter>
         </form>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Building2, Users, GraduationCap, BookOpen, AlertCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { ProgressBar } from "@/components/shared/progress-bar";
 import { useSchools } from "@/features/schools/use-schools";
 import { useStudents } from "@/features/students/use-students";
@@ -24,6 +25,7 @@ function StatBlock({
   color: string;
   isError?: boolean;
 }) {
+  const t = useTranslations("admin.dashboard");
   return (
     <div
       className="relative overflow-hidden rounded-xl border p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
@@ -37,7 +39,7 @@ function StatBlock({
           {isError ? (
             <p className="text-destructive mt-1 flex items-center gap-1 text-xs font-medium">
               <AlertCircle className="size-3.5" />
-              Gagal memuat
+              {t("failedToLoad")}
             </p>
           ) : (
             <p className="mt-1 text-2xl font-bold leading-none tracking-tight">{value}</p>
@@ -64,6 +66,7 @@ function StatBlock({
  * aktif — sekolah, siswa, teacher, kelas. Metrik turunan (kelas hari ini,
  * kepatuhan lesson plan, estimasi pendapatan) dipindah ke `overview-sidebar`. */
 export function OverviewStats() {
+  const t = useTranslations("admin.dashboard");
   const { data: schools, isError: schoolsError } = useSchools();
   const { data: students, isError: studentsError } = useStudents();
   const { data: teachers, isError: teachersError } = useTeachers();
@@ -83,36 +86,36 @@ export function OverviewStats() {
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       <StatBlock
         icon={Building2}
-        label="Sekolah Aktif"
+        label={t("activeSchools")}
         value={String(activeSchools)}
-        sub={`${activeSchools} dari ${schools?.length ?? 0} sekolah`}
+        sub={t("ofTotalSchools", { active: activeSchools, total: schools?.length ?? 0 })}
         progress={schools?.length ? (activeSchools / schools.length) * 100 : 0}
         color="var(--chart-1)"
         isError={schoolsError}
       />
       <StatBlock
         icon={Users}
-        label="Siswa Aktif"
+        label={t("activeStudents")}
         value={String(activeStudents)}
-        sub={`${activeStudents} dari ${students?.length ?? 0} siswa`}
+        sub={t("ofTotalStudents", { active: activeStudents, total: students?.length ?? 0 })}
         progress={students?.length ? (activeStudents / students.length) * 100 : 0}
         color="var(--chart-3)"
         isError={studentsError}
       />
       <StatBlock
         icon={GraduationCap}
-        label="Teacher Aktif"
+        label={t("activeTeachers")}
         value={String(activeTeachers)}
-        sub={`${activeTeachers} dari ${teachers?.length ?? 0} teacher`}
+        sub={t("ofTotalTeachers", { active: activeTeachers, total: teachers?.length ?? 0 })}
         progress={teachers?.length ? (activeTeachers / teachers.length) * 100 : 0}
         color="var(--chart-5)"
         isError={teachersError}
       />
       <StatBlock
         icon={BookOpen}
-        label="Kelas Siswa Aktif"
+        label={t("activeStudentClasses")}
         value={String(activeClasses)}
-        sub={`${activeClasses} dari ${regularClasses.length} kelas · ${activeTeacherTrainingClasses} kelas guru & staff`}
+        sub={t("ofTotalClasses", { active: activeClasses, total: regularClasses.length, training: activeTeacherTrainingClasses })}
         progress={regularClasses.length ? (activeClasses / regularClasses.length) * 100 : 0}
         color="var(--chart-2)"
         isError={classesError}

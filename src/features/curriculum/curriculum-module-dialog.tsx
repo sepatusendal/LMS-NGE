@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { FileText, Trash2, Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,8 @@ export function CurriculumModuleDialog({
   onOpenChange: (open: boolean) => void;
   curriculum?: Curriculum;
 }) {
+  const t = useTranslations("admin.curriculum.moduleDialog");
+  const tCommon = useTranslations("common");
   const inputRef = useRef<HTMLInputElement>(null);
   const upload = useUploadCurriculumModule();
   const remove = useDeleteCurriculumModule();
@@ -64,11 +67,8 @@ export function CurriculumModuleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Modul — {curriculum.name}</DialogTitle>
-          <DialogDescription>
-            File PDF ini jadi acuan tutor saat bikin lesson plan untuk kelas
-            di program ini. Tersimpan di Google Drive, bukan di database.
-          </DialogDescription>
+          <DialogTitle>{t("titlePrefix")} — {curriculum.name}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
@@ -112,7 +112,7 @@ export function CurriculumModuleDialog({
                 />
               </div>
               <p className="text-muted-foreground text-center text-xs">
-                Mengupload... {progress}%
+                {t("uploading", { progress })}
               </p>
             </div>
           ) : (
@@ -124,7 +124,7 @@ export function CurriculumModuleDialog({
             >
               <Upload className="size-4" />
               <span className="ml-1.5">
-                {hasModule ? "Ganti Modul (PDF)" : "Upload Modul (PDF)"}
+                {hasModule ? t("replaceModule") : t("uploadModule")}
               </span>
             </Button>
           )}
@@ -139,7 +139,7 @@ export function CurriculumModuleDialog({
 
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            Tutup
+            {tCommon("close")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Users, BookOpen, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,9 @@ import type { Student } from "@/features/students/schema";
 import type { Class } from "@/features/classes/schema";
 
 export default function SchoolDetailPage() {
+  const t = useTranslations("admin.schools.detail");
+  const tStudents = useTranslations("admin.students");
+  const tCommon = useTranslations("common");
   const params = useParams<{ id: string }>();
   const schoolId = params.id;
   const { data: schools } = useSchools();
@@ -35,20 +39,20 @@ export default function SchoolDetailPage() {
 
   const studentColumns = useMemo(
     () =>
-      createStudentColumns((student) => {
+      createStudentColumns(tStudents, tCommon, (student) => {
         setEditingStudent(student);
         setStudentDialogOpen(true);
       }),
-    [],
+    [tStudents, tCommon],
   );
 
   if (!school) {
     return (
       <div className="space-y-4">
         <Link href="/schools" className="text-muted-foreground text-sm hover:underline">
-          ← Kembali ke Sekolah
+          {t("back")}
         </Link>
-        <p className="text-muted-foreground text-sm">Memuat data sekolah...</p>
+        <p className="text-muted-foreground text-sm">{t("loading")}</p>
       </div>
     );
   }
@@ -57,7 +61,7 @@ export default function SchoolDetailPage() {
     <div className="space-y-6">
       <div>
         <Link href="/schools" className="text-muted-foreground text-sm hover:underline">
-          ← Kembali ke Sekolah
+          {t("back")}
         </Link>
         <div className="mt-2 flex items-start justify-between">
           <div>
@@ -67,12 +71,12 @@ export default function SchoolDetailPage() {
             )}
             {school.picName && (
               <p className="text-muted-foreground text-xs mt-1">
-                PIC: {school.picName}{school.picPhone ? ` (${school.picPhone})` : ""}
+                {t("pic")}: {school.picName}{school.picPhone ? ` (${school.picPhone})` : ""}
               </p>
             )}
           </div>
           <Badge variant={school.isActive ? "default" : "secondary"}>
-            {school.isActive ? "Aktif" : "Nonaktif"}
+            {school.isActive ? tCommon("active") : tCommon("inactive")}
           </Badge>
         </div>
       </div>
@@ -87,7 +91,7 @@ export default function SchoolDetailPage() {
           }`}
         >
           <Users className="size-4" />
-          Siswa
+          {t("tabStudents")}
           {students && (
             <span className="bg-muted rounded-full px-1.5 text-xs">{students.length}</span>
           )}
@@ -101,7 +105,7 @@ export default function SchoolDetailPage() {
           }`}
         >
           <BookOpen className="size-4" />
-          Kelas
+          {t("tabClasses")}
           <span className="bg-muted rounded-full px-1.5 text-xs">{schoolClasses.length}</span>
         </button>
       </div>
@@ -110,7 +114,7 @@ export default function SchoolDetailPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-muted-foreground text-sm">
-              Daftar siswa di {school.name}
+              {t("studentsInSchool", { school: school.name })}
             </p>
             <Button
               size="sm"
@@ -120,7 +124,7 @@ export default function SchoolDetailPage() {
               }}
             >
               <Plus className="size-4" />
-              Tambah Siswa
+              {t("addStudent")}
             </Button>
           </div>
           <DataTable
@@ -128,7 +132,7 @@ export default function SchoolDetailPage() {
             data={students ?? []}
             isLoading={studentsLoading}
             isError={studentsError}
-            searchPlaceholder="Cari nama atau NIS..."
+            searchPlaceholder={t("searchStudentPlaceholder")}
           />
           <StudentFormDialog
             open={studentDialogOpen}
@@ -143,7 +147,7 @@ export default function SchoolDetailPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-muted-foreground text-sm">
-              Daftar kelas di {school.name}
+              {t("classesInSchool", { school: school.name })}
             </p>
             <Button
               size="sm"
@@ -153,13 +157,13 @@ export default function SchoolDetailPage() {
               }}
             >
               <Plus className="size-4" />
-              Tambah Kelas
+              {t("addClass")}
             </Button>
           </div>
           {schoolClasses.length === 0 ? (
             <Card>
               <CardContent className="text-muted-foreground py-8 text-center text-sm">
-                Belum ada kelas di sekolah ini.
+                {t("noClasses")}
               </CardContent>
             </Card>
           ) : (
@@ -181,7 +185,7 @@ export default function SchoolDetailPage() {
                           </p>
                         </div>
                         <Badge variant={cls.isActive ? "default" : "secondary"}>
-                          {cls.isActive ? "Aktif" : "Nonaktif"}
+                          {cls.isActive ? tCommon("active") : tCommon("inactive")}
                         </Badge>
                       </CardContent>
                     </Card>

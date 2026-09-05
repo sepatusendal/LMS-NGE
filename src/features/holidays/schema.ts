@@ -2,19 +2,21 @@ import { z } from "zod";
 
 export const ALL_SCHOOLS_VALUE = "ALL";
 
-export const holidaySchema = z
-  .object({
-    dateFrom: z.string().min(1, "Tanggal mulai wajib diisi"),
-    dateTo: z.string().min(1, "Tanggal selesai wajib diisi"),
-    name: z.string().min(1, "Nama libur wajib diisi"),
-    schoolId: z.string().nullable(),
-  })
-  .refine((v) => v.dateTo >= v.dateFrom, {
-    message: "Tanggal selesai tidak boleh sebelum tanggal mulai",
-    path: ["dateTo"],
-  });
+export function buildHolidaySchema(t: (key: string) => string) {
+  return z
+    .object({
+      dateFrom: z.string().min(1, t("validation.dateFromRequired")),
+      dateTo: z.string().min(1, t("validation.dateToRequired")),
+      name: z.string().min(1, t("validation.nameRequired")),
+      schoolId: z.string().nullable(),
+    })
+    .refine((v) => v.dateTo >= v.dateFrom, {
+      message: t("validation.dateToBeforeDateFrom"),
+      path: ["dateTo"],
+    });
+}
 
-export type HolidayInput = z.infer<typeof holidaySchema>;
+export type HolidayInput = z.infer<ReturnType<typeof buildHolidaySchema>>;
 
 /** Inclusive list of ISO date strings from dateFrom to dateTo. */
 export function dateRange(dateFrom: string, dateTo: string): string[] {

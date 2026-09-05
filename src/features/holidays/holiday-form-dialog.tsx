@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSchools } from "@/features/schools/use-schools";
-import { ALL_SCHOOLS_VALUE, holidaySchema, type HolidayInput } from "./schema";
+import { ALL_SCHOOLS_VALUE, buildHolidaySchema, type HolidayInput } from "./schema";
 import { useCreateHoliday } from "./use-holidays";
 
 export function HolidayFormDialog({
@@ -31,8 +32,12 @@ export function HolidayFormDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useTranslations("admin.holidays");
+  const tCommon = useTranslations("common");
   const { data: schools } = useSchools();
   const createHoliday = useCreateHoliday();
+
+  const holidaySchema = useMemo(() => buildHolidaySchema(t), [t]);
 
   const {
     register,
@@ -54,7 +59,7 @@ export function HolidayFormDialog({
   }
 
   const schoolOptions = [
-    { value: ALL_SCHOOLS_VALUE, label: "Semua Sekolah" },
+    { value: ALL_SCHOOLS_VALUE, label: t("allSchools") },
     ...(schools?.map((s) => ({ value: s.id, label: s.name })) ?? []),
   ];
 
@@ -62,33 +67,31 @@ export function HolidayFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Tambah Hari Libur</DialogTitle>
+          <DialogTitle>{t("addTitle")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="dateFrom">Tanggal Mulai</Label>
+              <Label htmlFor="dateFrom">{t("dateFrom")}</Label>
               <Input id="dateFrom" type="date" {...register("dateFrom")} />
               {errors.dateFrom && (
                 <p className="text-destructive text-sm">{errors.dateFrom.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dateTo">Tanggal Selesai</Label>
+              <Label htmlFor="dateTo">{t("dateTo")}</Label>
               <Input id="dateTo" type="date" {...register("dateTo")} />
               {errors.dateTo && (
                 <p className="text-destructive text-sm">{errors.dateTo.message}</p>
               )}
             </div>
           </div>
-          <p className="text-muted-foreground -mt-2 text-xs">
-            Untuk libur satu hari, isi tanggal mulai dan selesai sama.
-          </p>
+          <p className="text-muted-foreground -mt-2 text-xs">{t("sameDateHint")}</p>
           <div className="space-y-2">
-            <Label htmlFor="name">Nama Hari Libur</Label>
+            <Label htmlFor="name">{t("name")}</Label>
             <Input
               id="name"
-              placeholder="mis. Libur Hari Raya"
+              placeholder={t("namePlaceholder")}
               {...register("name")}
             />
             {errors.name && (
@@ -96,7 +99,7 @@ export function HolidayFormDialog({
             )}
           </div>
           <div className="space-y-2">
-            <Label>Sekolah</Label>
+            <Label>{tCommon("school")}</Label>
             <Controller
               control={control}
               name="schoolId"
@@ -109,7 +112,7 @@ export function HolidayFormDialog({
                   }
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih sekolah" />
+                    <SelectValue placeholder={t("selectSchool")} />
                   </SelectTrigger>
                   <SelectContent>
                     {schoolOptions.map((o) => (
@@ -124,7 +127,7 @@ export function HolidayFormDialog({
           </div>
           <DialogFooter>
             <Button type="submit" disabled={createHoliday.isPending}>
-              {createHoliday.isPending ? "Menyimpan..." : "Simpan"}
+              {createHoliday.isPending ? tCommon("saving") : tCommon("save")}
             </Button>
           </DialogFooter>
         </form>

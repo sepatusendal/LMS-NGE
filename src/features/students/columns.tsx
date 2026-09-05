@@ -1,6 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import type { Student } from "./schema";
 import { useSetStudentActive } from "./use-students";
 
 function ActiveToggleCell({ student }: { student: Student }) {
+  const tCommon = useTranslations("common");
   const setActive = useSetStudentActive();
   return (
     <div className="flex items-center gap-2">
@@ -19,26 +21,28 @@ function ActiveToggleCell({ student }: { student: Student }) {
         }
       />
       <Badge variant={student.isActive ? "default" : "secondary"}>
-        {student.isActive ? "Aktif" : "Nonaktif"}
+        {student.isActive ? tCommon("active") : tCommon("inactive")}
       </Badge>
     </div>
   );
 }
 
 export function createStudentColumns(
+  t: (key: string) => string,
+  tCommon: (key: string) => string,
   onEdit: (student: Student) => void,
 ): ColumnDef<Student>[] {
   return [
-    { accessorKey: "fullName", header: "Nama Siswa" },
+    { accessorKey: "fullName", header: t("nameHeader") },
     {
       accessorKey: "nis",
       header: "NIS",
       cell: ({ row }) => row.original.nis || "-",
     },
-    { accessorKey: "schoolName", header: "Sekolah" },
+    { accessorKey: "schoolName", header: tCommon("school") },
     {
       accessorKey: "isActive",
-      header: "Status",
+      header: tCommon("status"),
       cell: ({ row }) => <ActiveToggleCell student={row.original} />,
     },
     {
@@ -46,7 +50,7 @@ export function createStudentColumns(
       header: "",
       cell: ({ row }) => (
         <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
-          Edit
+          {tCommon("edit")}
         </Button>
       ),
     },

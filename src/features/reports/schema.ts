@@ -16,6 +16,19 @@ export const OBJECTIVES_KEY: Record<ObjectivesAchieved, string> = {
   NO: "notAchieved",
 };
 
+/** Build translated objectives labels. Pass a t scoped to
+ * "reportForm.objectivesStatus" (reused from the teacher-facing ReportForm
+ * namespace, which already carries both languages). */
+export function buildObjectivesLabel(
+  t: (key: string) => string,
+): Record<ObjectivesAchieved, string> {
+  return {
+    YES: t(OBJECTIVES_KEY.YES),
+    PARTIALLY: t(OBJECTIVES_KEY.PARTIALLY),
+    NO: t(OBJECTIVES_KEY.NO),
+  };
+}
+
 export const SKILL_OPTIONS = ["Listening", "Speaking", "Writing", "Reading"] as const;
 
 export interface ReportObjectiveInput {

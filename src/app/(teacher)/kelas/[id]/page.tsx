@@ -30,7 +30,7 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-3 rounded-3xl border border-black/5 bg-white p-4 shadow-[0_2px_12px_-4px_rgba(20,25,50,0.08)] sm:p-5">
+    <div className="space-y-3 rounded-3xl border border-black/5 bg-card p-4 shadow-[0_2px_12px_-4px_rgba(20,25,50,0.08)] sm:p-5">
       <h2 className="flex items-center gap-1.5 font-bold">
         {icon}
         {title}
@@ -69,7 +69,7 @@ export default function TeacherClassDetailPage() {
   // outside that set (or a bad id) resolves to no data, not an error.
   if (isFetched && !classItem) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-3xl bg-white px-6 py-14 text-center shadow-sm">
+      <div className="flex flex-col items-center justify-center gap-3 rounded-3xl bg-card px-6 py-14 text-center shadow-sm">
         <Users className="text-muted-foreground size-10" />
         <div>
           <p className="font-medium">{t("notFound.title")}</p>
@@ -96,7 +96,7 @@ export default function TeacherClassDetailPage() {
         {t("myClasses")}
       </Link>
 
-      <div className="rounded-3xl border border-black/5 bg-white p-4 shadow-[0_2px_12px_-4px_rgba(20,25,50,0.08)] sm:p-5">
+      <div className="rounded-3xl border border-black/5 bg-card p-4 shadow-[0_2px_12px_-4px_rgba(20,25,50,0.08)] sm:p-5">
         <div className="flex items-start gap-3.5">
           <ClassAvatar name={classItem.name} themeKey={themeKey} size="lg" />
           <div className="min-w-0 flex-1">
@@ -144,7 +144,7 @@ export default function TeacherClassDetailPage() {
         </div>
       )}
 
-      <div className="flex gap-1.5 rounded-2xl bg-white p-1.5 shadow-sm">
+      <div className="flex gap-1.5 rounded-2xl bg-card p-1.5 shadow-sm">
         {TABS.map((tabItem) => (
           <button
             key={tabItem.key}
@@ -153,7 +153,7 @@ export default function TeacherClassDetailPage() {
             className={cn(
               "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition-colors",
               tab === tabItem.key
-                ? "bg-[#4b60ac] text-white shadow-sm"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted",
             )}
           >

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search, School, ChevronDown, ChevronRight, Clock, Plus, FileSpreadsheet, Loader2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,13 +24,18 @@ import type { ExcelColumn } from "@/lib/export-excel";
 import type { LessonPlan } from "@/features/lesson-plans/schema";
 import type { Class } from "@/features/classes/schema";
 
-function buildLessonPlanColumns(classById: Map<string, Class>): ExcelColumn<LessonPlan>[] {
+function buildLessonPlanColumns(
+  t: (key: string) => string,
+  tCommon: (key: string) => string,
+  locale: string,
+  classById: Map<string, Class>,
+): ExcelColumn<LessonPlan>[] {
   return [
-    { header: "Sekolah", key: "school", width: 22, value: (p) => classById.get(p.classId)?.schoolName ?? "-" },
-    { header: "Kelas", key: "class", width: 22, value: (p) => p.className },
+    { header: tCommon("school"), key: "school", width: 22, value: (p) => classById.get(p.classId)?.schoolName ?? "-" },
+    { header: t("class"), key: "class", width: 22, value: (p) => p.className },
     { header: "Meeting", key: "meeting", width: 10, value: (p) => p.meetingNumber },
-    { header: "Minggu", key: "week", width: 10, value: (p) => p.week },
-    { header: "Tanggal", key: "date", width: 14, value: (p) => new Date(p.scheduledDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) },
+    { header: t("week"), key: "week", width: 10, value: (p) => p.week },
+    { header: t("date"), key: "date", width: 14, value: (p) => new Date(p.scheduledDate).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short", year: "numeric" }) },
     { header: "Level", key: "level", width: 10, value: (p) => p.level ?? "-" },
     { header: "Topic", key: "topic", width: 26, value: (p) => p.topic },
     { header: "Learning Objectives", key: "objectives", width: 40, value: (p) => p.learningObjectives.filter(Boolean).join(" | ") || "-" },
@@ -39,9 +45,9 @@ function buildLessonPlanColumns(classById: Map<string, Class>): ExcelColumn<Less
     { header: "Differentiation - Support", key: "diffSupport", width: 30, value: (p) => p.differentiationSupport ?? "-" },
     { header: "Differentiation - Extension", key: "diffExtension", width: 30, value: (p) => p.differentiationExtension ?? "-" },
     { header: "Differentiation - Homework", key: "diffHomework", width: 30, value: (p) => p.differentiationHomework ?? "-" },
-    { header: "Modul", key: "module", width: 24, value: (p) => p.moduleFileName ?? "-" },
-    { header: "Dibuat oleh", key: "createdBy", width: 22, value: (p) => p.createdByTeacherName },
-    { header: "Tanggal Dibuat", key: "createdAt", width: 16, value: (p) => new Date(p.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) },
+    { header: t("module"), key: "module", width: 24, value: (p) => p.moduleFileName ?? "-" },
+    { header: t("createdBy"), key: "createdBy", width: 22, value: (p) => p.createdByTeacherName },
+    { header: t("createdAtHeader"), key: "createdAt", width: 16, value: (p) => new Date(p.createdAt).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short", year: "numeric" }) },
   ];
 }
 
@@ -54,6 +60,7 @@ function AlbrightExportButton({
   className: string;
   level: string;
 }) {
+  const t = useTranslations("admin.lessonPlans");
   const [isExporting, setIsExporting] = useState(false);
 
   async function handleExport() {
@@ -68,12 +75,15 @@ function AlbrightExportButton({
   return (
     <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting} className="w-full sm:w-auto">
       {isExporting ? <Loader2 className="size-4 animate-spin" /> : <FileSpreadsheet className="size-4" />}
-      Download Teaching Records (Format Albright)
+      {t("downloadAlbright")}
     </Button>
   );
 }
 
 export default function AdminLessonPlansPage() {
+  const t = useTranslations("admin.lessonPlans");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
   const { data: schools } = useSchools();
   const { data: classes } = useClasses();
   const { data: lessonPlans, isLoading } = useLessonPlans();
@@ -89,21 +99,19 @@ export default function AdminLessonPlansPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Lesson Plan</h1>
-          <p className="text-muted-foreground text-sm">
-            Lihat, edit, atau tambahkan lesson plan teacher per sekolah.
-          </p>
+          <h1 className="text-xl font-semibold">{t("title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <ExportExcelButton
             filename="lesson-plan"
             sheets={[
-              { name: "Lesson Plan", columns: buildLessonPlanColumns(classById), rows: lessonPlans ?? [] },
+              { name: t("title"), columns: buildLessonPlanColumns(t, tCommon, locale, classById), rows: lessonPlans ?? [] },
             ]}
           />
           <Link href="/lesson-plan/new" className={buttonVariants({ variant: "default" })}>
             <Plus className="size-4" />
-            Tambah Lesson Plan
+            {t("addTitle")}
           </Link>
         </div>
       </div>
@@ -119,7 +127,7 @@ export default function AdminLessonPlansPage() {
           }}
         >
           <SelectTrigger className="w-full sm:w-64">
-            <SelectValue placeholder="Pilih sekolah..." />
+            <SelectValue placeholder={t("selectSchoolEllipsis")} />
           </SelectTrigger>
           <SelectContent>
             {schools?.map((s) => (
@@ -136,16 +144,12 @@ export default function AdminLessonPlansPage() {
           <div className="bg-muted mb-4 flex size-14 items-center justify-center rounded-full">
             <Search className="text-muted-foreground size-6" />
           </div>
-          <p className="text-muted-foreground text-sm">
-            Pilih sekolah untuk melihat lesson plan.
-          </p>
+          <p className="text-muted-foreground text-sm">{t("selectSchoolPrompt")}</p>
         </div>
       ) : isLoading ? (
-        <p className="text-muted-foreground text-sm">Memuat data...</p>
+        <p className="text-muted-foreground text-sm">{tCommon("dataTable.loading")}</p>
       ) : schoolClasses.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          Belum ada kelas di sekolah ini.
-        </p>
+        <p className="text-muted-foreground text-sm">{t("noClassesInSchool")}</p>
       ) : (
         <div className="space-y-2">
           {schoolClasses.map((cls) => {
@@ -179,7 +183,7 @@ export default function AdminLessonPlansPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="text-xs">
-                        {classPlans.length} lesson plan
+                        {t("lessonPlanCount", { count: classPlans.length })}
                       </Badge>
                       {isExpanded ? (
                         <ChevronDown className="size-4" />
@@ -199,9 +203,7 @@ export default function AdminLessonPlansPage() {
                         />
                       )}
                       {classPlans.length === 0 ? (
-                        <p className="text-muted-foreground text-xs">
-                          Belum ada lesson plan.
-                        </p>
+                        <p className="text-muted-foreground text-xs">{t("noLessonPlans")}</p>
                       ) : (
                         classPlans.map((plan) => (
                           <Link
@@ -214,9 +216,9 @@ export default function AdminLessonPlansPage() {
                                 Meeting {plan.meetingNumber} — {plan.topic}
                               </p>
                               <p className="text-muted-foreground text-xs">
-                                Minggu {plan.week} ·{" "}
+                                {t("weekLabel", { week: plan.week })} ·{" "}
                                 {new Date(plan.scheduledDate).toLocaleDateString(
-                                  "id-ID",
+                                  locale === "en" ? "en-US" : "id-ID",
                                   {
                                     day: "numeric",
                                     month: "short",
@@ -225,8 +227,8 @@ export default function AdminLessonPlansPage() {
                                 )}
                               </p>
                               <p className="text-muted-foreground text-xs">
-                                Disubmit oleh {plan.createdByTeacherName} ·{" "}
-                                {new Date(plan.createdAt).toLocaleDateString("id-ID", {
+                                {t("submittedBy", { name: plan.createdByTeacherName })} ·{" "}
+                                {new Date(plan.createdAt).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", {
                                   day: "numeric",
                                   month: "short",
                                   year: "numeric",
@@ -234,7 +236,7 @@ export default function AdminLessonPlansPage() {
                               </p>
                             </div>
                             <Badge variant="outline" className="text-xs">
-                              Level {plan.level || "-"}
+                              {t("levelLabel", { level: plan.level || "-" })}
                             </Badge>
                           </Link>
                         ))

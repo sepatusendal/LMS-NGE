@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { KeyRound } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -16,8 +17,8 @@ import { Label } from "@/components/ui/label";
 import { PasswordField, generateRandomPassword } from "@/components/shared/password-field";
 import {
   ROLE_LABEL,
-  userEditSchema,
-  userResetPasswordSchema,
+  buildUserEditSchema,
+  buildUserResetPasswordSchema,
   type AppUser,
   type UserEditInput,
   type UserResetPasswordInput,
@@ -33,8 +34,13 @@ export function UserEditDialog({
   onOpenChange: (open: boolean) => void;
   user?: AppUser;
 }) {
+  const t = useTranslations("admin.users");
+  const tCommon = useTranslations("common");
   const resetPassword = useResetAppUserPassword();
   const updateUser = useUpdateAppUser();
+
+  const userResetPasswordSchema = useMemo(() => buildUserResetPasswordSchema(t), [t]);
+  const userEditSchema = useMemo(() => buildUserEditSchema(t), [t]);
 
   const {
     control,
@@ -76,14 +82,14 @@ export function UserEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Akun</DialogTitle>
+          <DialogTitle>{t("editTitle")}</DialogTitle>
         </DialogHeader>
         <div className="text-muted-foreground -mt-2 text-sm">
           {user?.email} · {user ? ROLE_LABEL[user.role] : ""}
         </div>
 
         <form onSubmit={handleNameSubmit(onSaveName)} className="space-y-2">
-          <Label htmlFor="fullName">Nama</Label>
+          <Label htmlFor="fullName">{tCommon("name")}</Label>
           <div className="flex items-start gap-2">
             <div className="flex-1">
               <Input
@@ -96,14 +102,14 @@ export function UserEditDialog({
               )}
             </div>
             <Button type="submit" variant="outline" disabled={updateUser.isPending}>
-              {updateUser.isPending ? "Menyimpan..." : "Simpan"}
+              {updateUser.isPending ? tCommon("saving") : tCommon("save")}
             </Button>
           </div>
         </form>
 
         <div className="space-y-2 rounded-lg border p-3">
           <Label htmlFor="reset-password" className="text-muted-foreground text-xs">
-            Ganti password
+            {t("changePassword")}
           </Label>
           <div className="flex items-start gap-2">
             <div className="flex-1">
@@ -125,7 +131,7 @@ export function UserEditDialog({
               onClick={handleSubmit(onResetPassword)}
             >
               <KeyRound className="size-3.5" />
-              {resetPassword.isPending ? "Menyimpan..." : "Simpan"}
+              {resetPassword.isPending ? tCommon("saving") : tCommon("save")}
             </Button>
           </div>
         </div>

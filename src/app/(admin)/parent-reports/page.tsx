@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileHeart, Plus } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,7 +34,7 @@ import { useSchools } from "@/features/schools/use-schools";
 import { useStudents } from "@/features/students/use-students";
 import { useParentReports } from "@/features/parent-reports/use-parent-reports";
 import { fetchStudentPeriodData } from "@/features/parent-reports/queries";
-import { MONTH_LABEL } from "@/features/parent-reports/schema";
+import { buildMonthLabel } from "@/features/parent-reports/schema";
 import type { ParentReportListItem } from "@/features/parent-reports/schema";
 import type { ExcelColumn, ExcelSheet } from "@/lib/export-excel";
 
@@ -41,11 +42,6 @@ const now = new Date();
 const CURRENT_MONTH = now.getMonth() + 1;
 const CURRENT_YEAR = now.getFullYear();
 const YEAR_OPTIONS = [CURRENT_YEAR, CURRENT_YEAR - 1];
-
-function formatDate(dateStr: string | null) {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-}
 
 interface ParentReportSummaryRow {
   studentName: string;
@@ -59,16 +55,6 @@ interface ParentReportSummaryRow {
   skillsCovered: string;
 }
 
-const SUMMARY_COLUMNS: ExcelColumn<ParentReportSummaryRow>[] = [
-  { header: "Siswa", key: "student", width: 24, value: (r) => r.studentName },
-  { header: "Sekolah", key: "school", width: 22, value: (r) => r.schoolName },
-  { header: "Periode", key: "period", width: 16, value: (r) => `${MONTH_LABEL[r.periodMonth]} ${r.periodYear}` },
-  { header: "Status", key: "status", width: 16, value: (r) => r.status },
-  { header: "Hadir", key: "attendance", width: 12, value: (r) => `${r.hadirPresent}/${r.hadirTotal}` },
-  { header: "Pertemuan Selesai", key: "lessons", width: 16, value: (r) => r.lessonsCompleted },
-  { header: "Skills Tercakup", key: "skills", width: 34, value: (r) => r.skillsCovered || "-" },
-];
-
 interface TeachingReportExportRow {
   studentName: string;
   date: string;
@@ -81,18 +67,6 @@ interface TeachingReportExportRow {
   whatNeedsImprovement: string;
 }
 
-const TEACHING_REPORT_COLUMNS: ExcelColumn<TeachingReportExportRow>[] = [
-  { header: "Siswa", key: "student", width: 24, value: (r) => r.studentName },
-  { header: "Tanggal", key: "date", width: 14, value: (r) => formatDate(r.date) },
-  { header: "Kelas", key: "class", width: 20, value: (r) => r.className },
-  { header: "Meeting", key: "meeting", width: 10, value: (r) => r.meetingNumber },
-  { header: "Topic", key: "topic", width: 28, value: (r) => r.topic },
-  { header: "Skills", key: "skills", width: 30, value: (r) => r.skills },
-  { header: "Tujuan Tercapai", key: "objectives", width: 16, value: (r) => r.objectivesAchieved },
-  { header: "What Went Well", key: "wentWell", width: 30, value: (r) => r.whatWentWell },
-  { header: "What Needs Improvement", key: "needsImprovement", width: 30, value: (r) => r.whatNeedsImprovement },
-];
-
 interface ProgressNoteExportRow {
   studentName: string;
   date: string;
@@ -100,20 +74,68 @@ interface ProgressNoteExportRow {
   note: string;
 }
 
-const PROGRESS_NOTE_COLUMNS: ExcelColumn<ProgressNoteExportRow>[] = [
-  { header: "Siswa", key: "student", width: 24, value: (r) => r.studentName },
-  { header: "Tanggal", key: "date", width: 14, value: (r) => formatDate(r.date) },
-  { header: "Skill Area", key: "skillArea", width: 20, value: (r) => r.skillArea },
-  { header: "Catatan", key: "note", width: 40, value: (r) => r.note },
-];
+function buildSummaryColumns(
+  t: (key: string) => string,
+  tCommon: (key: string) => string,
+  monthLabel: Record<number, string>,
+): ExcelColumn<ParentReportSummaryRow>[] {
+  return [
+    { header: t("student"), key: "student", width: 24, value: (r) => r.studentName },
+    { header: tCommon("school"), key: "school", width: 22, value: (r) => r.schoolName },
+    { header: t("period"), key: "period", width: 16, value: (r) => `${monthLabel[r.periodMonth]} ${r.periodYear}` },
+    { header: tCommon("status"), key: "status", width: 16, value: (r) => r.status },
+    { header: t("attendance"), key: "attendance", width: 12, value: (r) => `${r.hadirPresent}/${r.hadirTotal}` },
+    { header: t("lessonsCompleted"), key: "lessons", width: 16, value: (r) => r.lessonsCompleted },
+    { header: t("skillsCovered"), key: "skills", width: 34, value: (r) => r.skillsCovered || "-" },
+  ];
+}
 
-const OBJECTIVES_LABEL_EXPORT: Record<string, string> = { YES: "Tercapai", PARTIALLY: "Sebagian", NO: "Belum Tercapai" };
+function buildTeachingReportColumns(
+  t: (key: string) => string,
+  formatDate: (d: string | null) => string,
+): ExcelColumn<TeachingReportExportRow>[] {
+  return [
+    { header: t("student"), key: "student", width: 24, value: (r) => r.studentName },
+    { header: t("date"), key: "date", width: 14, value: (r) => formatDate(r.date) },
+    { header: t("class"), key: "class", width: 20, value: (r) => r.className },
+    { header: "Meeting", key: "meeting", width: 10, value: (r) => r.meetingNumber },
+    { header: "Topic", key: "topic", width: 28, value: (r) => r.topic },
+    { header: "Skills", key: "skills", width: 30, value: (r) => r.skills },
+    { header: t("objectivesAchieved"), key: "objectives", width: 16, value: (r) => r.objectivesAchieved },
+    { header: "What Went Well", key: "wentWell", width: 30, value: (r) => r.whatWentWell },
+    { header: "What Needs Improvement", key: "needsImprovement", width: 30, value: (r) => r.whatNeedsImprovement },
+  ];
+}
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function buildParentReportSheets(reports: ParentReportListItem[]): Promise<ExcelSheet<any>[]> {
+function buildProgressNoteColumns(
+  t: (key: string) => string,
+  formatDate: (d: string | null) => string,
+): ExcelColumn<ProgressNoteExportRow>[] {
+  return [
+    { header: t("student"), key: "student", width: 24, value: (r) => r.studentName },
+    { header: t("date"), key: "date", width: 14, value: (r) => formatDate(r.date) },
+    { header: "Skill Area", key: "skillArea", width: 20, value: (r) => r.skillArea },
+    { header: t("note"), key: "note", width: 40, value: (r) => r.note },
+  ];
+}
+
+async function buildParentReportSheets(
+  t: (key: string) => string,
+  tCommon: (key: string) => string,
+  tObjectives: (key: string) => string,
+  monthLabel: Record<number, string>,
+  formatDate: (d: string | null) => string,
+  reports: ParentReportListItem[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<ExcelSheet<any>[]> {
   const periodData = await Promise.all(
     reports.map((r) => fetchStudentPeriodData(r.studentId, r.periodMonth, r.periodYear)),
   );
+  const objectivesLabelExport: Record<string, string> = {
+    YES: tObjectives("achieved"),
+    PARTIALLY: tObjectives("partial"),
+    NO: tObjectives("notAchieved"),
+  };
 
   const summaryRows: ParentReportSummaryRow[] = reports.map((r, i) => {
     const d = periodData[i];
@@ -122,7 +144,7 @@ async function buildParentReportSheets(reports: ParentReportListItem[]): Promise
       schoolName: r.schoolName,
       periodMonth: r.periodMonth,
       periodYear: r.periodYear,
-      status: r.status === "GENERATED" ? "Sudah Digenerate" : "Draft",
+      status: r.status === "GENERATED" ? t("generated") : t("draft"),
       hadirPresent: d.attendance.present,
       hadirTotal: d.attendance.total,
       lessonsCompleted: d.lessonsCompleted,
@@ -131,16 +153,16 @@ async function buildParentReportSheets(reports: ParentReportListItem[]): Promise
   });
 
   const teachingReportRows: TeachingReportExportRow[] = periodData.flatMap((d) =>
-    d.teachingReports.map((t) => ({
+    d.teachingReports.map((tr) => ({
       studentName: d.studentName,
-      date: t.date,
-      className: t.className,
-      meetingNumber: t.meetingNumber,
-      topic: t.topic,
-      skills: t.skills.join(", "),
-      objectivesAchieved: t.objectivesAchieved ? OBJECTIVES_LABEL_EXPORT[t.objectivesAchieved] : "-",
-      whatWentWell: t.whatWentWell ?? "-",
-      whatNeedsImprovement: t.whatNeedsImprovement ?? "-",
+      date: tr.date,
+      className: tr.className,
+      meetingNumber: tr.meetingNumber,
+      topic: tr.topic,
+      skills: tr.skills.join(", "),
+      objectivesAchieved: tr.objectivesAchieved ? objectivesLabelExport[tr.objectivesAchieved] : "-",
+      whatWentWell: tr.whatWentWell ?? "-",
+      whatNeedsImprovement: tr.whatNeedsImprovement ?? "-",
     })),
   );
 
@@ -154,13 +176,18 @@ async function buildParentReportSheets(reports: ParentReportListItem[]): Promise
   );
 
   return [
-    { name: "Ringkasan", columns: SUMMARY_COLUMNS, rows: summaryRows },
-    { name: "Detail Teaching Report", columns: TEACHING_REPORT_COLUMNS, rows: teachingReportRows },
-    { name: "Progress Notes", columns: PROGRESS_NOTE_COLUMNS, rows: progressNoteRows },
+    { name: t("summary"), columns: buildSummaryColumns(t, tCommon, monthLabel), rows: summaryRows },
+    { name: t("teachingReportDetail"), columns: buildTeachingReportColumns(t, formatDate), rows: teachingReportRows },
+    { name: "Progress Notes", columns: buildProgressNoteColumns(t, formatDate), rows: progressNoteRows },
   ];
 }
 
 export default function ParentReportsPage() {
+  const t = useTranslations("admin.parentReports");
+  const tCommon = useTranslations("common");
+  const tObjectives = useTranslations("reportForm.objectivesStatus");
+  const tMonths = useTranslations("admin.parentReports.months");
+  const locale = useLocale();
   const router = useRouter();
   const { data: reports, isLoading } = useParentReports();
   const { data: schools } = useSchools();
@@ -173,9 +200,15 @@ export default function ParentReportsPage() {
 
   const { data: students } = useStudents(schoolId || undefined);
 
+  const monthLabel = useMemo(() => buildMonthLabel(tMonths), [tMonths]);
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "-";
+    return new Date(dateStr).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short", year: "numeric" });
+  };
+
   const monthOptions = useMemo(
-    () => Object.entries(MONTH_LABEL).map(([value, label]) => ({ value, label })),
-    [],
+    () => Object.entries(monthLabel).map(([value, label]) => ({ value, label })),
+    [monthLabel],
   );
 
   function handleGenerate() {
@@ -188,29 +221,29 @@ export default function ParentReportsPage() {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h1 className="text-xl font-semibold">Laporan Bulanan Orang Tua</h1>
+          <h1 className="text-xl font-semibold">{t("title")}</h1>
           <p className="text-muted-foreground text-sm">
-            Generate laporan PDF per siswa dari data kehadiran, teaching report, dan progress — {reports?.length ?? 0} laporan tersimpan.
+            {t("subtitle", { count: reports?.length ?? 0 })}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <ExportExcelButton
             filename="laporan-bulanan-orang-tua"
             disabled={!reports || reports.length === 0}
-            getSheets={() => buildParentReportSheets(reports ?? [])}
+            getSheets={() => buildParentReportSheets(t, tCommon, tObjectives, monthLabel, formatDate, reports ?? [])}
           />
           <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger render={<Button />}>
             <Plus className="size-4" />
-            Buat Laporan
+            {t("createReport")}
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Buat Laporan Bulanan</DialogTitle>
+              <DialogTitle>{t("createDialogTitle")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Sekolah</label>
+                <label className="text-sm font-medium">{tCommon("school")}</label>
                 <Select
                   items={schools?.map((s) => ({ value: s.id, label: s.name })) ?? []}
                   value={schoolId}
@@ -220,7 +253,7 @@ export default function ParentReportsPage() {
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih sekolah..." />
+                    <SelectValue placeholder={t("selectSchoolEllipsis")} />
                   </SelectTrigger>
                   <SelectContent>
                     {schools?.map((s) => (
@@ -232,14 +265,14 @@ export default function ParentReportsPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Siswa</label>
+                <label className="text-sm font-medium">{t("student")}</label>
                 <Select
                   items={students?.map((s) => ({ value: s.id, label: s.nis ? `${s.fullName} (${s.nis})` : s.fullName })) ?? []}
                   value={studentId}
                   onValueChange={(v) => setStudentId(v ?? "")}
                 >
                   <SelectTrigger className="w-full" disabled={!schoolId}>
-                    <SelectValue placeholder={schoolId ? "Pilih siswa..." : "Pilih sekolah dulu"} />
+                    <SelectValue placeholder={schoolId ? t("selectStudentEllipsis") : t("selectSchoolFirst")} />
                   </SelectTrigger>
                   <SelectContent>
                     {students?.map((s) => (
@@ -253,7 +286,7 @@ export default function ParentReportsPage() {
               </div>
               <div className="flex gap-2">
                 <div className="flex-1 space-y-1.5">
-                  <label className="text-sm font-medium">Bulan</label>
+                  <label className="text-sm font-medium">{t("month")}</label>
                   <Select items={monthOptions} value={month} onValueChange={(v) => v && setMonth(v)}>
                     <SelectTrigger className="w-full">
                       <SelectValue />
@@ -268,7 +301,7 @@ export default function ParentReportsPage() {
                   </Select>
                 </div>
                 <div className="flex-1 space-y-1.5">
-                  <label className="text-sm font-medium">Tahun</label>
+                  <label className="text-sm font-medium">{t("year")}</label>
                   <Select
                     items={YEAR_OPTIONS.map((y) => ({ value: String(y), label: String(y) }))}
                     value={year}
@@ -290,7 +323,7 @@ export default function ParentReportsPage() {
             </div>
             <DialogFooter>
               <Button onClick={handleGenerate} disabled={!studentId}>
-                Lanjut Review
+                {t("continueToReview")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -300,22 +333,22 @@ export default function ParentReportsPage() {
 
       <div className="rounded-lg border">
         {isLoading ? (
-          <p className="text-muted-foreground p-4 text-sm">Memuat data...</p>
+          <p className="text-muted-foreground p-4 text-sm">{tCommon("dataTable.loading")}</p>
         ) : !reports || reports.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <FileHeart className="text-muted-foreground mb-2 size-6" />
-            <p className="text-muted-foreground text-sm">Belum ada laporan orang tua dibuat.</p>
+            <p className="text-muted-foreground text-sm">{t("empty")}</p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Siswa</TableHead>
-                <TableHead>Sekolah</TableHead>
-                <TableHead>Periode</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Digenerate</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
+                <TableHead>{t("student")}</TableHead>
+                <TableHead>{tCommon("school")}</TableHead>
+                <TableHead>{t("period")}</TableHead>
+                <TableHead>{tCommon("status")}</TableHead>
+                <TableHead>{t("generatedAt")}</TableHead>
+                <TableHead className="text-right">{tCommon("actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -324,11 +357,11 @@ export default function ParentReportsPage() {
                   <TableCell className="font-medium">{r.studentName}</TableCell>
                   <TableCell className="text-muted-foreground">{r.schoolName}</TableCell>
                   <TableCell>
-                    {MONTH_LABEL[r.periodMonth]} {r.periodYear}
+                    {monthLabel[r.periodMonth]} {r.periodYear}
                   </TableCell>
                   <TableCell>
                     <Badge variant={r.status === "GENERATED" ? "default" : "secondary"}>
-                      {r.status === "GENERATED" ? "Sudah Digenerate" : "Draft"}
+                      {r.status === "GENERATED" ? t("generated") : t("draft")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{formatDate(r.generatedAt)}</TableCell>
@@ -342,7 +375,7 @@ export default function ParentReportsPage() {
                         )
                       }
                     >
-                      Lihat / Edit
+                      {t("viewEdit")}
                     </Button>
                   </TableCell>
                 </TableRow>

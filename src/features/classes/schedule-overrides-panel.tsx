@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DAY_LABEL, getSlotForDay } from "./schema";
+import { buildDayLabel, getSlotForDay } from "./schema";
 import { useTeachers } from "@/features/teachers/use-teachers";
 import {
   useDeleteScheduleOverride,
@@ -24,6 +25,10 @@ interface Props {
 }
 
 export function ScheduleOverridesPanel({ classItem }: Props) {
+  const t = useTranslations("admin.classes.scheduleOverrides");
+  const tCommon = useTranslations("common");
+  const tDay = useTranslations("jadwal.day");
+  const DAY_LABEL = useMemo(() => buildDayLabel(tDay), [tDay]);
   const { data: overrides } = useScheduleOverrides(classItem.id);
   const { data: teachers } = useTeachers();
   const upsert = useUpsertScheduleOverride(classItem.id);
@@ -62,10 +67,9 @@ export function ScheduleOverridesPanel({ classItem }: Props) {
   return (
     <div className="space-y-3">
       <div>
-        <h2 className="font-medium">Jadwal per Hari</h2>
+        <h2 className="font-medium">{t("title")}</h2>
         <p className="text-muted-foreground text-sm">
-          Default tutor: {classItem.teacherName}. Set override kalau tutor atau jam beda
-          di hari tertentu (kelas ketemu 2x/minggu).
+          {t("description", { teacher: classItem.teacherName })}
         </p>
       </div>
 
@@ -92,27 +96,27 @@ export function ScheduleOverridesPanel({ classItem }: Props) {
                   />
                 </div>
                 <Select
-                  items={teachers?.map((t) => ({ value: t.id, label: t.fullName }))}
+                  items={teachers?.map((te) => ({ value: te.id, label: te.fullName }))}
                   value={teacherId}
                   onValueChange={(v) => v && setTeacherId(v)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih tutor" />
+                    <SelectValue placeholder={t("selectTutor")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {teachers?.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.fullName}
+                    {teachers?.map((te) => (
+                      <SelectItem key={te.id} value={te.id}>
+                        {te.fullName}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <div className="flex gap-2">
                   <Button size="sm" disabled={upsert.isPending} onClick={() => saveEdit(day)}>
-                    {upsert.isPending ? "Menyimpan..." : "Simpan"}
+                    {upsert.isPending ? tCommon("saving") : tCommon("save")}
                   </Button>
                   <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                    Batal
+                    {tCommon("cancel")}
                   </Button>
                 </div>
               </div>
@@ -130,13 +134,13 @@ export function ScheduleOverridesPanel({ classItem }: Props) {
                 ) : (
                   <p className="text-muted-foreground text-xs">
                     {classItem.teacherName}
-                    {daySlot ? ` · ${daySlot.startTime}-${daySlot.endTime}` : ""} (default)
+                    {daySlot ? ` · ${daySlot.startTime}-${daySlot.endTime}` : ""} {t("defaultSuffix")}
                   </p>
                 )}
               </div>
               <div className="flex shrink-0 gap-1">
                 <Button size="sm" variant="outline" onClick={() => startEdit(day)}>
-                  {override ? "Edit" : "Set Override"}
+                  {override ? tCommon("edit") : t("setOverride")}
                 </Button>
                 {override && (
                   <Button
@@ -146,14 +150,17 @@ export function ScheduleOverridesPanel({ classItem }: Props) {
                     onClick={() => {
                       if (
                         window.confirm(
-                          `Hapus override ${DAY_LABEL[String(day)]} dan kembalikan ke jadwal default (${classItem.teacherName})?`,
+                          t("deleteConfirm", {
+                            day: DAY_LABEL[String(day)],
+                            teacher: classItem.teacherName,
+                          }),
                         )
                       ) {
                         del.mutate(override.id);
                       }
                     }}
                   >
-                    Hapus
+                    {tCommon("delete")}
                   </Button>
                 )}
               </div>

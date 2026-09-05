@@ -8,23 +8,29 @@ export const ROLE_LABEL: Record<ManageableRole, string> = {
   COORDINATOR: "Coordinator",
 };
 
-export const userCreateSchema = z.object({
-  fullName: z.string().min(1, "Nama wajib diisi"),
-  email: z.string().min(1, "Email wajib diisi").email("Format email salah"),
-  role: z.enum(MANAGEABLE_ROLES),
-  password: z.string().min(6, "Password minimal 6 karakter"),
-});
-export type UserCreateInput = z.infer<typeof userCreateSchema>;
+export function buildUserCreateSchema(t: (key: string) => string) {
+  return z.object({
+    fullName: z.string().min(1, t("validation.nameRequired")),
+    email: z.string().min(1, t("validation.emailRequired")).email(t("validation.emailInvalid")),
+    role: z.enum(MANAGEABLE_ROLES),
+    password: z.string().min(6, t("validation.passwordMin")),
+  });
+}
+export type UserCreateInput = z.infer<ReturnType<typeof buildUserCreateSchema>>;
 
-export const userEditSchema = z.object({
-  fullName: z.string().min(1, "Nama wajib diisi"),
-});
-export type UserEditInput = z.infer<typeof userEditSchema>;
+export function buildUserEditSchema(t: (key: string) => string) {
+  return z.object({
+    fullName: z.string().min(1, t("validation.nameRequired")),
+  });
+}
+export type UserEditInput = z.infer<ReturnType<typeof buildUserEditSchema>>;
 
-export const userResetPasswordSchema = z.object({
-  password: z.string().min(6, "Password minimal 6 karakter"),
-});
-export type UserResetPasswordInput = z.infer<typeof userResetPasswordSchema>;
+export function buildUserResetPasswordSchema(t: (key: string) => string) {
+  return z.object({
+    password: z.string().min(6, t("validation.passwordMin")),
+  });
+}
+export type UserResetPasswordInput = z.infer<ReturnType<typeof buildUserResetPasswordSchema>>;
 
 export interface AppUser {
   id: string;

@@ -47,12 +47,12 @@ export default function LessonPlanPage() {
                 {t("classCount", { count: classes.length })}
               </span>
               {classesNeedingPlan > 0 ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eda100]/12 px-3 py-1 text-xs font-semibold text-[#a3730a]">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-chart-4/12 px-3 py-1 text-xs font-semibold text-chart-4">
                   <AlarmClockCheck className="size-3.5" />
                   {t("classesNeedPlan", { count: classesNeedingPlan })}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1baf7a]/12 px-3 py-1 text-xs font-semibold text-[#0e7a53]">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-chart-3/12 px-3 py-1 text-xs font-semibold text-chart-3">
                   <CheckCircle2 className="size-3.5" />
                   {t("allClassesSafe")}
                 </span>
@@ -84,18 +84,18 @@ export default function LessonPlanPage() {
 
           return (
             <div key={classItem.id} className="space-y-3.5">
-              <div className="flex items-start gap-3.5 rounded-3xl border border-black/5 bg-white p-4 shadow-[0_2px_12px_-4px_rgba(20,25,50,0.08)] sm:p-5">
+              <div className="flex items-start gap-3.5 rounded-3xl border border-black/5 bg-card p-4 shadow-[0_2px_12px_-4px_rgba(20,25,50,0.08)] sm:p-5">
                 <ClassAvatar name={classItem.name} themeKey={themeKey} size="lg" />
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-lg leading-tight font-bold">{classItem.name}</p>
                     {isCompliant ? (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#1baf7a]/12 px-2.5 py-1 text-[11px] font-bold text-[#0e7a53]">
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-chart-3/12 px-2.5 py-1 text-[11px] font-bold text-chart-3">
                         <CheckCircle2 className="size-3" />
                         {t("safe")}
                       </span>
                     ) : (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#eda100]/15 px-2.5 py-1 text-[11px] font-bold text-[#a3730a]">
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-chart-4/15 px-2.5 py-1 text-[11px] font-bold text-chart-4">
                         <AlarmClockCheck className="size-3" />
                         {t("needsLessonPlan")}
                       </span>
@@ -127,7 +127,7 @@ export default function LessonPlanPage() {
                 <div className="space-y-2">
                   {classPlans.map((plan) => (
                     <Link key={plan.id} href={`/lesson-plan/${plan.id}`}>
-                      <div className="group border-border/60 flex items-center gap-3 rounded-2xl border bg-white p-3.5 transition-all hover:-translate-y-0.5 hover:border-transparent hover:shadow-md">
+                      <div className="group border-border/60 flex items-center gap-3 rounded-2xl border bg-card p-3.5 transition-all hover:-translate-y-0.5 hover:border-transparent hover:shadow-md">
                         <div
                           className={cn(
                             "flex size-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white",
@@ -157,7 +157,7 @@ export default function LessonPlanPage() {
         })}
 
       {!isLoading && (!classes || classes.length === 0) && (
-        <div className="flex flex-col items-center justify-center rounded-3xl bg-white px-6 py-14 text-center shadow-sm">
+        <div className="flex flex-col items-center justify-center rounded-3xl bg-card px-6 py-14 text-center shadow-sm">
           <NotebookPen className="text-muted-foreground mb-3 size-10" />
           <p className="text-muted-foreground text-sm">{t("noClassesAssigned")}</p>
         </div>

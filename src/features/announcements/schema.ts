@@ -24,16 +24,30 @@ export const TARGET_ROLE_LABEL: Record<AnnouncementTargetRole, string> = {
   TEACHER: "Tutor",
 };
 
-export const announcementSchema = z.object({
-  title: z.string().min(1, "Judul wajib diisi").max(80, "Judul maksimal 80 karakter"),
-  body: z.string().min(1, "Isi pengumuman wajib diisi").max(500, "Isi maksimal 500 karakter"),
-  type: z.enum(ANNOUNCEMENT_TYPES),
-  displayMode: z.enum(ANNOUNCEMENT_DISPLAY_MODES),
-  expiresAt: z.string().nullable(),
-  // Empty = visible to every role (backward compatible default).
-  targetRoles: z.array(z.enum(ANNOUNCEMENT_TARGET_ROLES)),
-});
-export type AnnouncementInput = z.infer<typeof announcementSchema>;
+/** Build translated target-role labels. Pass a t scoped to
+ * "admin.announcements". */
+export function buildTargetRoleLabel(
+  t: (key: string) => string,
+): Record<AnnouncementTargetRole, string> {
+  return {
+    ADMIN: t("roleAdmin"),
+    COORDINATOR: t("roleCoordinator"),
+    TEACHER: t("roleTeacher"),
+  };
+}
+
+export function buildAnnouncementSchema(t: (key: string) => string) {
+  return z.object({
+    title: z.string().min(1, t("validation.titleRequired")).max(80, t("validation.titleMax")),
+    body: z.string().min(1, t("validation.bodyRequired")).max(500, t("validation.bodyMax")),
+    type: z.enum(ANNOUNCEMENT_TYPES),
+    displayMode: z.enum(ANNOUNCEMENT_DISPLAY_MODES),
+    expiresAt: z.string().nullable(),
+    // Empty = visible to every role (backward compatible default).
+    targetRoles: z.array(z.enum(ANNOUNCEMENT_TARGET_ROLES)),
+  });
+}
+export type AnnouncementInput = z.infer<ReturnType<typeof buildAnnouncementSchema>>;
 
 export interface Announcement {
   id: string;
@@ -59,6 +73,17 @@ export const DISPLAY_MODE_INFO: Record<AnnouncementDisplayMode, { label: string;
   },
 };
 
+/** Build translated display-mode info. Pass a t scoped to
+ * "admin.announcements". */
+export function buildDisplayModeInfo(
+  t: (key: string) => string,
+): Record<AnnouncementDisplayMode, { label: string; description: string }> {
+  return {
+    BANNER: { label: "Banner", description: t("displayModeBannerDescription") },
+    POPUP: { label: "Pop-up", description: t("displayModePopupDescription") },
+  };
+}
+
 interface AnnouncementTheme {
   label: string;
   Illustration: (props: { className?: string; uid?: string }) => React.JSX.Element;
@@ -78,41 +103,53 @@ export const ANNOUNCEMENT_THEME: Record<AnnouncementType, AnnouncementTheme> = {
   INFO: {
     label: "Info",
     Illustration: InfoIllustration,
-    card: "bg-[#4b60ac]/[0.06]",
-    border: "border-[#4b60ac]/15",
-    iconBg: "bg-[#4b60ac]/10",
-    iconColor: "text-[#4b60ac]",
-    titleColor: "text-[#1e3a5f]",
-    swatch: "#4b60ac",
+    card: "bg-primary/[0.06]",
+    border: "border-primary/15",
+    iconBg: "bg-primary/10",
+    iconColor: "text-primary",
+    titleColor: "text-foreground",
+    swatch: "var(--brand-blue)",
   },
   SUCCESS: {
     label: "Sukses",
     Illustration: SuccessIllustration,
-    card: "bg-[#1baf7a]/[0.06]",
-    border: "border-[#1baf7a]/15",
-    iconBg: "bg-[#1baf7a]/10",
-    iconColor: "text-[#1baf7a]",
-    titleColor: "text-[#0f5c3f]",
-    swatch: "#1baf7a",
+    card: "bg-chart-3/[0.06]",
+    border: "border-chart-3/15",
+    iconBg: "bg-chart-3/10",
+    iconColor: "text-chart-3",
+    titleColor: "text-foreground",
+    swatch: "var(--chart-3)",
   },
   CELEBRATION: {
     label: "Perayaan",
     Illustration: CelebrationIllustration,
-    card: "bg-[#f15c5d]/[0.06]",
-    border: "border-[#f15c5d]/15",
-    iconBg: "bg-[#f15c5d]/10",
-    iconColor: "text-[#f15c5d]",
-    titleColor: "text-[#8a2e2f]",
-    swatch: "#f15c5d",
+    card: "bg-destructive/[0.06]",
+    border: "border-destructive/15",
+    iconBg: "bg-destructive/10",
+    iconColor: "text-destructive",
+    titleColor: "text-foreground",
+    swatch: "var(--brand-coral)",
   },
   MAINTENANCE: {
     label: "Perbaikan",
     Illustration: MaintenanceIllustration,
-    card: "bg-[#eda100]/[0.08]",
-    border: "border-[#eda100]/20",
-    iconBg: "bg-[#eda100]/15",
-    iconColor: "text-[#a3730a]",
-    titleColor: "text-[#a3730a]",
-    swatch: "#eda100",
+    card: "bg-chart-4/[0.08]",
+    border: "border-chart-4/20",
+    iconBg: "bg-chart-4/15",
+    iconColor: "text-chart-4",
+    titleColor: "text-foreground",
+    swatch: "var(--chart-4)",
   },
 };
+
+/** Build translated theme labels (Info/Success/Celebration/Maintenance),
+ * for the admin list page's type badge. Pass a t scoped to
+ * "admin.announcements". */
+export function buildThemeLabel(t: (key: string) => string): Record<AnnouncementType, string> {
+  return {
+    INFO: t("typeInfo"),
+    SUCCESS: t("typeSuccess"),
+    CELEBRATION: t("typeCelebration"),
+    MAINTENANCE: t("typeMaintenance"),
+  };
+}

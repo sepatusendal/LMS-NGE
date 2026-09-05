@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AlertCircle, Banknote, ListChecks } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Bar,
   BarChart,
@@ -38,23 +39,17 @@ import type { TutorPayrollRow } from "./queries";
 
 // Compact label buat sumbu chart — "Rp 1,25jt" / "Rp 125rb", biar tick
 // gak berdesakan. Tooltip tetap pakai formatRupiah penuh.
-function compactRupiah(n: number): string {
+function compactRupiah(n: number, locale: string): string {
   if (n >= 1_000_000) {
-    return `Rp ${(n / 1_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })}jt`;
+    return `Rp ${(n / 1_000_000).toLocaleString(locale === "en" ? "en-US" : "id-ID", { maximumFractionDigits: 1 })}${locale === "en" ? "M" : "jt"}`;
   }
   if (n >= 1_000) {
-    return `Rp ${Math.round(n / 1_000).toLocaleString("id-ID")}rb`;
+    return `Rp ${Math.round(n / 1_000).toLocaleString(locale === "en" ? "en-US" : "id-ID")}${locale === "en" ? "K" : "rb"}`;
   }
   return formatRupiah(n);
 }
 
 type Period = "this-month" | "last-month" | "custom";
-
-const PERIOD_OPTIONS: { value: Period; label: string }[] = [
-  { value: "this-month", label: "Bulan Ini" },
-  { value: "last-month", label: "Bulan Lalu" },
-  { value: "custom", label: "Kustom" },
-];
 
 function toDateInput(d: Date): string {
   const y = d.getFullYear();
@@ -63,11 +58,17 @@ function toDateInput(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function monthLabel(d: Date): string {
-  return d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+function monthLabel(d: Date, locale: string): string {
+  return d.toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { month: "long", year: "numeric" });
 }
 
-function computeRange(period: Period, customFrom: string, customTo: string) {
+function computeRange(
+  period: Period,
+  customFrom: string,
+  customTo: string,
+  locale: string,
+  allTimeLabel: string,
+) {
   const now = new Date();
   const y = now.getFullYear();
   const m = now.getMonth();
@@ -75,13 +76,13 @@ function computeRange(period: Period, customFrom: string, customTo: string) {
   if (period === "this-month") {
     const from = new Date(y, m, 1);
     const to = new Date(y, m + 1, 1);
-    return { from: from.toISOString(), to: to.toISOString(), label: monthLabel(from) };
+    return { from: from.toISOString(), to: to.toISOString(), label: monthLabel(from, locale) };
   }
 
   if (period === "last-month") {
     const from = new Date(y, m - 1, 1);
     const to = new Date(y, m, 1);
-    return { from: from.toISOString(), to: to.toISOString(), label: monthLabel(from) };
+    return { from: from.toISOString(), to: to.toISOString(), label: monthLabel(from, locale) };
   }
 
   // custom — `to` eksklusif (hari setelah tanggal akhir).
@@ -92,28 +93,41 @@ function computeRange(period: Period, customFrom: string, customTo: string) {
     d.setDate(d.getDate() + 1);
     to = d.toISOString();
   }
-  const label = [customFrom, customTo].filter(Boolean).join(" – ") || "Semua waktu";
+  const label = [customFrom, customTo].filter(Boolean).join(" – ") || allTimeLabel;
   return { from, to, label };
 }
 
-const EXPORT_COLUMNS: ExcelColumn<TutorPayrollRow>[] = [
-  { header: "Tutor", key: "teacher", width: 24, value: (r) => r.teacherName },
-  { header: "Fee per Meeting", key: "fee", width: 18, value: (r) => (r.feePerMeeting != null ? r.feePerMeeting : "belum set") },
-  { header: "Hadir", key: "attended", width: 10, value: (r) => r.attendedCount },
-  { header: "Subtotal", key: "subtotal", width: 18, value: (r) => r.subtotal },
-];
+function buildExportColumns(
+  t: (key: string) => string,
+): ExcelColumn<TutorPayrollRow>[] {
+  return [
+    { header: t("tutor"), key: "teacher", width: 24, value: (r) => r.teacherName },
+    { header: "Fee per Meeting", key: "fee", width: 18, value: (r) => (r.feePerMeeting != null ? r.feePerMeeting : t("notSet")) },
+    { header: t("attended"), key: "attended", width: 10, value: (r) => r.attendedCount },
+    { header: t("subtotal"), key: "subtotal", width: 18, value: (r) => r.subtotal },
+  ];
+}
 
 interface PayrollSummaryRow {
   label: string;
   value: string | number;
 }
 
-const SUMMARY_COLUMNS: ExcelColumn<PayrollSummaryRow>[] = [
-  { header: "Ringkasan", key: "label", width: 26, value: (r) => r.label },
-  { header: "Nilai", key: "value", width: 20, value: (r) => r.value },
-];
+function buildSummaryColumns(t: (key: string) => string): ExcelColumn<PayrollSummaryRow>[] {
+  return [
+    { header: t("summary"), key: "label", width: 26, value: (r) => r.label },
+    { header: t("value"), key: "value", width: 20, value: (r) => r.value },
+  ];
+}
 
 export function TutorPayroll() {
+  const t = useTranslations("admin.dashboard.payroll");
+  const locale = useLocale();
+  const PERIOD_OPTIONS: { value: Period; label: string }[] = [
+    { value: "this-month", label: t("thisMonth") },
+    { value: "last-month", label: t("lastMonth") },
+    { value: "custom", label: t("custom") },
+  ];
   const [period, setPeriod] = useState<Period>("this-month");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -121,8 +135,8 @@ export function TutorPayroll() {
   const isIncomplete = period === "custom" && (!customFrom || !customTo);
 
   const range = useMemo(
-    () => computeRange(period, customFrom, customTo),
-    [period, customFrom, customTo],
+    () => computeRange(period, customFrom, customTo, locale, t("allTime")),
+    [period, customFrom, customTo, locale, t],
   );
   const { data, isLoading, isError } = useTutorPayroll(range.from, range.to, !isIncomplete);
 
@@ -149,27 +163,27 @@ export function TutorPayroll() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <SectionHeading
           icon={Banknote}
-          title="Beban Gaji Tutor"
-          description="Fee per meeting × jumlah check-in. Tutor tanpa fee tidak masuk total beban."
+          title={t("title")}
+          description={t("description")}
         />
         <div className="flex flex-wrap items-center gap-2">
           <ExportExcelButton
             filename={`gaji-tutor-${range.label}`}
             sheets={[
               {
-                name: "Ringkasan",
-                columns: SUMMARY_COLUMNS,
+                name: t("summary"),
+                columns: buildSummaryColumns(t),
                 rows: data
                   ? [
-                      { label: "Periode", value: range.label },
-                      { label: "Total Beban Gaji Tutor", value: data.totalExpense },
-                      { label: "Total Kehadiran", value: data.totalAttended },
-                      { label: "Tutor Belum Set Fee", value: data.unbilledCount },
-                      { label: "Check-in Tidak Terhitung", value: data.orphanedCheckInCount },
+                      { label: t("period"), value: range.label },
+                      { label: t("totalPayrollExpense"), value: data.totalExpense },
+                      { label: t("totalAttendance"), value: data.totalAttended },
+                      { label: t("tutorsWithoutFee"), value: data.unbilledCount },
+                      { label: t("uncountedCheckIns"), value: data.orphanedCheckInCount },
                     ]
                   : [],
               },
-              { name: "Detail Gaji Tutor", columns: EXPORT_COLUMNS, rows: data?.rows ?? [] },
+              { name: t("tutorPayrollDetail"), columns: buildExportColumns(t), rows: data?.rows ?? [] },
             ]}
           />
           <Select items={PERIOD_OPTIONS} value={period} onValueChange={handlePeriodChange}>
@@ -207,20 +221,20 @@ export function TutorPayroll() {
       {isIncomplete ? (
         <Card>
           <CardContent className="text-muted-foreground py-8 text-center text-sm">
-            Lengkapi rentang tanggal untuk melihat beban gaji tutor.
+            {t("completeDateRange")}
           </CardContent>
         </Card>
       ) : isError ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center gap-1.5 py-8">
             <AlertCircle className="text-destructive size-5" />
-            <p className="text-muted-foreground text-sm">Gagal memuat beban gaji tutor.</p>
+            <p className="text-muted-foreground text-sm">{t("failedToLoad")}</p>
           </CardContent>
         </Card>
       ) : isLoading || !data ? (
         <Card>
           <CardContent className="text-muted-foreground py-8 text-center text-sm">
-            Memuat beban gaji tutor...
+            {t("loadingPayroll")}
           </CardContent>
         </Card>
       ) : (
@@ -237,7 +251,7 @@ export function TutorPayroll() {
                   >
                     <Banknote className="size-4" style={{ color: "var(--chart-3)" }} />
                   </span>
-                  Beban Pengeluaran
+                  {t("expenseTitle")}
                 </span>
                 <span className="text-muted-foreground text-xs font-normal">{range.label}</span>
               </CardTitle>
@@ -247,7 +261,7 @@ export function TutorPayroll() {
                 <p className="text-3xl font-bold leading-tight" style={{ color: "var(--chart-3)" }}>
                   {formatRupiah(data.totalExpense)}
                 </p>
-                <p className="text-muted-foreground text-xs">Total beban gaji tutor</p>
+                <p className="text-muted-foreground text-xs">{t("totalPayrollExpense")}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -258,7 +272,7 @@ export function TutorPayroll() {
                   <p className="text-xl font-semibold" style={{ color: "var(--chart-3)" }}>
                     {data.totalAttended}
                   </p>
-                  <p className="text-muted-foreground text-xs">Total Kehadiran</p>
+                  <p className="text-muted-foreground text-xs">{t("totalAttendance")}</p>
                 </div>
                 <div
                   className="rounded-lg p-3 text-center"
@@ -275,13 +289,13 @@ export function TutorPayroll() {
                   >
                     {data.unbilledCount}
                   </p>
-                  <p className="text-muted-foreground text-xs">Belum Set Fee</p>
+                  <p className="text-muted-foreground text-xs">{t("withoutFeeSet")}</p>
                 </div>
               </div>
 
               <div className="h-60">
                 {chartData.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">Belum ada data check-in pada periode ini.</p>
+                  <p className="text-muted-foreground text-sm">{t("noCheckInData")}</p>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -299,7 +313,7 @@ export function TutorPayroll() {
                       />
                       <YAxis
                         tick={{ fontSize: 11 }}
-                        tickFormatter={(v) => compactRupiah(Number(v))}
+                        tickFormatter={(v) => compactRupiah(Number(v), locale)}
                         width={56}
                       />
                       <Tooltip
@@ -314,12 +328,12 @@ export function TutorPayroll() {
 
               {data.unbilledCount > 0 && (
                 <p className="text-muted-foreground text-xs">
-                  {data.unbilledCount} tutor belum diset fee-nya — tidak tampil di chart.
+                  {t("tutorsWithoutFeeHint", { count: data.unbilledCount })}
                 </p>
               )}
               {data.orphanedCheckInCount > 0 && (
                 <p className="text-muted-foreground text-xs">
-                  {data.orphanedCheckInCount} check-in tidak terhitung — meeting terkait sudah tidak ada.
+                  {t("uncountedCheckInsHint", { count: data.orphanedCheckInCount })}
                 </p>
               )}
             </CardContent>
@@ -336,46 +350,46 @@ export function TutorPayroll() {
                 >
                   <ListChecks className="size-4" style={{ color: "var(--chart-5)" }} />
                 </span>
-                Detail Gaji Tutor
+                {t("tutorPayrollDetail")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {data.rows.length === 0 ? (
-                <p className="text-muted-foreground text-sm">Belum ada data check-in pada periode ini.</p>
+                <p className="text-muted-foreground text-sm">{t("noCheckInData")}</p>
               ) : (
                 <div className="max-h-80 overflow-y-auto rounded-lg border">
                   <Table>
                     <TableHeader className="[&_tr]:bg-card sticky top-0 z-10 [&_tr]:border-b">
                       <TableRow>
-                        <TableHead>Tutor</TableHead>
+                        <TableHead>{t("tutor")}</TableHead>
                         <TableHead className="text-right">Fee</TableHead>
-                        <TableHead className="text-right">Hadir</TableHead>
-                        <TableHead className="text-right">Subtotal</TableHead>
+                        <TableHead className="text-right">{t("attended")}</TableHead>
+                        <TableHead className="text-right">{t("subtotal")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.rows.map((t) => (
-                        <TableRow key={t.teacherId}>
-                          <TableCell className="font-medium">{t.teacherName}</TableCell>
+                      {data.rows.map((row) => (
+                        <TableRow key={row.teacherId}>
+                          <TableCell className="font-medium">{row.teacherName}</TableCell>
                           <TableCell className="text-right">
-                            {t.feePerMeeting != null ? (
-                              formatRupiah(t.feePerMeeting)
+                            {row.feePerMeeting != null ? (
+                              formatRupiah(row.feePerMeeting)
                             ) : (
                               <Badge variant="outline" className="text-xs">
-                                belum set
+                                {t("notSet")}
                               </Badge>
                             )}
                           </TableCell>
-                          <TableCell className="text-right">{t.attendedCount}</TableCell>
+                          <TableCell className="text-right">{row.attendedCount}</TableCell>
                           <TableCell className="text-right font-medium">
-                            {formatRupiah(t.subtotal)}
+                            {formatRupiah(row.subtotal)}
                           </TableCell>
                         </TableRow>
                       ))}
                       <TableRow className="bg-card sticky bottom-0 border-t hover:bg-card">
-                        <TableCell className="font-semibold">Total</TableCell>
+                        <TableCell className="font-semibold">{t("total")}</TableCell>
                         <TableCell className="text-muted-foreground text-right text-xs" colSpan={2}>
-                          {data.totalAttended} kehadiran
+                          {t("attendanceCount", { count: data.totalAttended })}
                         </TableCell>
                         <TableCell className="text-right font-semibold">
                           {formatRupiah(data.totalExpense)}

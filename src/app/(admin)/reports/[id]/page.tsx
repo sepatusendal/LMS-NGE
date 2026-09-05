@@ -3,20 +3,17 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ExternalLink, Check, X as XIcon } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdminReportDetail } from "@/features/reports/use-admin-reports";
-import { OBJECTIVES_LABEL } from "@/features/reports/schema";
+import { buildObjectivesLabel } from "@/features/reports/schema";
 
 const OBJECTIVES_BADGE: Record<string, "default" | "secondary" | "destructive"> = {
   YES: "default",
   PARTIALLY: "secondary",
   NO: "destructive",
 };
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-}
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -29,14 +26,21 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export default function ReportDetailPage() {
+  const t = useTranslations("admin.reports.detail");
+  const tCommon = useTranslations("common");
+  const tObjectives = useTranslations("reportForm.objectivesStatus");
+  const locale = useLocale();
   const params = useParams<{ id: string }>();
   const { data: report, isLoading } = useAdminReportDetail(params.id);
+  const objectivesLabel = buildObjectivesLabel(tObjectives);
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "long", year: "numeric" });
 
   if (isLoading) {
-    return <p className="text-muted-foreground text-sm">Memuat data...</p>;
+    return <p className="text-muted-foreground text-sm">{tCommon("dataTable.loading")}</p>;
   }
   if (!report) {
-    return <p className="text-muted-foreground text-sm">Report tidak ditemukan.</p>;
+    return <p className="text-muted-foreground text-sm">{t("notFound")}</p>;
   }
 
   const isAlbright = Boolean(report.languageSkillsFocus || report.activitiesLog || report.resourcesUsed);
@@ -45,7 +49,7 @@ export default function ReportDetailPage() {
     <div className="space-y-4">
       <div>
         <Link href="/reports" className="text-muted-foreground text-sm hover:underline">
-          ← Kembali ke Daily Teaching Report
+          {t("back")}
         </Link>
         <div className="mt-1 flex items-start justify-between">
           <div>
@@ -53,7 +57,7 @@ export default function ReportDetailPage() {
               {report.className}
               {report.classType === "TEACHER_TRAINING" && (
                 <Badge variant="secondary" className="ml-2 text-xs">
-                  Guru & Staff
+                  {t("classTypeTraining")}
                 </Badge>
               )}
               {report.isSubstitute && (
@@ -68,7 +72,7 @@ export default function ReportDetailPage() {
           </div>
           {report.objectivesAchieved && (
             <Badge variant={OBJECTIVES_BADGE[report.objectivesAchieved]}>
-              {OBJECTIVES_LABEL[report.objectivesAchieved]}
+              {objectivesLabel[report.objectivesAchieved]}
             </Badge>
           )}
         </div>
@@ -76,13 +80,13 @@ export default function ReportDetailPage() {
 
       <Card className="border-l-4" style={{ borderLeftColor: "var(--chart-1)" }}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Ringkasan Kelas</CardTitle>
+          <CardTitle className="text-sm">{t("classSummary")}</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <Field label="Teacher" value={report.teacherName} />
           <Field
             label="Attendance"
-            value={report.attendanceTotal > 0 ? `${report.attendancePresent} / ${report.attendanceTotal} siswa` : "-"}
+            value={report.attendanceTotal > 0 ? t("attendanceValue", { present: report.attendancePresent, total: report.attendanceTotal }) : "-"}
           />
           <Field label="Skill" value={report.skills.join(", ")} />
           <Field label="Topic" value={report.topic} />
@@ -181,7 +185,7 @@ export default function ReportDetailPage() {
             ) : report.summary ? (
               <p className="text-muted-foreground text-sm">{report.summary}</p>
             ) : (
-              <p className="text-muted-foreground text-sm">Tidak ada.</p>
+              <p className="text-muted-foreground text-sm">{tCommon("empty")}</p>
             )}
           </CardContent>
         </Card>
@@ -193,7 +197,7 @@ export default function ReportDetailPage() {
             <p className="text-muted-foreground text-sm">{report.nextLessonNotes || "-"}</p>
             {report.homeworkAssigned && (
               <p className="text-sm">
-                <span className="text-muted-foreground">PR: </span>
+                <span className="text-muted-foreground">{t("homeworkLabel")}: </span>
                 {report.homeworkAssigned}
               </p>
             )}
@@ -209,7 +213,7 @@ export default function ReportDetailPage() {
           className="text-primary inline-flex items-center gap-1.5 text-sm hover:underline"
         >
           <ExternalLink className="size-3.5" />
-          Lihat foto aktivitas
+          {t("viewActivityPhoto")}
         </a>
       )}
     </div>

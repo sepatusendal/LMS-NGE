@@ -10,66 +10,82 @@ import {
   CalendarDays,
   ShieldUser,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemeSwitcher } from "@/components/shared/theme-switcher";
 
-const QUICK_LINKS = [
-  {
-    href: "/schools",
-    label: "Kelola Sekolah",
-    description: "Tambah, edit, atau nonaktifkan sekolah mitra.",
-    icon: Building2,
-  },
-  {
-    href: "/teachers",
-    label: "Kelola Teacher",
-    description: "Buat akun teacher, atur data, dan status aktif.",
-    icon: GraduationCap,
-  },
-  {
-    href: "/users",
-    label: "Admin & Coordinator",
-    description: "Buat akun Admin/Coordinator, reset password, dan status aktif.",
-    icon: ShieldUser,
-  },
-  {
-    href: "/students",
-    label: "Kelola Siswa",
-    description: "Daftar siswa per sekolah lengkap dengan NIS.",
-    icon: Users,
-  },
-  {
-    href: "/classes",
-    label: "Kelola Kelas",
-    description: "Buat kelas, atur jadwal, roster, dan teacher.",
-    icon: BookOpen,
-  },
-  {
-    href: "/curriculum",
-    label: "Kelola Kurikulum",
-    description: "Atur level dan deskripsi kurikulum per kelas.",
-    icon: ListChecks,
-  },
-  {
-    href: "/lesson-plans",
-    label: "Lesson Plan",
-    description: "Lihat lesson plan teacher per sekolah.",
-    icon: CalendarDays,
-  },
-];
+function useQuickLinks() {
+  const t = useTranslations("admin.settings.links");
+  return [
+    {
+      href: "/schools",
+      label: t("schools"),
+      description: t("schoolsDescription"),
+      icon: Building2,
+    },
+    {
+      href: "/teachers",
+      label: t("teachers"),
+      description: t("teachersDescription"),
+      icon: GraduationCap,
+    },
+    {
+      href: "/users",
+      label: t("users"),
+      description: t("usersDescription"),
+      icon: ShieldUser,
+    },
+    {
+      href: "/students",
+      label: t("students"),
+      description: t("studentsDescription"),
+      icon: Users,
+    },
+    {
+      href: "/classes",
+      label: t("classes"),
+      description: t("classesDescription"),
+      icon: BookOpen,
+    },
+    {
+      href: "/curriculum",
+      label: t("curriculum"),
+      description: t("curriculumDescription"),
+      icon: ListChecks,
+    },
+    {
+      href: "/lesson-plans",
+      label: t("lessonPlans"),
+      description: t("lessonPlansDescription"),
+      icon: CalendarDays,
+    },
+  ];
+}
 
 export default function SettingsPage() {
+  const t = useTranslations("admin.settings");
+  const tTheme = useTranslations("common.theme");
+  const quickLinks = useQuickLinks();
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Pengaturan</h1>
-        <p className="text-muted-foreground text-sm">
-          Pusat kontrol untuk mengelola seluruh data Portal NUFA.
-        </p>
+        <h1 className="text-xl font-semibold">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </div>
 
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">{tTheme("label")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ThemeSwitcher className="w-full sm:w-48" />
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 sm:grid-cols-2">
-        {QUICK_LINKS.map((link) => {
+        {quickLinks.map((link) => {
           const Icon = link.icon;
           return (
             <Link key={link.href} href={link.href}>

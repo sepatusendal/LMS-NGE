@@ -72,13 +72,13 @@ export default function TodayPage() {
       {lessonPlanDueCount > 0 && (
         <Link
           href="/lesson-plan"
-          className="bg-[#eda100]/10 flex items-center gap-3 rounded-2xl border border-[#eda100]/20 px-4 py-3 text-sm transition-colors hover:bg-[#eda100]/15"
+          className="bg-chart-4/10 flex items-center gap-3 rounded-2xl border border-chart-4/20 px-4 py-3 text-sm transition-colors hover:bg-chart-4/15"
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#eda100]/15">
-            <AlarmClockCheck className="size-4 text-[#a3730a]" />
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-chart-4/15">
+            <AlarmClockCheck className="size-4 text-chart-4" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="font-semibold text-[#a3730a]">
+            <span className="font-semibold text-chart-4">
               {t("lessonPlanDue", { count: lessonPlanDueCount })}
             </span>
             <span className="text-muted-foreground block text-xs">
@@ -114,7 +114,7 @@ export default function TodayPage() {
               </Link>
             )}
           </div>
-          <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl bg-card shadow-sm">
             {classes.map((c, i) => {
               const status = STATUS_CONFIG[c.meetingStatus] || STATUS_CONFIG.not_started;
               return (
@@ -174,21 +174,21 @@ function TodayHero({
       className={cn(
         "relative overflow-hidden rounded-3xl px-5 py-6 text-white shadow-[0_16px_40px_-16px_rgba(75,96,172,0.5)] sm:px-7 sm:py-7",
         isNight
-          ? "bg-gradient-to-br from-[#2a3466] via-[#3a4585] to-[#4b60ac]"
-          : "bg-gradient-to-br from-[#4b60ac] via-[#5468b8] to-[#6b83c9]",
+          ? "bg-gradient-to-br from-[#2a3466] via-[#3a4585] to-[var(--brand-blue)]"
+          : "bg-gradient-to-br from-[var(--brand-blue)] via-[#5468b8] to-[#6b83c9]",
       )}
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <svg className="absolute -top-10 -right-10 size-48 opacity-25 sm:size-56" viewBox="0 0 200 200">
           <path
-            fill="#ffffff"
+            fill="var(--primary-foreground)"
             d="M45.3,-58.6C58.5,-49.9,68.6,-35.5,72.8,-19.5C77,-3.5,75.3,14.1,68.1,29.3C60.9,44.5,48.2,57.3,33.2,64.8C18.2,72.3,0.9,74.5,-16.9,71.8C-34.7,69.1,-53,61.5,-64.5,47.9C-76,34.3,-80.7,14.7,-78.4,-3.6C-76.1,-21.9,-66.8,-38.9,-53.2,-47.9C-39.6,-56.9,-21.7,-57.9,-3.3,-54.1C15.1,-50.3,32.1,-67.3,45.3,-58.6Z"
             transform="translate(100 100)"
           />
         </svg>
         <svg className="absolute -bottom-16 left-1/3 size-56 opacity-15" viewBox="0 0 200 200">
           <path
-            fill="#f15c5d"
+            fill="var(--destructive)"
             d="M39.6,-51.2C52.6,-43.5,65.4,-33.4,70.8,-19.9C76.2,-6.5,74.2,10.3,66.9,24.2C59.6,38.1,47,49.1,32.7,57.2C18.4,65.3,2.4,70.5,-13.9,68.9C-30.2,67.3,-46.8,58.9,-58.4,45.6C-70,32.3,-76.6,14.1,-75.8,-3.7C-75,-21.5,-66.8,-38.9,-53.9,-46.9C-41,-54.9,-23.4,-53.5,-6.9,-45.7C9.6,-37.9,26.6,-58.9,39.6,-51.2Z"
             transform="translate(100 100)"
           />
@@ -227,9 +227,9 @@ function TodayHero({
 
 function EmptyTodayState({ t }: { t: ReturnType<typeof useTranslations> }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-3xl bg-white px-6 py-14 text-center shadow-sm">
+    <div className="flex flex-col items-center justify-center rounded-3xl bg-card px-6 py-14 text-center shadow-sm">
       <RelaxIllustration className="mb-5 h-auto w-48" />
-      <h1 className="text-lg font-semibold text-[#1e3a5f]">{t("empty.title")}</h1>
+      <h1 className="text-lg font-semibold text-foreground">{t("empty.title")}</h1>
       <p className="text-muted-foreground mt-1 max-w-xs text-sm">{t("empty.description")}</p>
     </div>
   );
@@ -247,7 +247,7 @@ function StatCard({
   loading: boolean;
 }) {
   return (
-    <div className="rounded-2xl bg-white p-3.5 shadow-sm">
+    <div className="rounded-2xl bg-card p-3.5 shadow-sm">
       <div className="flex items-center gap-1.5">
         <Icon className="text-muted-foreground size-3.5" />
         <p className="text-muted-foreground text-xs">{label}</p>

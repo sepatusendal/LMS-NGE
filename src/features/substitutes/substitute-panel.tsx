@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -16,13 +17,16 @@ import {
   useCancelSubstitute,
   useCurrentMeetingInfo,
 } from "./use-substitutes";
-import { ABSENCE_REASONS, ABSENCE_REASON_LABEL } from "./schema";
+import { ABSENCE_REASONS, ABSENCE_REASON_KEY } from "./schema";
 
 interface Props {
   classId: string;
 }
 
 export function SubstitutePanel({ classId }: Props) {
+  const t = useTranslations("admin.substitutes.panel");
+  const tCommon = useTranslations("common");
+  const tReason = useTranslations("workflow.absenceReason");
   const { data: info, isLoading } = useCurrentMeetingInfo(classId);
   const { data: teachers } = useTeachers();
   const assign = useAssignSubstitute(classId);
@@ -36,9 +40,7 @@ export function SubstitutePanel({ classId }: Props) {
   if (!info) {
     return (
       <div className="rounded-lg border px-3 py-2.5">
-        <p className="text-muted-foreground text-sm">
-          Belum ada lesson plan — belum bisa assign substitute.
-        </p>
+        <p className="text-muted-foreground text-sm">{t("noLessonPlanYet")}</p>
       </div>
     );
   }
@@ -57,14 +59,16 @@ export function SubstitutePanel({ classId }: Props) {
     }
   }
 
-  const teacherOptions = (teachers ?? []).filter((t) => t.id !== info.effectiveTeacherId);
+  const teacherOptions = (teachers ?? []).filter((te) => te.id !== info.effectiveTeacherId);
+  const reasonLabel = (r: string) =>
+    ABSENCE_REASON_KEY[r] ? tReason(ABSENCE_REASON_KEY[r]) : r;
 
   return (
     <div className="space-y-3">
       <div>
-        <h2 className="font-medium">Substitute Teacher</h2>
+        <h2 className="font-medium">{t("title")}</h2>
         <p className="text-muted-foreground text-sm">
-          Meeting {info.meetingNumber}: {info.topic}
+          {t("meetingLabel", { number: info.meetingNumber, topic: info.topic })}
         </p>
       </div>
 
@@ -73,13 +77,13 @@ export function SubstitutePanel({ classId }: Props) {
           <p className="text-sm">
             {info.isSubstituted ? (
               <>
-                Diajar oleh <span className="font-medium">{info.substituteTeacherName}</span>{" "}
-                (pengganti {info.effectiveTeacherName}) — sudah check-in, tidak bisa diubah.
+                {t("taughtBy")} <span className="font-medium">{info.substituteTeacherName}</span>{" "}
+                {t("substituteForCheckedIn", { teacher: info.effectiveTeacherName })}
               </>
             ) : (
               <>
-                Diajar oleh <span className="font-medium">{info.effectiveTeacherName}</span> —
-                sudah check-in.
+                {t("taughtBy")} <span className="font-medium">{info.effectiveTeacherName}</span>{" "}
+                {t("alreadyCheckedIn")}
               </>
             )}
           </p>
@@ -87,11 +91,11 @@ export function SubstitutePanel({ classId }: Props) {
           <div className="flex items-center justify-between gap-2">
             <div className="text-sm">
               <p>
-                <span className="font-medium">{info.effectiveTeacherName}</span> ditandai absen —
-                digantikan <span className="font-medium">{info.substituteTeacherName}</span>
+                <span className="font-medium">{info.effectiveTeacherName}</span> {t("markedAbsent")}{" "}
+                <span className="font-medium">{info.substituteTeacherName}</span>
               </p>
               <Badge variant="secondary" className="mt-1">
-                {ABSENCE_REASON_LABEL[info.substituteReason ?? ""] ?? info.substituteReason}
+                {reasonLabel(info.substituteReason ?? "")}
               </Badge>
             </div>
             <Button
@@ -100,39 +104,39 @@ export function SubstitutePanel({ classId }: Props) {
               disabled={cancel.isPending || !info.meetingId}
               onClick={() => info.meetingId && cancel.mutate(info.meetingId)}
             >
-              Batalkan
+              {t("cancel")}
             </Button>
           </div>
         ) : assigning ? (
           <div className="space-y-2">
             <Select
-              items={teacherOptions.map((t) => ({ value: t.id, label: t.fullName }))}
+              items={teacherOptions.map((te) => ({ value: te.id, label: te.fullName }))}
               value={substituteTeacherId}
               onValueChange={(v) => v && setSubstituteTeacherId(v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih substitute teacher" />
+                <SelectValue placeholder={t("selectSubstitute")} />
               </SelectTrigger>
               <SelectContent>
-                {teacherOptions.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.fullName}
+                {teacherOptions.map((te) => (
+                  <SelectItem key={te.id} value={te.id}>
+                    {te.fullName}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select
-              items={ABSENCE_REASONS.map((r) => ({ value: r, label: ABSENCE_REASON_LABEL[r] }))}
+              items={ABSENCE_REASONS.map((r) => ({ value: r, label: reasonLabel(r) }))}
               value={reason}
               onValueChange={(v) => v && setReason(v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Alasan absen" />
+                <SelectValue placeholder={t("selectReason")} />
               </SelectTrigger>
               <SelectContent>
                 {ABSENCE_REASONS.map((r) => (
                   <SelectItem key={r} value={r}>
-                    {ABSENCE_REASON_LABEL[r]}
+                    {reasonLabel(r)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -143,20 +147,20 @@ export function SubstitutePanel({ classId }: Props) {
                 disabled={!substituteTeacherId || !reason || assign.isPending}
                 onClick={handleAssign}
               >
-                {assign.isPending ? "Menyimpan..." : "Simpan"}
+                {assign.isPending ? tCommon("saving") : tCommon("save")}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setAssigning(false)}>
-                Batal
+                {tCommon("cancel")}
               </Button>
             </div>
           </div>
         ) : (
           <div className="flex items-center justify-between">
             <p className="text-sm">
-              Diajar oleh <span className="font-medium">{info.effectiveTeacherName}</span>
+              {t("taughtBy")} <span className="font-medium">{info.effectiveTeacherName}</span>
             </p>
             <Button size="sm" variant="outline" onClick={() => setAssigning(true)}>
-              Tandai Guru Absen
+              {t("markAbsent")}
             </Button>
           </div>
         )}
