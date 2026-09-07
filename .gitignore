@@ -66,8 +66,8 @@ next-env.d.ts
 # local testing notes — contains test account credentials, repo is public
 /TESTING.md
 
-# Claude Code session state
-.claude/scheduled_tasks.lock
+# Claude Code local state/config — not for source control
+.claude/
 
 # local PDF preview output from scripts/render-parent-report-preview.ts
 /parent-report-preview.pdf
