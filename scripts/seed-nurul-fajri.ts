@@ -3,7 +3,7 @@
 // Supabase. Idempotent: safe to re-run — matches existing rows by name/NIS
 // instead of blindly inserting duplicates.
 //
-// Run with: npx tsx scripts/seed-nurul-fajri.ts
+// Run with: npx tsx scripts/seed-nurul-fajri.ts [path/to/seed_final.json]
 
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
@@ -25,8 +25,7 @@ const supabase = createClient(supabaseUrl, serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const SEED_JSON_PATH =
-  "/private/tmp/claude-502/-Users-wiraraja-Documents-LMS-NGE/9d08f836-3d24-4294-8b0b-6ca9de7a1d4c/scratchpad/seed_final.json";
+const SEED_JSON_PATH = resolve(__dirname, process.argv[2] ?? "seed_final.json");
 
 interface SeedStudent {
   no: number;

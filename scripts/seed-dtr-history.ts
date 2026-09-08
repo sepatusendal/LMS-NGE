@@ -11,7 +11,7 @@
 // this is NOT a verified per-student record — don't treat individual rows
 // from this import as ground truth for a specific student's attendance.
 //
-// Run with: npx tsx scripts/seed-dtr-history.ts
+// Run with: npx tsx scripts/seed-dtr-history.ts [path/to/dtr_reports.json]
 
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
@@ -29,8 +29,7 @@ const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const DTR_JSON_PATH =
-  "/private/tmp/claude-502/-Users-wiraraja-Documents-LMS-NGE/9d08f836-3d24-4294-8b0b-6ca9de7a1d4c/scratchpad/dtr_reports.json";
+const DTR_JSON_PATH = resolve(__dirname, process.argv[2] ?? "dtr_reports.json");
 
 interface DtrRow {
   row: number;

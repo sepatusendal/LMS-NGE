@@ -6,8 +6,8 @@
 // records by fullName+school instead of blindly inserting duplicates.
 //
 // Run with:
-//   npx tsx scripts/seed-teacher-training.ts dev    (targets .env.staging)
-//   npx tsx scripts/seed-teacher-training.ts prod    (targets .env)
+//   npx tsx scripts/seed-teacher-training.ts dev [path/to/teacher_training_seed.json]    (targets .env.staging)
+//   npx tsx scripts/seed-teacher-training.ts prod [path/to/teacher_training_seed.json]    (targets .env)
 
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
@@ -37,8 +37,7 @@ const supabase = createClient(supabaseUrl, serviceKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const SEED_JSON_PATH =
-  "/private/tmp/claude-502/-Users-wiraraja-Documents-LMS-NGE/865dc384-6af2-461d-8896-0e3078f08daf/scratchpad/teacher_training_seed.json";
+const SEED_JSON_PATH = resolve(__dirname, process.argv[3] ?? "teacher_training_seed.json");
 
 interface SeedClass {
   name: string;

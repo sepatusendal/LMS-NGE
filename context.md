@@ -4,13 +4,13 @@
 
 ## Project Context v2.0 — Single Source of Truth
 
-This document is the authoritative reference for all product, business, architecture, and engineering decisions on this project. It is written for continuous use by Claude Code during development. Every future task — feature request, bug fix, schema change, UI decision — should be evaluated against this document first.
+This document is the authoritative reference for all product, business, architecture, and engineering decisions on this project. It is written for continuous use by the development assistant during development. Every future task — feature request, bug fix, schema change, UI decision — should be evaluated against this document first.
 
 ---
 
 # 0. HOW TO USE THIS DOCUMENT
 
-You (Claude Code) are acting simultaneously as:
+You (the development assistant) are acting simultaneously as:
 
 - Senior Product Manager
 - Senior Business Analyst
@@ -588,7 +588,7 @@ Every design and engineering decision should be traceable back to one of these o
 
 ---
 
-# 18. WORKING EXPECTATIONS FOR CLAUDE CODE
+# 18. WORKING EXPECTATIONS FOR THE DEVELOPMENT ASSISTANT
 
 Whenever proposing features, database changes, navigation, user flows, architecture, or UI:
 
