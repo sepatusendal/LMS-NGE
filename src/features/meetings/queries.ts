@@ -464,15 +464,24 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
       moduleFileName: plan.moduleFileName,
       meetingId: meeting?.id || null,
       meetingStatus,
-      checkInTime: checkIn?.checkInTime || null,
-      checkOutTime: checkOut?.checkOutTime || null,
-      isLate: checkIn?.isLate ?? null,
-      durationMinutes: checkOut?.durationMinutes ?? null,
+      // `plan`/`meeting` here point at the last, already-taught lesson plan
+      // when courseCompleted is true (see above) — its check-in/out/late/
+      // substitute data belongs to that old, finished meeting, not to
+      // "today". Surfacing it as-is previously made a card that hasn't even
+      // started look like it was already checked in/out (and occasionally
+      // "teaching as a substitute for X"), directly under a card whose
+      // badge says the opposite ("Lesson Plan Needed"). Blank it out so
+      // there's nothing here to misread as current.
+      checkInTime: courseCompleted ? null : checkIn?.checkInTime || null,
+      checkOutTime: courseCompleted ? null : checkOut?.checkOutTime || null,
+      isLate: courseCompleted ? null : (checkIn?.isLate ?? null),
+      durationMinutes: courseCompleted ? null : (checkOut?.durationMinutes ?? null),
       hasAttendance,
       hasReport,
-      isSubstitute,
-      originalTeacherName: isSubstitute ? (toOne(meeting?.assignedTeacher)?.users?.fullName ?? null) : null,
-      substituteReason: isSubstitute ? (meeting?.substituteReason ?? null) : null,
+      isSubstitute: courseCompleted ? false : isSubstitute,
+      originalTeacherName:
+        !courseCompleted && isSubstitute ? (toOne(meeting?.assignedTeacher)?.users?.fullName ?? null) : null,
+      substituteReason: !courseCompleted && isSubstitute ? (meeting?.substituteReason ?? null) : null,
       courseCompleted,
     };
   });

@@ -246,12 +246,11 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
               </div>
             )}
 
-            {c.meetingStatus === "course_completed" && (
-              <div className="flex w-full items-center gap-2 rounded-md bg-chart-3/10 px-3 py-2 text-sm">
-                <CheckCircle className="size-4 text-chart-3" />
-                <span className="font-medium text-chart-3">{t("courseAllDone")}</span>
-              </div>
-            )}
+            {/* course_completed intentionally has no "all done" box here —
+                it already gets the "Create Lesson Plan" CTA above, and a
+                green checkmark success box right next to it would directly
+                contradict the "Lesson Plan Needed" badge on this same card
+                (this used to render both at once). */}
           </div>
         </CardContent>
       </Card>
