@@ -35,6 +35,7 @@ import {
   useUnenrollStudent,
 } from "@/features/classes/use-roster";
 import { formatScheduleSlots } from "@/features/classes/schema";
+import { ClassSchedulePanel } from "@/features/classes/class-schedule-panel";
 import { ScheduleOverridesPanel } from "@/features/classes/schedule-overrides-panel";
 import { SubstitutePanel } from "@/features/substitutes/substitute-panel";
 import { ClassTimeline } from "@/features/meetings/class-timeline";
@@ -102,6 +103,8 @@ export default function ClassDetailPage() {
       </div>
 
       <SubstitutePanel classId={classItem.id} />
+
+      <ClassSchedulePanel classItem={classItem} />
 
       <ScheduleOverridesPanel classItem={classItem} />
 
