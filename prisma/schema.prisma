@@ -213,19 +213,31 @@ enum ClassType {
   TEACHER_TRAINING
 }
 
+/// Coarse grouping used to batch-apply temporary schedule changes (e.g. exam
+/// week) across many classes at once — see ClassTemporarySchedule. Freeform
+/// grade level already lives on Curriculum.gradeLevel; this is a separate,
+/// small fixed set specifically for that grouping use case, not a general
+/// grade taxonomy.
+enum GradeBand {
+  GRADE_1_3
+  GRADE_4_6
+  SMP_SMA
+}
+
 model Class {
-  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  schoolId           String    @db.Uuid
-  curriculumId       String?   @db.Uuid
-  teacherId          String    @db.Uuid
+  id                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId           String     @db.Uuid
+  curriculumId       String?    @db.Uuid
+  teacherId          String     @db.Uuid
   name               String
-  classType          ClassType @default(REGULAR) // REGULAR = student classes, TEACHER_TRAINING = Guru & Staff English course — kept in separate admin submenus, never listed together
+  classType          ClassType  @default(REGULAR) // REGULAR = student classes, TEACHER_TRAINING = Guru & Staff English course — kept in separate admin submenus, never listed together
+  gradeBand          GradeBand?
   room               String?
   scheduleDaysOfWeek Int[] // 0 = Sunday .. 6 = Saturday; classes often meet 2x/week — kept in sync with scheduleSlots
-  isActive           Boolean   @default(true)
-  createdAt          DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt          DateTime  @updatedAt @db.Timestamptz(3)
-  deletedAt          DateTime? @db.Timestamptz(3)
+  isActive           Boolean    @default(true)
+  createdAt          DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime   @updatedAt @db.Timestamptz(3)
+  deletedAt          DateTime?  @db.Timestamptz(3)
 
   school      School            @relation(fields: [schoolId], references: [id])
   curriculum  Curriculum?       @relation(fields: [curriculumId], references: [id])
@@ -234,11 +246,40 @@ model Class {
   lessonPlans LessonPlan[]
   scheduleOverrides ClassScheduleOverride[]
   scheduleSlots     ClassScheduleSlot[]
+  temporarySchedules ClassTemporarySchedule[]
 
   @@unique([schoolId, name])
   @@index([schoolId])
   @@index([teacherId])
   @@map("classes")
+}
+
+/// One calendar day's time override for a class, for a temporary period
+/// (e.g. STS/exam week schedule). Expanded to one row per date over the
+/// admin-picked date range at creation time — same pattern as Holiday — so
+/// resolving "what time does this class meet on date X" is a plain equality
+/// lookup, and the override naturally stops applying once its dates pass
+/// (no separate "revert" step needed). Only changes the time, not the
+/// teacher — teacher resolution still goes through ClassScheduleOverride.
+/// `batchId` groups every row created by one admin action (one class × N
+/// dates, or N classes × N dates) so the whole batch can be listed/deleted
+/// as a single unit.
+model ClassTemporarySchedule {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchId   String   @db.Uuid
+  classId   String   @db.Uuid
+  date      DateTime @db.Date
+  startTime String // "HH:mm"
+  endTime   String // "HH:mm"
+  label     String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  class Class @relation(fields: [classId], references: [id])
+
+  @@unique([classId, date])
+  @@index([date])
+  @@index([batchId])
+  @@map("class_temporary_schedules")
 }
 
 /// Per-day time for a Class's own regular schedule (context.md: classes meet

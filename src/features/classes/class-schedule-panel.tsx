@@ -50,6 +50,7 @@ export function ClassSchedulePanel({ classItem }: { classItem: Class }) {
       schoolId: classItem.schoolId,
       teacherId: classItem.teacherId,
       curriculumId: classItem.curriculumId ?? "",
+      gradeBand: classItem.gradeBand ?? "",
       room: classItem.room ?? "",
       scheduleDaysOfWeek: days,
       scheduleTimes: times,

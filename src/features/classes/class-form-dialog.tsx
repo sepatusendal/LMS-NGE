@@ -25,7 +25,14 @@ import {
 import { useSchools } from "@/features/schools/use-schools";
 import { useTeachers } from "@/features/teachers/use-teachers";
 import { useCurriculums } from "@/features/curriculum/use-curriculum";
-import { buildClassSchema, buildDayOptions, type Class, type ClassInput, type ClassType } from "./schema";
+import {
+  buildClassSchema,
+  buildDayOptions,
+  GRADE_BAND_OPTIONS,
+  type Class,
+  type ClassInput,
+  type ClassType,
+} from "./schema";
 import { useCreateClass, useUpdateClass } from "./use-classes";
 
 export function ClassFormDialog({
@@ -74,6 +81,7 @@ export function ClassFormDialog({
         schoolId: classItem?.schoolId ?? "",
         teacherId: classItem?.teacherId ?? "",
         curriculumId: classItem?.curriculumId ?? "",
+        gradeBand: classItem?.gradeBand ?? "",
         room: classItem?.room ?? "",
         scheduleDaysOfWeek: classItem
           ? classItem.scheduleDaysOfWeek.map(String)
@@ -209,6 +217,33 @@ export function ClassFormDialog({
                 </Select>
               )}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t("gradeBandOptional")}</Label>
+            <Controller
+              control={control}
+              name="gradeBand"
+              render={({ field }) => (
+                <Select
+                  items={GRADE_BAND_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                  value={field.value}
+                  onValueChange={(v) => field.onChange(v ?? "")}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t("selectGradeBand")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GRADE_BAND_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <p className="text-muted-foreground text-xs">{t("gradeBandHint")}</p>
           </div>
 
           <div className="space-y-2">

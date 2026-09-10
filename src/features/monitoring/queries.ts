@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { fetchHolidaySchoolsForDate } from "@/features/holidays/queries";
+import { fetchTemporaryScheduleTimesForDate } from "@/features/temporary-schedules/queries";
 import { formatLocalDateStr } from "@/lib/date";
 import type { AnalyticsPoint, ClassStatusRow } from "./schema";
 
@@ -133,13 +134,19 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
 
   const now = Date.now();
 
+  // A temporary schedule (e.g. exam-week hours) for `date` wins over both
+  // the per-day teacher override and the class's normal recurring slot —
+  // it only ever changes the time, never who's teaching.
+  const temporaryTimes = await fetchTemporaryScheduleTimesForDate(classIds, date);
+
   return classesToday
     .map((cls): ClassStatusRow => {
       const override = overrideByClass.get(cls.id);
       const overrideTeacher = toOne(override?.teachers ?? null);
       const todaySlot = cls.class_schedule_slots.find((s) => s.dayOfWeek === today);
-      const scheduleStartTime = override?.startTime ?? todaySlot?.startTime ?? "00:00";
-      const scheduleEndTime = override?.endTime ?? todaySlot?.endTime ?? "00:00";
+      const temp = temporaryTimes.get(cls.id);
+      const scheduleStartTime = temp?.startTime ?? override?.startTime ?? todaySlot?.startTime ?? "00:00";
+      const scheduleEndTime = temp?.endTime ?? override?.endTime ?? todaySlot?.endTime ?? "00:00";
       const teacherName = overrideTeacher?.users?.fullName ?? cls.teachers?.users?.fullName ?? "-";
       const teacherId = overrideTeacher?.id ?? cls.teacherId;
 

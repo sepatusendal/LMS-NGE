@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { findRecurringScheduleConflict, ScheduleConflictError } from "@/lib/schedule-conflict";
-import type { Class, ClassInput, ClassType, ScheduleSlot } from "./schema";
+import type { Class, ClassInput, ClassType, GradeBand, ScheduleSlot } from "./schema";
 
 interface ClassRow {
   id: string;
@@ -9,6 +9,7 @@ interface ClassRow {
   teacherId: string;
   curriculumId: string | null;
   classType: ClassType;
+  gradeBand: GradeBand | null;
   room: string | null;
   scheduleDaysOfWeek: number[];
   isActive: boolean;
@@ -20,7 +21,7 @@ interface ClassRow {
 }
 
 const SELECT = `
-  id, name, schoolId, teacherId, curriculumId, classType, room, scheduleDaysOfWeek,
+  id, name, schoolId, teacherId, curriculumId, classType, gradeBand, room, scheduleDaysOfWeek,
   isActive, createdAt,
   schools(name), curriculums(name, gradeLevel, reportFormat), teachers(users(fullName)),
   class_schedule_slots(dayOfWeek, startTime, endTime)
@@ -39,6 +40,7 @@ function mapRow(row: ClassRow): Class {
     curriculumGradeLevel: row.curriculums?.gradeLevel ?? null,
     curriculumReportFormat: row.curriculums?.reportFormat ?? "STANDARD",
     classType: row.classType,
+    gradeBand: row.gradeBand,
     room: row.room,
     scheduleDaysOfWeek: row.scheduleDaysOfWeek,
     scheduleSlots: row.class_schedule_slots ?? [],
@@ -81,6 +83,7 @@ function toPayload(input: ClassInput, classType: ClassType) {
     teacherId: input.teacherId,
     curriculumId: input.curriculumId || null,
     classType,
+    gradeBand: input.gradeBand || null,
     room: input.room || null,
     scheduleDaysOfWeek: input.scheduleDaysOfWeek.map(Number),
   };

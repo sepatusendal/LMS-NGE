@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+export const GRADE_BAND_OPTIONS = [
+  { value: "GRADE_1_3", label: "Kelas 1-3" },
+  { value: "GRADE_4_6", label: "Kelas 4-6" },
+  { value: "SMP_SMA", label: "SMP & SMA" },
+] as const;
+
+export type GradeBand = (typeof GRADE_BAND_OPTIONS)[number]["value"];
+
 export const DAY_OPTIONS = [
   { value: "1", label: "Senin" },
   { value: "2", label: "Selasa" },
@@ -69,6 +77,7 @@ export function buildClassSchema(t: (key: string) => string) {
       schoolId: z.string().min(1, t("validation.schoolRequired")),
       teacherId: z.string().min(1, t("validation.teacherRequired")),
       curriculumId: z.string().optional(),
+      gradeBand: z.string().optional(),
       room: z.string().optional(),
       scheduleDaysOfWeek: z.array(z.string()).min(1, t("validation.daySelectionRequired")),
       scheduleTimes: z.record(
@@ -104,6 +113,7 @@ export interface Class {
   curriculumGradeLevel: string | null;
   curriculumReportFormat: "STANDARD" | "ALBRIGHT";
   classType: ClassType;
+  gradeBand: GradeBand | null;
   room: string | null;
   scheduleDaysOfWeek: number[];
   scheduleSlots: ScheduleSlot[];
