@@ -140,7 +140,7 @@ export default function LessonPlanPage() {
                           <p className="truncate text-sm font-semibold">{plan.topic}</p>
                           <p className="text-muted-foreground text-xs">
                             {t("week", { week: plan.week })} ·{" "}
-                            {new Date(plan.scheduledDate).toLocaleDateString(
+                            {parseLocalDate(plan.scheduledDate).toLocaleDateString(
                               dtLocale,
                               { day: "numeric", month: "short", year: "numeric" },
                             )}

@@ -94,8 +94,8 @@
       "classCount": "Kelas diampu",
       "studentCount": "Total siswa"
     },
-    "lessonPlanDue": "{count} kelas perlu lesson plan",
-    "lessonPlanDueHint": "Siapkan lesson plan minimal 2 minggu ke depan biar pengganti bisa langsung catch-up.",
+    "lessonPlanDue": "{count} kelas belum punya lesson plan 2 minggu ke depan",
+    "lessonPlanDueHint": "Ini bukan daftar tugas tetap — tiap kelas butuh lesson plan yang selalu ready minimal 2 minggu ke depan, jadi angka ini bisa tetap muncul biarpun kamu udah bikin lesson plan minggu ini kalau kelasnya masih ketinggalan jauh. Cek Plan buat lihat kelas mana yang paling butuh.",
     "loadError": {
       "title": "Gagal Memuat Data",
       "description": "Terjadi kesalahan. Coba refresh halaman."
@@ -401,12 +401,13 @@
       "checkOut": "Check-out",
       "fillReport": "Isi Report",
       "done": "Selesai",
-      "courseCompleted": "Kelas Selesai"
+      "courseCompleted": "Perlu Lesson Plan"
     },
     "meetingTopic": "Meeting {number}: {topic}",
     "noLessonPlanForMeeting": "Belum ada lesson plan untuk meeting ini",
     "teachingAsSubstitute": "Anda mengajar sebagai pengganti",
     "checkIn": "Check-in",
+    "checkOut": "Check-out",
     "duration": "Durasi",
     "durationMinutes": "{minutes} mnt",
     "late": "Terlambat",

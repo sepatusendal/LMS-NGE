@@ -14,7 +14,7 @@ import {
 import { useSchools } from "@/features/schools/use-schools";
 import { useStatusBoard } from "@/features/monitoring/use-monitoring";
 import { TeacherDayList } from "@/features/substitutes/teacher-day-list";
-import { todayLocalDateStr } from "@/lib/date";
+import { parseLocalDate, todayLocalDateStr } from "@/lib/date";
 
 export default function SubstitutesPage() {
   const t = useTranslations("admin.substitutes");
@@ -81,7 +81,7 @@ export default function SubstitutesPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm">
             {t("scheduledTeachers")} —{" "}
-            {new Date(date).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", {
+            {parseLocalDate(date).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", {
               weekday: "long",
               day: "numeric",
               month: "long",

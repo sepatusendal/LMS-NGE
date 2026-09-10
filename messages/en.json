@@ -94,8 +94,8 @@
       "classCount": "Classes taught",
       "studentCount": "Total students"
     },
-    "lessonPlanDue": "{count, plural, one {# class needs a lesson plan} other {# classes need a lesson plan}}",
-    "lessonPlanDueHint": "Prepare lesson plans at least 2 weeks ahead so a substitute can catch up quickly.",
+    "lessonPlanDue": "{count, plural, one {# class is missing a lesson plan 2 weeks out} other {# classes are missing a lesson plan 2 weeks out}}",
+    "lessonPlanDueHint": "This isn't a fixed to-do list — every class needs a lesson plan ready at least 2 weeks ahead at all times, so this number can stay the same even after you write one this week if that class is still far behind. Check Plan to see which classes need it most.",
     "loadError": {
       "title": "Couldn't Load Data",
       "description": "Something went wrong. Try refreshing the page."
@@ -401,12 +401,13 @@
       "checkOut": "Check-out",
       "fillReport": "Fill Report",
       "done": "Done",
-      "courseCompleted": "Course Completed"
+      "courseCompleted": "Lesson Plan Needed"
     },
     "meetingTopic": "Meeting {number}: {topic}",
     "noLessonPlanForMeeting": "No lesson plan for this meeting yet",
     "teachingAsSubstitute": "You're teaching as a substitute for",
     "checkIn": "Check-in",
+    "checkOut": "Check-out",
     "duration": "Duration",
     "durationMinutes": "{minutes} min",
     "late": "Late",

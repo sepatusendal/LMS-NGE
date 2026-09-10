@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdminReportDetail } from "@/features/reports/use-admin-reports";
 import { buildObjectivesLabel } from "@/features/reports/schema";
+import { parseLocalDate } from "@/lib/date";
 
 const OBJECTIVES_BADGE: Record<string, "default" | "secondary" | "destructive"> = {
   YES: "default",
@@ -34,7 +35,7 @@ export default function ReportDetailPage() {
   const { data: report, isLoading, isError, error } = useAdminReportDetail(params.id);
   const objectivesLabel = buildObjectivesLabel(tObjectives);
   const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "long", year: "numeric" });
+    parseLocalDate(dateStr).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "long", year: "numeric" });
 
   if (isLoading) {
     return <p className="text-muted-foreground text-sm">{tCommon("dataTable.loading")}</p>;

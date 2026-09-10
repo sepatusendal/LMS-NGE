@@ -27,6 +27,7 @@ import { useAdminReports } from "@/features/reports/use-admin-reports";
 import { buildObjectivesLabel } from "@/features/reports/schema";
 import type { AdminReportListItem } from "@/features/reports/admin-queries";
 import type { ExcelColumn } from "@/lib/export-excel";
+import { parseLocalDate } from "@/lib/date";
 
 const OBJECTIVES_BADGE: Record<string, "default" | "secondary" | "destructive"> = {
   YES: "default",
@@ -85,7 +86,7 @@ export default function AdminReportsPage() {
   const [classType, setClassType] = useState("");
 
   const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short", year: "numeric" });
+    parseLocalDate(dateStr).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short", year: "numeric" });
   const objectivesLabel = useMemo(() => buildObjectivesLabel(tObjectives), [tObjectives]);
 
   const schoolIdByClassId = useMemo(() => new Map((classes ?? []).map((c) => [c.id, c.schoolId])), [classes]);

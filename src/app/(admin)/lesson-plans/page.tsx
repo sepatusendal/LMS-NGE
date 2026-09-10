@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { downloadAlbrightTeachingRecords } from "@/features/lesson-plans/albright-export";
+import { parseLocalDate } from "@/lib/date";
 import {
   Select,
   SelectContent,
@@ -35,7 +36,7 @@ function buildLessonPlanColumns(
     { header: t("class"), key: "class", width: 22, value: (p) => p.className },
     { header: "Meeting", key: "meeting", width: 10, value: (p) => p.meetingNumber },
     { header: t("week"), key: "week", width: 10, value: (p) => p.week },
-    { header: t("date"), key: "date", width: 14, value: (p) => new Date(p.scheduledDate).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short", year: "numeric" }) },
+    { header: t("date"), key: "date", width: 14, value: (p) => parseLocalDate(p.scheduledDate).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short", year: "numeric" }) },
     { header: "Level", key: "level", width: 10, value: (p) => p.level ?? "-" },
     { header: "Topic", key: "topic", width: 26, value: (p) => p.topic },
     { header: "Learning Objectives", key: "objectives", width: 40, value: (p) => p.learningObjectives.filter(Boolean).join(" | ") || "-" },
@@ -217,7 +218,7 @@ export default function AdminLessonPlansPage() {
                               </p>
                               <p className="text-muted-foreground text-xs">
                                 {t("weekLabel", { week: plan.week })} ·{" "}
-                                {new Date(plan.scheduledDate).toLocaleDateString(
+                                {parseLocalDate(plan.scheduledDate).toLocaleDateString(
                                   locale === "en" ? "en-US" : "id-ID",
                                   {
                                     day: "numeric",

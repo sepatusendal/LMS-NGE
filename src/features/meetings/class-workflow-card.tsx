@@ -32,11 +32,19 @@ export const STATUS_CONFIG: Record<
     accent: "border-transparent bg-chart-3 px-2.5 py-1 text-[13px] font-semibold text-primary-foreground",
     barColor: "bg-chart-3",
   },
+  // Every existing lesson plan for this class has already been taught —
+  // there just isn't a next one written yet. This used to be styled/labeled
+  // identically to "report_submitted" ("Selesai", green) — from a teacher's
+  // side that reads as "today's class is done" even when checked before the
+  // class has started, when the real, actionable meaning is "you haven't
+  // written next week's lesson plan." Styled like `not_started` (neutral,
+  // not a false "success" green) and paired with the same "create lesson
+  // plan" CTA as the no-lesson-plan-at-all case below.
   course_completed: {
     labelKey: "courseCompleted",
-    variant: "outline",
-    accent: "border-transparent bg-chart-3 px-2.5 py-1 text-[13px] font-semibold text-primary-foreground",
-    barColor: "bg-chart-3",
+    variant: "secondary",
+    accent: "text-slate-500",
+    barColor: "bg-slate-300",
   },
 };
 
@@ -87,7 +95,9 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
                     </span>
                   )}
                 </div>
-                {c.topic ? (
+                {c.courseCompleted ? (
+                  <p className="text-destructive/80 text-xs">{t("noLessonPlanForMeeting")}</p>
+                ) : c.topic ? (
                   <p className="text-xs font-medium">
                     {t("meetingTopic", { number: c.meetingNumber, topic: c.topic })}
                   </p>
@@ -159,13 +169,13 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
           )}
 
           <div className="mt-3 flex flex-wrap gap-2">
-            {noLp && (
+            {(noLp || c.courseCompleted) && (
               <Link href="/lesson-plan/new" className={cn(buttonVariants({ size: "sm", variant: "outline" }), "w-full")}>
                 {t("createLessonPlan")}
               </Link>
             )}
 
-            {!noLp && c.meetingStatus === "not_started" && (
+            {!noLp && !c.courseCompleted && c.meetingStatus === "not_started" && (
               <Button
                 size="sm"
                 className="w-full bg-primary hover:bg-primary/80"
