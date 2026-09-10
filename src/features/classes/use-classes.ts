@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   createClassRecord,
+  deleteClassRecord,
   fetchClassById,
   fetchClasses,
   setClassActive,
@@ -63,6 +64,19 @@ export function useUpdateClass(classType: ClassType = "REGULAR") {
     },
     onError: (error) =>
       toast.error("Gagal memperbarui kelas", { description: error.message }),
+  });
+}
+
+export function useDeleteClass(classType: ClassType = "REGULAR") {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteClassRecord(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CLASSES_KEY });
+      toast.success("Kelas berhasil dihapus");
+    },
+    onError: (error) =>
+      toast.error("Gagal menghapus kelas", { description: error.message }),
   });
 }
 

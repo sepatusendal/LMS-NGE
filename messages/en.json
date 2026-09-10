@@ -752,6 +752,18 @@
         "emailInvalid": "Invalid email format",
         "passwordMin": "Password must be at least 6 characters",
         "feeInvalid": "Fee must be a whole Rupiah number, and cannot be negative"
+      },
+      "assignments": {
+        "title": "Classes Taught",
+        "empty": "No classes assigned to this teacher yet.",
+        "assignButton": "Assign to Class",
+        "overrideBadge": "override",
+        "unassignConfirm": "Remove the {class} assignment on {day}? The class will revert to its default teacher.",
+        "assignDialogTitle": "Assign {teacher} to a Class",
+        "selectClass": "Select class",
+        "selectDay": "Select day",
+        "currentlyBy": "Currently: {teacher}",
+        "timeLabel": "Time"
       }
     },
     "users": {

@@ -131,6 +131,16 @@ async function syncScheduleSlots(supabase: ReturnType<typeof createClient>, clas
   if (upsertError) throw upsertError;
 }
 
+/** Postgres raises 23505 for the (schoolId, name) unique constraint — this
+ * is the only unique constraint on `classes`, so any 23505 here means a
+ * duplicate class name within the same school. */
+function throwFriendlyClassError(error: { code?: string; message: string }): never {
+  if (error.code === "23505") {
+    throw new Error("Sudah ada kelas dengan nama ini di sekolah yang sama");
+  }
+  throw new Error(error.message);
+}
+
 export async function createClassRecord(input: ClassInput, classType: ClassType = "REGULAR") {
   await assertNoScheduleConflict(input);
 
@@ -140,7 +150,7 @@ export async function createClassRecord(input: ClassInput, classType: ClassType 
     .insert(toPayload(input, classType))
     .select("id")
     .single();
-  if (error) throw error;
+  if (error) throwFriendlyClassError(error);
 
   await syncScheduleSlots(supabase, (data as { id: string }).id, input);
 }
@@ -153,7 +163,7 @@ export async function updateClassRecord(id: string, input: ClassInput, classType
     .from("classes")
     .update(toPayload(input, classType))
     .eq("id", id);
-  if (error) throw error;
+  if (error) throwFriendlyClassError(error);
 
   await syncScheduleSlots(supabase, id, input);
 }
@@ -165,4 +175,35 @@ export async function setClassActive(id: string, isActive: boolean) {
     .update({ isActive })
     .eq("id", id);
   if (error) throw error;
+}
+
+/** Hard delete. The class's own schedule rows are cleaned up first (they
+ * carry no meaning on their own); the class row itself is then deleted, which
+ * Postgres will reject (23503) if students are still enrolled or lesson
+ * plans still reference it — callers should tell the admin to unenroll
+ * students / remove lesson plans, or deactivate the class instead. */
+export async function deleteClassRecord(id: string) {
+  const supabase = createClient();
+
+  const { error: overridesError } = await supabase
+    .from("class_schedule_overrides")
+    .delete()
+    .eq("classId", id);
+  if (overridesError) throw overridesError;
+
+  const { error: slotsError } = await supabase
+    .from("class_schedule_slots")
+    .delete()
+    .eq("classId", id);
+  if (slotsError) throw slotsError;
+
+  const { error } = await supabase.from("classes").delete().eq("id", id);
+  if (error) {
+    if (error.code === "23503") {
+      throw new Error(
+        "Kelas ini masih punya siswa terdaftar atau lesson plan — keluarkan/pindahkan data itu dulu, atau nonaktifkan saja kelasnya lewat toggle status.",
+      );
+    }
+    throw error;
+  }
 }

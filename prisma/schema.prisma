@@ -235,6 +235,7 @@ model Class {
   scheduleOverrides ClassScheduleOverride[]
   scheduleSlots     ClassScheduleSlot[]
 
+  @@unique([schoolId, name])
   @@index([schoolId])
   @@index([teacherId])
   @@map("classes")

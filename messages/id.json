@@ -752,6 +752,18 @@
         "emailInvalid": "Format email salah",
         "passwordMin": "Password minimal 6 karakter",
         "feeInvalid": "Fee harus angka Rupiah bulat, tidak boleh negatif"
+      },
+      "assignments": {
+        "title": "Kelas yang Diampu",
+        "empty": "Belum ada kelas yang di-assign ke teacher ini.",
+        "assignButton": "Assign ke Kelas",
+        "overrideBadge": "override",
+        "unassignConfirm": "Hapus assignment {class} di hari {day}? Kelas ini akan kembali ke guru default-nya.",
+        "assignDialogTitle": "Assign {teacher} ke Kelas",
+        "selectClass": "Pilih kelas",
+        "selectDay": "Pilih hari",
+        "currentlyBy": "Saat ini: {teacher}",
+        "timeLabel": "Jam"
       }
     },
     "users": {

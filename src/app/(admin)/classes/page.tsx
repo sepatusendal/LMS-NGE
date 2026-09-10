@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/shared/data-table";
 import { ExportExcelButton } from "@/components/shared/export-excel-button";
@@ -52,6 +53,7 @@ export default function ClassesPage() {
               setDialogOpen(true);
             }}
           >
+            <Plus />
             {t("addTitle")}
           </Button>
         </div>

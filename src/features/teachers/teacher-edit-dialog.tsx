@@ -24,6 +24,7 @@ import {
   type TeacherResetPasswordInput,
 } from "./schema";
 import { useUpdateTeacher, useResetTeacherPassword } from "./use-teachers";
+import { TeacherClassAssignmentsPanel } from "./teacher-class-assignments-panel";
 
 export function TeacherEditDialog({
   open,
@@ -86,11 +87,13 @@ export function TeacherEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("editTitle")}</DialogTitle>
         </DialogHeader>
         <div className="text-muted-foreground -mt-2 text-sm">{teacher?.email}</div>
+
+        {teacher && <TeacherClassAssignmentsPanel teacher={teacher} />}
 
         <div className="space-y-2 rounded-lg border p-3">
           <Label htmlFor="reset-password" className="text-muted-foreground text-xs">

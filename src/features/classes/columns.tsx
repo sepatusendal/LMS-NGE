@@ -1,13 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { PencilLine, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { buildDayLabelShort, formatScheduleSlots, type Class, type ClassType } from "./schema";
-import { useSetClassActive } from "./use-classes";
+import { useDeleteClass, useSetClassActive } from "./use-classes";
 
 function ActiveToggleCell({ classItem, classType }: { classItem: Class; classType: ClassType }) {
   const tCommon = useTranslations("common");
@@ -24,6 +27,48 @@ function ActiveToggleCell({ classItem, classType }: { classItem: Class; classTyp
       <Badge variant={classItem.isActive ? "default" : "secondary"}>
         {classItem.isActive ? tCommon("active") : tCommon("inactive")}
       </Badge>
+    </div>
+  );
+}
+
+function RowActionsCell({
+  classItem,
+  tCommon,
+  onEdit,
+  classType,
+}: {
+  classItem: Class;
+  tCommon: (key: string) => string;
+  onEdit: (classItem: Class) => void;
+  classType: ClassType;
+}) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const deleteClass = useDeleteClass(classType);
+
+  return (
+    <div className="flex justify-end gap-1">
+      <Button variant="ghost" size="icon-sm" onClick={() => onEdit(classItem)} aria-label={tCommon("edit")}>
+        <PencilLine />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+        onClick={() => setConfirmOpen(true)}
+        aria-label={tCommon("delete")}
+      >
+        <Trash2 />
+      </Button>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`${tCommon("delete")} "${classItem.name}"?`}
+        description={tCommon("confirmDeleteDescription")}
+        isConfirming={deleteClass.isPending}
+        onConfirm={() =>
+          deleteClass.mutate(classItem.id, { onSuccess: () => setConfirmOpen(false) })
+        }
+      />
     </div>
   );
 }
@@ -70,9 +115,7 @@ export function createClassColumns(
       id: "actions",
       header: "",
       cell: ({ row }) => (
-        <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
-          {tCommon("edit")}
-        </Button>
+        <RowActionsCell classItem={row.original} tCommon={tCommon} onEdit={onEdit} classType={classType} />
       ),
     },
   ];

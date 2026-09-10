@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { findRecurringScheduleConflict, ScheduleConflictError } from "@/lib/schedule-conflict";
 
 export interface ScheduleOverride {
   id: string;
@@ -47,6 +48,15 @@ export async function upsertScheduleOverride(input: {
   endTime: string;
   teacherId: string;
 }) {
+  const conflict = await findRecurringScheduleConflict({
+    teacherId: input.teacherId,
+    dayOfWeek: input.dayOfWeek,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    excludeClassId: input.classId,
+  });
+  if (conflict) throw new ScheduleConflictError(conflict);
+
   const supabase = createClient();
   const { error } = await supabase
     .from("class_schedule_overrides")

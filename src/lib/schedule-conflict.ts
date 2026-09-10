@@ -121,3 +121,99 @@ export async function findRecurringScheduleConflict(params: {
 
   return candidates.find((cand) => timeRangesOverlap(startTime, endTime, cand.startTime, cand.endTime)) ?? null;
 }
+
+/** One recurring weekly commitment a teacher actually teaches — either their
+ * own class's day (no override, or an override that hands it right back to
+ * them) or another class's day handed to them via override. Powers the
+ * "Kelas yang Diampu" panel on the Teacher admin page — the mirror image of
+ * `findRecurringScheduleConflict`, listing everything instead of checking
+ * one slot. */
+export interface TeacherWeeklyAssignment {
+  classId: string;
+  className: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  /** True if this slot only applies to this teacher because of an override
+   * row (so it can be un-assigned); false for the class's own primary slot. */
+  isOverride: boolean;
+  overrideId?: string;
+}
+
+export async function findTeacherWeeklyAssignments(teacherId: string): Promise<TeacherWeeklyAssignment[]> {
+  const supabase = createClient();
+
+  const { data: ownClasses, error: ownErr } = await supabase
+    .from("classes")
+    .select("id, name, class_schedule_slots(dayOfWeek, startTime, endTime)")
+    .eq("teacherId", teacherId)
+    .is("deletedAt", null);
+  if (ownErr) throw ownErr;
+  const ownClassRows = ownClasses as unknown as {
+    id: string;
+    name: string;
+    class_schedule_slots: { dayOfWeek: number; startTime: string; endTime: string }[];
+  }[];
+
+  const { data: overrides, error: ovErr } = await supabase
+    .from("class_schedule_overrides")
+    .select("id, classId, dayOfWeek, teacherId, startTime, endTime, classes(id, name)");
+  if (ovErr) throw ovErr;
+  const overrideRows = overrides as unknown as {
+    id: string;
+    classId: string;
+    dayOfWeek: number;
+    teacherId: string;
+    startTime: string;
+    endTime: string;
+    classes: { id: string; name: string } | { id: string; name: string }[] | null;
+  }[];
+  const overrideByClassDay = new Map(overrideRows.map((o) => [`${o.classId}:${o.dayOfWeek}`, o]));
+
+  const assignments: TeacherWeeklyAssignment[] = [];
+
+  for (const c of ownClassRows) {
+    for (const slot of c.class_schedule_slots) {
+      const ov = overrideByClassDay.get(`${c.id}:${slot.dayOfWeek}`);
+      if (ov) {
+        if (ov.teacherId === teacherId) {
+          assignments.push({
+            classId: c.id,
+            className: c.name,
+            dayOfWeek: slot.dayOfWeek,
+            startTime: ov.startTime,
+            endTime: ov.endTime,
+            isOverride: true,
+            overrideId: ov.id,
+          });
+        }
+        continue;
+      }
+      assignments.push({
+        classId: c.id,
+        className: c.name,
+        dayOfWeek: slot.dayOfWeek,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        isOverride: false,
+      });
+    }
+  }
+
+  for (const ov of overrideRows) {
+    if (ov.teacherId !== teacherId) continue;
+    if (assignments.some((a) => a.classId === ov.classId && a.dayOfWeek === ov.dayOfWeek)) continue;
+    const cls = toOne(ov.classes);
+    assignments.push({
+      classId: ov.classId,
+      className: cls?.name ?? "-",
+      dayOfWeek: ov.dayOfWeek,
+      startTime: ov.startTime,
+      endTime: ov.endTime,
+      isOverride: true,
+      overrideId: ov.id,
+    });
+  }
+
+  return assignments.sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime));
+}
