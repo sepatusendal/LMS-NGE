@@ -38,6 +38,8 @@ function DeleteCell({ batch }: { batch: TemporaryScheduleBatch }) {
 export function createTemporaryScheduleColumns(
   t: (key: string) => string,
   locale: string,
+  dayLabel: Record<string, string>,
+  onEdit: (batch: TemporaryScheduleBatch) => void,
 ): ColumnDef<TemporaryScheduleBatch>[] {
   return [
     {
@@ -45,6 +47,11 @@ export function createTemporaryScheduleColumns(
       header: t("period"),
       cell: ({ row }) =>
         `${formatDate(row.original.dateFrom, locale)} – ${formatDate(row.original.dateTo, locale)}`,
+    },
+    {
+      id: "days",
+      header: t("daysOfWeek"),
+      cell: ({ row }) => row.original.daysOfWeek.map((d) => dayLabel[String(d)]).join(", "),
     },
     {
       id: "time",
@@ -75,7 +82,14 @@ export function createTemporaryScheduleColumns(
     {
       id: "actions",
       header: "",
-      cell: ({ row }) => <DeleteCell batch={row.original} />,
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-1">
+          <Button variant="ghost" size="sm" onClick={() => onEdit(row.original)}>
+            {t("edit")}
+          </Button>
+          <DeleteCell batch={row.original} />
+        </div>
+      ),
     },
   ];
 }

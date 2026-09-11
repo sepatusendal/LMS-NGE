@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { dateRange } from "@/features/holidays/schema";
-import { findRecurringScheduleConflict, ScheduleConflictError } from "@/lib/schedule-conflict";
+import { parseLocalDate } from "@/lib/date";
+import { findRecurringScheduleConflict, timeRangesOverlap } from "@/lib/schedule-conflict";
 import type { TemporaryScheduleBatch, TemporaryScheduleInput } from "./schema";
 
 interface TemporaryScheduleRow {
@@ -17,6 +18,12 @@ interface TemporaryScheduleRow {
 function toOne<T>(rel: T | T[] | null | undefined): T | null {
   if (!rel) return null;
   return Array.isArray(rel) ? (rel[0] ?? null) : rel;
+}
+
+/** Inclusive date range restricted to the given weekdays ("0".."6", Sunday..Saturday). */
+function datesForWeekdays(dateFrom: string, dateTo: string, daysOfWeek: string[]): string[] {
+  const allowed = new Set(daysOfWeek.map(Number));
+  return dateRange(dateFrom, dateTo).filter((d) => allowed.has(parseLocalDate(d).getDay()));
 }
 
 export async function fetchTemporaryScheduleBatches(): Promise<TemporaryScheduleBatch[]> {
@@ -42,6 +49,7 @@ export async function fetchTemporaryScheduleBatches(): Promise<TemporarySchedule
       const classNames = [
         ...new Set(batchRows.map((r) => toOne(r.classes)?.name ?? "-")),
       ];
+      const daysOfWeek = [...new Set(dates.map((d) => parseLocalDate(d).getDay()))].sort((a, b) => a - b);
       return {
         batchId,
         label: batchRows[0].label,
@@ -49,6 +57,7 @@ export async function fetchTemporaryScheduleBatches(): Promise<TemporarySchedule
         classNames,
         dateFrom: dates[0],
         dateTo: dates[dates.length - 1],
+        daysOfWeek,
         startTime: batchRows[0].startTime,
         endTime: batchRows[0].endTime,
         createdAt: batchRows[0].createdAt,
@@ -57,37 +66,48 @@ export async function fetchTemporaryScheduleBatches(): Promise<TemporarySchedule
     .sort((a, b) => b.dateFrom.localeCompare(a.dateFrom));
 }
 
-/** Checks the new date-range time window against every selected class's
- * teacher for a schedule clash — both against classes NOT in this batch
- * (their normal recurring schedule) and against each other within the batch
- * (every class in a batch shares the same new time, so two batch classes
- * sharing a teacher on an overlapping weekday would double-book them). */
-async function assertNoTemporaryScheduleConflicts(input: TemporaryScheduleInput) {
+/** Every conflict a candidate batch would create, keyed by the class it
+ * affects (one message per class — first conflict found wins). Checks three
+ * layers: (1) two selected classes sharing a teacher — since every class in
+ * the batch gets the same new time on the same dates, that's an automatic
+ * clash; (2) each teacher's OTHER recurring weekly commitments (their own
+ * classes, or classes handed to them via override), on the actual weekdays
+ * this batch's dates fall on; (3) any OTHER still-active temporary-schedule
+ * batch that already claims that teacher's time on one of these dates.
+ * `excludeBatchId` skips a batch's own rows in check (3) — pass the batch's
+ * id when re-checking it during an edit, otherwise it always "conflicts"
+ * with itself. */
+async function collectTemporaryScheduleConflicts(
+  input: TemporaryScheduleInput,
+  dates: string[],
+  excludeBatchId?: string,
+): Promise<Map<string, string>> {
+  const conflicts = new Map<string, string>();
+  if (dates.length === 0 || input.classIds.length === 0) return conflicts;
+
   const supabase = createClient();
   const { data, error } = await supabase
     .from("classes")
-    .select("id, name, teacherId, scheduleDaysOfWeek")
+    .select("id, name, teacherId")
     .in("id", input.classIds);
   if (error) throw error;
-  const classes = data as unknown as { id: string; name: string; teacherId: string; scheduleDaysOfWeek: number[] }[];
+  const classes = data as unknown as { id: string; name: string; teacherId: string }[];
 
   for (let i = 0; i < classes.length; i++) {
     for (let j = i + 1; j < classes.length; j++) {
       const a = classes[i];
       const b = classes[j];
       if (a.teacherId !== b.teacherId) continue;
-      const sharesDay = a.scheduleDaysOfWeek.some((d) => b.scheduleDaysOfWeek.includes(d));
-      if (sharesDay) {
-        throw new ScheduleConflictError(
-          { classId: b.id, className: b.name, startTime: input.startTime, endTime: input.endTime },
-          `Guru yang sama mengajar ${a.name} dan ${b.name} di hari yang sama — kalau dilanjutkan, keduanya bakal dijadwalkan jam yang sama (${input.startTime}-${input.endTime}) di periode ini.`,
-        );
-      }
+      const message = `Guru yang sama mengajar ${a.name} dan ${b.name} — kalau dilanjutkan, keduanya bakal dijadwalkan jam yang sama (${input.startTime}-${input.endTime}) di periode ini.`;
+      conflicts.set(a.id, message);
+      conflicts.set(b.id, message);
     }
   }
 
+  const effectiveDays = [...new Set(dates.map((d) => parseLocalDate(d).getDay()))];
   for (const c of classes) {
-    for (const day of c.scheduleDaysOfWeek) {
+    if (conflicts.has(c.id)) continue;
+    for (const day of effectiveDays) {
       const conflict = await findRecurringScheduleConflict({
         teacherId: c.teacherId,
         dayOfWeek: day,
@@ -95,19 +115,72 @@ async function assertNoTemporaryScheduleConflicts(input: TemporaryScheduleInput)
         endTime: input.endTime,
         excludeClassId: c.id,
       });
-      if (conflict) throw new ScheduleConflictError(conflict);
+      if (conflict) {
+        conflicts.set(
+          c.id,
+          `Guru kelas ${c.name} sudah mengajar ${conflict.className} (${conflict.startTime}-${conflict.endTime}) di hari yang sama.`,
+        );
+        break;
+      }
     }
   }
+
+  const { data: otherData, error: otherError } = await supabase
+    .from("class_temporary_schedules")
+    .select("classId, batchId, date, startTime, endTime, classes(name, teacherId)")
+    .in("date", dates);
+  if (otherError) throw otherError;
+  const otherRows = otherData as unknown as {
+    classId: string;
+    batchId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    classes: { name: string; teacherId: string } | { name: string; teacherId: string }[] | null;
+  }[];
+
+  for (const c of classes) {
+    if (conflicts.has(c.id)) continue;
+    for (const row of otherRows) {
+      if (row.batchId === excludeBatchId) continue;
+      if (row.classId === c.id) continue;
+      const other = toOne(row.classes);
+      if (!other || other.teacherId !== c.teacherId) continue;
+      if (!timeRangesOverlap(input.startTime, input.endTime, row.startTime, row.endTime)) continue;
+      conflicts.set(
+        c.id,
+        `Guru kelas ${c.name} sudah punya jadwal sementara lain (${other.name}, ${row.startTime}-${row.endTime}) di tanggal ${row.date}.`,
+      );
+      break;
+    }
+  }
+
+  return conflicts;
 }
 
-export async function createTemporarySchedules(input: TemporaryScheduleInput): Promise<void> {
-  await assertNoTemporaryScheduleConflicts(input);
+/** Live-preview version for the form UI: returns every conflict found so
+ * each affected class can be flagged, instead of stopping at the first one. */
+export async function findTemporaryScheduleConflicts(
+  input: TemporaryScheduleInput,
+  excludeBatchId?: string,
+): Promise<{ classId: string; message: string }[]> {
+  const dates = datesForWeekdays(input.dateFrom, input.dateTo, input.daysOfWeek);
+  const conflicts = await collectTemporaryScheduleConflicts(input, dates, excludeBatchId);
+  return [...conflicts.entries()].map(([classId, message]) => ({ classId, message }));
+}
 
-  const supabase = createClient();
-  const dates = dateRange(input.dateFrom, input.dateTo);
-  const batchId = crypto.randomUUID();
+async function assertNoTemporaryScheduleConflicts(
+  input: TemporaryScheduleInput,
+  dates: string[],
+  excludeBatchId?: string,
+) {
+  const conflicts = await collectTemporaryScheduleConflicts(input, dates, excludeBatchId);
+  const first = conflicts.values().next().value;
+  if (first) throw new Error(first);
+}
 
-  const rows = input.classIds.flatMap((classId) =>
+function buildTemporaryScheduleRows(input: TemporaryScheduleInput, dates: string[], batchId: string) {
+  return input.classIds.flatMap((classId) =>
     dates.map((date) => ({
       batchId,
       classId,
@@ -117,15 +190,51 @@ export async function createTemporarySchedules(input: TemporaryScheduleInput): P
       label: input.label || null,
     })),
   );
+}
+
+const DUPLICATE_SCHEDULE_MESSAGE =
+  "Salah satu kelas yang dipilih sudah punya jadwal sementara di salah satu tanggal pada rentang ini — hapus jadwal lamanya dulu.";
+
+export async function createTemporarySchedules(input: TemporaryScheduleInput): Promise<void> {
+  const dates = datesForWeekdays(input.dateFrom, input.dateTo, input.daysOfWeek);
+  if (dates.length === 0) {
+    throw new Error("Tidak ada tanggal yang cocok dengan hari yang dipilih dalam rentang ini.");
+  }
+  await assertNoTemporaryScheduleConflicts(input, dates);
+
+  const supabase = createClient();
+  const batchId = crypto.randomUUID();
+  const rows = buildTemporaryScheduleRows(input, dates, batchId);
 
   const { error } = await supabase.from("class_temporary_schedules").insert(rows);
   if (error) {
-    if (error.code === "23505") {
-      throw new Error(
-        "Salah satu kelas yang dipilih sudah punya jadwal sementara di salah satu tanggal pada rentang ini — hapus jadwal lamanya dulu.",
-      );
-    }
+    if (error.code === "23505") throw new Error(DUPLICATE_SCHEDULE_MESSAGE);
     throw error;
+  }
+}
+
+/** Replaces every row of an existing batch with a freshly generated set —
+ * there's no per-field "update" since the model is one row per (class ×
+ * date); editing means regenerating that set under the same `batchId` so the
+ * list page keeps showing it as one entry. Conflict checks exclude the
+ * batch's own existing rows so editing it doesn't fail by "conflicting with
+ * itself". */
+export async function updateTemporarySchedule(batchId: string, input: TemporaryScheduleInput): Promise<void> {
+  const dates = datesForWeekdays(input.dateFrom, input.dateTo, input.daysOfWeek);
+  if (dates.length === 0) {
+    throw new Error("Tidak ada tanggal yang cocok dengan hari yang dipilih dalam rentang ini.");
+  }
+  await assertNoTemporaryScheduleConflicts(input, dates, batchId);
+
+  const supabase = createClient();
+  const { error: deleteError } = await supabase.from("class_temporary_schedules").delete().eq("batchId", batchId);
+  if (deleteError) throw deleteError;
+
+  const rows = buildTemporaryScheduleRows(input, dates, batchId);
+  const { error: insertError } = await supabase.from("class_temporary_schedules").insert(rows);
+  if (insertError) {
+    if (insertError.code === "23505") throw new Error(DUPLICATE_SCHEDULE_MESSAGE);
+    throw insertError;
   }
 }
 
