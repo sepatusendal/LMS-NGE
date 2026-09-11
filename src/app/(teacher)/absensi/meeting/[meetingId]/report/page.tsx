@@ -28,7 +28,15 @@ export default function ReportPage() {
     );
   }
 
-  const readOnly = !isWithinEditWindow(context.scheduledDate);
+  // Only an EDIT is time-gated — create_teaching_report() has no date
+  // restriction at all (a report can be filed however late after the
+  // class), only update_teaching_report()'s RLS does. And that gate keys
+  // off the report's own actualTeachingDate (when it was actually
+  // submitted), not the lesson plan's scheduledDate — those diverge
+  // whenever a report is filed several days after the class, which is
+  // exactly the case this feature exists for. Using scheduledDate here
+  // would lock out edits the database would actually still allow.
+  const readOnly = Boolean(existingReport) && !isWithinEditWindow(existingReport!.actualTeachingDate);
 
   return (
     <div className="space-y-5">

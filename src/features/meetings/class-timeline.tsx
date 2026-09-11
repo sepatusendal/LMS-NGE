@@ -135,7 +135,7 @@ function TimelineItem({
                 {t("manageMeeting")}
               </Button>
             )}
-            {!canManage && entry.hasReport && entry.meetingId && isWithinEditWindow(entry.scheduledDate) && (
+            {!canManage && entry.hasReport && entry.meetingId && entry.reportActualTeachingDate && isWithinEditWindow(entry.reportActualTeachingDate) && (
               <Link
                 href={`/absensi/meeting/${entry.meetingId}/report`}
                 className="text-primary flex h-5 items-center gap-1 px-1.5 text-[11px] font-medium hover:underline"

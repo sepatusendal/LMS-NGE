@@ -32,10 +32,16 @@ export default function CheckInPage() {
       router.replace(`/absensi/${c.classId}/attendance`);
     } else if (c.meetingStatus === "checked_out") {
       router.replace(`/absensi/meeting/${c.meetingId}/report`);
+    } else if (c.meetingStatus === "report_submitted") {
+      router.replace("/absensi");
     }
   }, [c, router]);
 
-  if (isLoading) return <LoadingState />;
+  const isRedirecting = Boolean(
+    c && ["checked_in", "attendance_done", "checked_out", "report_submitted"].includes(c.meetingStatus),
+  );
+
+  if (isLoading || isRedirecting) return <LoadingState />;
 
   if (!c) {
     return (

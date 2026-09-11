@@ -20,6 +20,11 @@ export interface TimelineEntry {
   attendancePresent: number;
   hasReport: boolean;
   objectivesAchieved: string | null;
+  /** The report's own actualTeachingDate — what the 7-day edit window is
+   * actually computed from (see update_teaching_report()'s RLS), which can
+   * differ from scheduledDate when a report is filed several days after
+   * the class. Null when there's no report yet. */
+  reportActualTeachingDate: string | null;
 }
 
 interface LpRow {
@@ -43,7 +48,7 @@ interface MeetingRow {
   checkIn: ToOne<{ checkInTime: string; isLate: boolean }>;
   checkOut: ToOne<{ checkOutTime: string; durationMinutes: number }>;
   attendances: { id: string; status: string }[] | null;
-  teachingReport: ToOne<{ id: string; objectivesAchieved: string | null }>;
+  teachingReport: ToOne<{ id: string; objectivesAchieved: string | null; actualTeachingDate: string }>;
 }
 
 // Supabase embeds a to-one relation as an object when it can infer the
@@ -134,7 +139,7 @@ export async function fetchClassTimeline(classId: string): Promise<{
       checkIn:check_ins(checkInTime, isLate),
       checkOut:check_outs(checkOutTime, durationMinutes),
       attendances(id, status),
-      teachingReport:teaching_reports(id, objectivesAchieved)
+      teachingReport:teaching_reports(id, objectivesAchieved, actualTeachingDate)
     `)
     .in("lessonPlanId", lpIds);
   if (meetErr) throw meetErr;
@@ -179,6 +184,7 @@ export async function fetchClassTimeline(classId: string): Promise<{
       ).length,
       hasReport: Boolean(report),
       objectivesAchieved: report?.objectivesAchieved ?? null,
+      reportActualTeachingDate: report?.actualTeachingDate ?? null,
     };
   });
 

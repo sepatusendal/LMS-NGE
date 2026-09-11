@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Camera } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -22,7 +22,27 @@ export default function AttendancePage() {
 
   const c = classes?.find((cls) => cls.classId === params.classId);
 
-  if (isLoading) return <LoadingState />;
+  // Reached this page in a state it no longer applies to (back button
+  // after already checking out/submitting the report, or before ever
+  // checking in) — send them to the step that's actually next instead of
+  // letting them re-submit into a unique-constraint error (check_outs is
+  // one row per meeting) or stare at a roster with nothing to do.
+  useEffect(() => {
+    if (!c) return;
+    if (c.meetingStatus === "checked_out") {
+      router.replace(`/absensi/meeting/${c.meetingId}/report`);
+    } else if (c.meetingStatus === "report_submitted") {
+      router.replace("/absensi");
+    } else if (c.meetingStatus === "not_started" || c.meetingStatus === "no_plan_today") {
+      router.replace(`/absensi/${c.classId}/checkin`);
+    }
+  }, [c, router]);
+
+  const isRedirecting = Boolean(
+    c && ["checked_out", "report_submitted", "not_started", "no_plan_today"].includes(c.meetingStatus),
+  );
+
+  if (isLoading || isRedirecting) return <LoadingState />;
 
   if (!c || !c.meetingId) {
     return (
