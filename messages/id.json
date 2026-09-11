@@ -294,6 +294,7 @@
     "albrightNotice": "Kurikulum Albright — detail Activities, Resources, dan Language Focus diisi setelah kelas selesai, di Daily Teaching Report.",
     "submitting": "Menyimpan...",
     "submit": "Simpan Lesson Plan",
+    "preparingForm": "Menyiapkan form...",
     "toasts": {
       "teacherProfileNotReady": "Profil teacher belum siap",
       "createSuccess": "Lesson plan berhasil disimpan",
@@ -303,7 +304,7 @@
       "deleteSuccess": "Lesson plan berhasil dihapus",
       "deleteError": "Gagal menghapus lesson plan",
       "HOLIDAY_NO_LESSON_PLAN": "Tanggal ini adalah hari libur, tidak bisa membuat lesson plan",
-      "DUPLICATE_MEETING_NUMBER": "Meeting number ini sudah dipakai lesson plan lain di kelas ini. Ubah nomor meeting-nya."
+      "DUPLICATE_MEETING_NUMBER": "Nomor pertemuan ini sudah dipakai lesson plan lain di kelas ini. Tutup halaman ini lalu buka lagi dari menu Lesson Plan — nomornya akan otomatis benar."
     }
   },
   "attendanceForm": {

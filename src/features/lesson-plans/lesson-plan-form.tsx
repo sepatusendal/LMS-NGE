@@ -153,7 +153,7 @@ export function LessonPlanForm({
         teacherId: c.teacherId as string | undefined,
       }))
     : myClasses?.filter((c) => c.isPrimary);
-  const { data: existingPlans } = useLessonPlans();
+  const { data: existingPlans, isLoading: existingPlansLoading } = useLessonPlans();
   const updateLessonPlan = useUpdateLessonPlan();
 
   const [moduleDriveFileId, setModuleDriveFileId] = useState(
@@ -264,7 +264,15 @@ export function LessonPlanForm({
     router.push("/lesson-plan");
   }
 
-  const isSubmitting = createLessonPlan.isPending || updateLessonPlan.isPending;
+  // The meeting-number auto-fill effect above only resolves once
+  // existingPlans has loaded for a new (non-edit) plan. Submitting before
+  // that resolves would post the placeholder default (1) instead of the
+  // real next number, which the DB's unique (classId, meetingNumber)
+  // constraint would then bounce back as a confusing "number already taken"
+  // error on a slow connection — block the button instead of letting that
+  // race happen.
+  const meetingNumberPending = !isEdit && existingPlansLoading;
+  const isSubmitting = createLessonPlan.isPending || updateLessonPlan.isPending || meetingNumberPending;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pb-6">
@@ -629,7 +637,11 @@ export function LessonPlanForm({
             className="w-full shadow-sm"
             disabled={isSubmitting}
           >
-            {isSubmitting ? t("submitting") : t("submit")}
+            {meetingNumberPending
+              ? t("preparingForm")
+              : isSubmitting
+                ? t("submitting")
+                : t("submit")}
           </Button>
         </div>
       )}

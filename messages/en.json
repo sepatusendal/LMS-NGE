@@ -294,6 +294,7 @@
     "albrightNotice": "Albright curriculum — Activities, Resources, and Language Focus details are filled in after class, in the Daily Teaching Report.",
     "submitting": "Saving...",
     "submit": "Save Lesson Plan",
+    "preparingForm": "Preparing form...",
     "toasts": {
       "teacherProfileNotReady": "Teacher profile isn't ready yet",
       "createSuccess": "Lesson plan saved successfully",
@@ -303,7 +304,7 @@
       "deleteSuccess": "Lesson plan deleted successfully",
       "deleteError": "Couldn't delete lesson plan",
       "HOLIDAY_NO_LESSON_PLAN": "This date is a holiday, a lesson plan can't be created for it",
-      "DUPLICATE_MEETING_NUMBER": "This meeting number is already used by another lesson plan in this class. Change the meeting number."
+      "DUPLICATE_MEETING_NUMBER": "This meeting number is already used by another lesson plan in this class. Close this page and open it again from the Lesson Plan menu — the number will be filled in correctly."
     }
   },
   "attendanceForm": {
