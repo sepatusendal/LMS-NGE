@@ -3,19 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Loader2,
   MapPin,
   Clock,
   CheckCircle,
   Play,
   LogOut,
   FileText,
-  Camera,
   ClipboardCheck,
   NotebookPen,
   CalendarClock,
   AlertTriangle,
   Users2,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -23,11 +22,6 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useStartClass, useCheckOut } from "@/features/meetings/use-today";
-import { updateCheckInPhoto } from "@/features/meetings/queries";
-import { AttendanceForm } from "@/features/meetings/attendance-form";
-import { ReportForm } from "@/features/meetings/report-form";
-import { FileUpload } from "@/features/drive/file-upload";
 import { ClassAvatar } from "@/components/shared/class-avatar";
 import { HandoverSummaryPanel } from "@/features/substitutes/handover-summary-panel";
 import { ABSENCE_REASON_LABEL, ABSENCE_REASON_KEY } from "@/features/substitutes/schema";
@@ -97,17 +91,27 @@ export const STATUS_CONFIG: Record<
   },
 };
 
-/** Full check-in → attendance → check-out → report stepper for one class,
- * all inline in a single card — the one place a teacher actually does the
- * day's work. Extracted from the old Hari Ini page so both Absensi (the
- * work hub) and any future embedding can share it without duplicating the
- * state machine. */
+/** Where the primary action button for each meetingStatus should send the
+ * teacher — each step now lives on its own page (see plan: wizard, not an
+ * expand-in-place accordion) so a dropped connection or closed app mid-flow
+ * always resumes at the right screen instead of losing local state. */
+function wizardHref(c: TodayClass): string {
+  switch (c.meetingStatus) {
+    case "checked_in":
+    case "attendance_done":
+      return `/absensi/${c.classId}/attendance`;
+    case "checked_out":
+      return `/absensi/meeting/${c.meetingId}/report`;
+    default:
+      return `/absensi/${c.classId}/checkin`;
+  }
+}
+
+/** Summary card for one class's today status — the primary button always
+ * links into the check-in → attendance → report wizard at whatever step
+ * is next; this component itself no longer runs any of those steps inline. */
 export function ClassWorkflowCard({ c }: { c: TodayClass }) {
-  const startClass = useStartClass();
-  const checkOut = useCheckOut();
-  const [expanded, setExpanded] = useState(false);
   const [showHandover, setShowHandover] = useState(false);
-  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
   const t = useTranslations("workflow");
   const tStatus = useTranslations("workflow.status");
   const locale = useLocale();
@@ -119,12 +123,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
 
   return (
     <div className="space-y-3.5">
-      <Card
-        className={cn(
-          "overflow-hidden border-2 border-transparent py-0 shadow-sm transition-shadow",
-          expanded && "border-primary/25 shadow-md",
-        )}
-      >
+      <Card className="overflow-hidden border-2 border-transparent py-0 shadow-sm">
         <div className={cn("h-1.5 w-full", status.barColor)} />
         <CardContent className="pt-4 pb-4">
           <div className="flex items-start justify-between gap-3">
@@ -223,88 +222,73 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
             </Button>
           )}
 
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-col gap-1.5">
             {noPlanToday && (
-              <Link
-                href={newPlanHref}
-                className={cn(buttonVariants({ size: "sm" }), "w-full bg-chart-4 text-white hover:bg-chart-4/90")}
-              >
-                <NotebookPen className="size-4" />
-                <span className="ml-1.5">{t("createLessonPlan")}</span>
-              </Link>
+              <>
+                <Link
+                  href={wizardHref(c)}
+                  className={cn(buttonVariants({ size: "sm" }), "w-full bg-chart-4 text-white hover:bg-chart-4/90")}
+                >
+                  <Play className="size-4" />
+                  <span className="ml-1.5">{t("startClass")}</span>
+                </Link>
+                <Link
+                  href={newPlanHref}
+                  className="text-muted-foreground flex items-center justify-center gap-1 text-xs hover:text-foreground"
+                >
+                  <NotebookPen className="size-3" />
+                  {t("orWriteLessonPlanFirst")}
+                </Link>
+              </>
             )}
 
             {!noPlanToday && c.meetingStatus === "not_started" && (
-              <Button
-                size="sm"
-                className="w-full bg-primary hover:bg-primary/80"
-                disabled={startClass.isPending}
-                onClick={() =>
-                  startClass.mutate(c.lessonPlanId!, {
-                    onSuccess: () => setExpanded(true),
-                  })
-                }
-              >
-                {startClass.isPending ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
+              <Link href={wizardHref(c)} className={cn(buttonVariants({ size: "sm" }), "w-full bg-primary hover:bg-primary/80")}>
+                <Play className="size-4" />
                 <span className="ml-1.5">{t("startClass")}</span>
-              </Button>
+              </Link>
             )}
 
-            {c.meetingStatus === "checked_in" && (
-              <div className="w-full space-y-2">
-                <Button
-                  size="sm"
-                  className="w-full bg-chart-4 hover:bg-chart-4/80"
-                  onClick={() => setExpanded((prev) => !prev)}
-                >
-                  <ClipboardCheck className="size-4" />
-                  <span className="ml-1.5">{expanded ? t("closeAttendance") : t("fillStudentAttendance")}</span>
-                </Button>
-              </div>
-            )}
-
-            {c.meetingStatus === "attendance_done" && (
-              <div className="flex w-full gap-2">
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => setExpanded((prev) => !prev)}>
-                  {t("viewLessonPlan")}
-                </Button>
-                <Button
-                  size="sm"
-                  className="flex-1 bg-chart-4 hover:bg-chart-4/80"
-                  disabled={checkOut.isPending}
-                  onClick={() => checkOut.mutate(c.meetingId!)}
-                >
-                  {checkOut.isPending ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />}
-                  <span className="ml-1.5">{t("checkOut")}</span>
-                </Button>
-              </div>
+            {(c.meetingStatus === "checked_in" || c.meetingStatus === "attendance_done") && (
+              <Link
+                href={wizardHref(c)}
+                className={cn(buttonVariants({ size: "sm" }), "w-full bg-chart-4 hover:bg-chart-4/80")}
+              >
+                <ClipboardCheck className="size-4" />
+                <span className="ml-1.5">{t("fillStudentAttendance")}</span>
+              </Link>
             )}
 
             {c.meetingStatus === "checked_out" && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full border-primary/40 text-primary hover:bg-primary/10"
-                onClick={() => setExpanded((prev) => !prev)}
-              >
-                {expanded ? (
-                  t("close")
-                ) : (
-                  <>
-                    <FileText className="size-4" />
-                    <span className="ml-1.5">{t("fillDailyReport")}</span>
-                  </>
+              <Link
+                href={wizardHref(c)}
+                className={cn(
+                  buttonVariants({ size: "sm", variant: "outline" }),
+                  "w-full border-primary/40 text-primary hover:bg-primary/10",
                 )}
-              </Button>
+              >
+                <FileText className="size-4" />
+                <span className="ml-1.5">{t("fillDailyReport")}</span>
+              </Link>
             )}
 
             {c.meetingStatus === "report_submitted" && (
-              <div className="flex w-full items-center gap-2 rounded-md bg-chart-3/10 px-3 py-2 text-sm">
-                <CheckCircle className="size-4 text-chart-3" />
-                <span className="font-medium text-chart-3">{t("classDone")}</span>
+              <div className="flex w-full items-center justify-between gap-2 rounded-md bg-chart-3/10 px-3 py-2 text-sm">
+                <span className="flex items-center gap-2">
+                  <CheckCircle className="size-4 text-chart-3" />
+                  <span className="font-medium text-chart-3">{t("classDone")}</span>
+                </span>
+                {c.meetingId && (
+                  <Link
+                    href={`/absensi/meeting/${c.meetingId}/report`}
+                    className="text-chart-3 flex items-center gap-0.5 text-xs font-medium hover:underline"
+                  >
+                    {t("viewOrEditReport")}
+                    <ChevronRight className="size-3" />
+                  </Link>
+                )}
               </div>
             )}
-
           </div>
 
           {/* Forward-looking reminder only — today's own status above
@@ -333,97 +317,6 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
           <CardContent className="pt-4">
             <h3 className="mb-3 text-sm font-medium">{t("handoverSummary")}</h3>
             <HandoverSummaryPanel classId={c.classId} lessonPlanId={c.lessonPlanId} />
-          </CardContent>
-        </Card>
-      )}
-
-      {expanded && c.meetingStatus === "checked_in" && c.meetingId && (
-        <Card className="overflow-hidden py-0">
-          <CardContent className="pt-4 pb-4">
-            <h3 className="mb-3 text-sm font-medium">{t("studentAttendance")}</h3>
-            <AttendanceForm meetingId={c.meetingId} classId={c.classId} onDone={() => setExpanded(false)} />
-          </CardContent>
-          <div className="border-t px-4 py-3">
-            <button
-              type="button"
-              onClick={() => setShowPhotoUpload((prev) => !prev)}
-              className="text-muted-foreground flex w-full items-center justify-center gap-1.5 text-xs hover:text-foreground"
-            >
-              <Camera className="size-3.5" />
-              {showPhotoUpload ? t("closeClassPhoto") : t("addClassPhoto")}
-            </button>
-          </div>
-          {showPhotoUpload && (
-            <div className="border-t bg-chart-4/5 px-4 py-4">
-              <FileUpload
-                label={t("uploadClassPhoto")}
-                onUploaded={(driveFileId, fileName) => {
-                  if (driveFileId) {
-                    updateCheckInPhoto(c.meetingId!, driveFileId, fileName);
-                  }
-                }}
-              />
-            </div>
-          )}
-        </Card>
-      )}
-
-      {expanded && c.meetingStatus === "attendance_done" && c.lessonPlanId && (
-        <Card>
-          <CardContent className="pt-4">
-            <h3 className="mb-2 text-sm font-medium">{t("lessonPlan")}</h3>
-            <div className="space-y-2 text-sm">
-              <p>
-                <span className="text-muted-foreground">{t("topic")}:</span> <span className="font-medium">{c.topic}</span>
-              </p>
-              {c.learningObjectives.length > 0 && (
-                <div>
-                  <span className="text-muted-foreground">{t("objectives")}:</span>
-                  <ul className="list-disc space-y-0.5 pl-5">
-                    {c.learningObjectives.map((o, i) => (
-                      <li key={i}>{o}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {c.skills.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {c.skills.map((s) => (
-                    <Badge key={s} variant="secondary" className="text-xs">
-                      {s}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              {c.moduleFileName && (
-                <a
-                  href={`https://drive.google.com/file/d/${c.moduleDriveFileId}/view`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary flex items-center gap-1.5 text-xs hover:underline"
-                >
-                  <FileText className="size-3.5" />
-                  {c.moduleFileName}
-                </a>
-              )}
-              <Link href={`/lesson-plan/${c.lessonPlanId}`} className="text-primary inline-block text-xs hover:underline">
-                {t("viewFull")}
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {expanded && c.meetingStatus === "checked_out" && c.meetingId && (
-        <Card>
-          <CardContent className="pt-4">
-            <h3 className="mb-3 text-sm font-medium">{t("dailyTeachingReport")}</h3>
-            <ReportForm
-              meetingId={c.meetingId}
-              classId={c.classId}
-              learningObjectives={c.learningObjectives}
-              curriculumReportFormat={c.curriculumReportFormat}
-            />
           </CardContent>
         </Card>
       )}

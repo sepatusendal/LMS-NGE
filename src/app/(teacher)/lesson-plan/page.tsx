@@ -137,7 +137,14 @@ export default function LessonPlanPage() {
                           {plan.meetingNumber}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold">{plan.topic}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="truncate text-sm font-semibold">{plan.topic}</p>
+                            {plan.isDraft && (
+                              <span className="bg-chart-4/15 text-chart-4 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
+                                {t("draftBadge")}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-muted-foreground text-xs">
                             {t("week", { week: plan.week })} ·{" "}
                             {parseLocalDate(plan.scheduledDate).toLocaleDateString(

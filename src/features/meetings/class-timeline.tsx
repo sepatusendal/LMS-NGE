@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, CheckCircle, Clock, UserCheck, UserRoundCog, Settings2 } from "lucide-react";
+import Link from "next/link";
+import { Loader2, CheckCircle, Clock, UserCheck, UserRoundCog, Settings2, FileEdit } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { parseLocalDate } from "@/lib/date";
+import { parseLocalDate, isWithinEditWindow } from "@/lib/date";
 import { useClassTimeline } from "@/features/meetings/use-timeline";
 import type { TimelineEntry } from "@/features/meetings/timeline-queries";
 import {
@@ -133,6 +134,15 @@ function TimelineItem({
                 <Settings2 className="size-3" />
                 {t("manageMeeting")}
               </Button>
+            )}
+            {!canManage && entry.hasReport && entry.meetingId && isWithinEditWindow(entry.scheduledDate) && (
+              <Link
+                href={`/absensi/meeting/${entry.meetingId}/report`}
+                className="text-primary flex h-5 items-center gap-1 px-1.5 text-[11px] font-medium hover:underline"
+              >
+                <FileEdit className="size-3" />
+                {t("editReport")}
+              </Link>
             )}
           </div>
 

@@ -24,3 +24,14 @@ export function formatLocalDateStr(date: Date): string {
 export function todayLocalDateStr(): string {
   return formatLocalDateStr(new Date());
 }
+
+/** Whether `dateStr` ("YYYY-MM-DD") is still within `days` days of today —
+ * the client-side mirror of the 7-day RLS edit window on lesson_plans and
+ * teaching_reports (see migration 20260911020000). Purely for UI (showing
+ * the right form state / message); the database is the actual gate. */
+export function isWithinEditWindow(dateStr: string, days = 7): boolean {
+  const target = parseLocalDate(dateStr).getTime();
+  const today = parseLocalDate(todayLocalDateStr()).getTime();
+  const daysSince = Math.floor((today - target) / (24 * 60 * 60 * 1000));
+  return daysSince <= days;
+}

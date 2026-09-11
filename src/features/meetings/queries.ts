@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/client";
 import { isHoliday, fetchHolidaySchoolsForDate } from "@/features/holidays/queries";
 import { fetchTemporaryScheduleTimesForDate } from "@/features/temporary-schedules/queries";
 import { todayLocalDateStr } from "@/lib/date";
-import type { TodayClass, CheckOutInput } from "./schema";
+import type { TodayClass } from "./schema";
 
 function getTodayDayOfWeek(): number {
   const day = new Date().getDay();
@@ -50,55 +50,55 @@ function computeIsLate(scheduleStartTime: string): boolean {
   return now.getTime() > scheduled.getTime() + LATE_GRACE_MINUTES * 60_000;
 }
 
+/** Shared by startClass() and checkInWithDraftPlan(): resolves whether
+ * check-in counts as late (today's effective start time, with temporary
+ * schedule > per-day override > normal recurring slot, same precedence as
+ * fetchTodayClasses) and whether today is a holiday for the class's school. */
+async function resolveCheckInTiming(classId: string): Promise<{ isLate: boolean }> {
+  const supabase = createClient();
+  const today = getTodayDayOfWeek();
+  const todayDateStr = todayLocalDateStr();
+
+  const { data: clsRow } = await supabase
+    .from("classes")
+    .select("schoolId, class_schedule_slots(dayOfWeek, startTime)")
+    .eq("id", classId)
+    .single();
+  type SlotRow = { dayOfWeek: number; startTime: string };
+  const cls = clsRow as { schoolId: string; class_schedule_slots: SlotRow[] } | null;
+  const todaySlot = cls?.class_schedule_slots.find((s) => s.dayOfWeek === today);
+
+  if (cls?.schoolId && (await isHoliday(todayDateStr, cls.schoolId))) {
+    throw new Error("HOLIDAY_NO_CLASS");
+  }
+
+  const { data: override } = await supabase
+    .from("class_schedule_overrides")
+    .select("startTime")
+    .eq("classId", classId)
+    .eq("dayOfWeek", today)
+    .maybeSingle();
+
+  const temporarySchedule = (await fetchTemporaryScheduleTimesForDate([classId], todayDateStr)).get(classId);
+
+  const effectiveStartTime =
+    temporarySchedule?.startTime ?? (override as { startTime: string } | null)?.startTime ?? todaySlot?.startTime;
+  return { isLate: effectiveStartTime ? computeIsLate(effectiveStartTime) : false };
+}
+
 export async function startClass(
   lessonPlanId: string,
   teacherId: string,
 ): Promise<string> {
   const supabase = createClient();
 
-  const today = getTodayDayOfWeek();
-
   const { data: lpRow } = await supabase
     .from("lesson_plans")
-    .select("classId, classes(schoolId, class_schedule_slots(dayOfWeek, startTime))")
+    .select("classId")
     .eq("id", lessonPlanId)
     .single();
-  type SlotRow = { dayOfWeek: number; startTime: string };
-  const lp = lpRow as {
-    classId: string;
-    classes:
-      | { schoolId: string; class_schedule_slots: SlotRow[] }
-      | { schoolId: string; class_schedule_slots: SlotRow[] }[]
-      | null;
-  } | null;
-  const cls = toOne(lp?.classes);
-  const todaySlot = cls?.class_schedule_slots.find((s) => s.dayOfWeek === today);
-  const todayDateStr = todayLocalDateStr();
-
-  if (cls?.schoolId) {
-    if (await isHoliday(todayDateStr, cls.schoolId)) {
-      throw new Error("HOLIDAY_NO_CLASS");
-    }
-  }
-
-  const { data: override } = lp?.classId
-    ? await supabase
-        .from("class_schedule_overrides")
-        .select("startTime")
-        .eq("classId", lp.classId)
-        .eq("dayOfWeek", today)
-        .maybeSingle()
-    : { data: null };
-
-  // A temporary schedule (e.g. exam-week hours) for today's date wins over
-  // both the per-day teacher override and the class's normal recurring slot.
-  const temporarySchedule = lp?.classId
-    ? (await fetchTemporaryScheduleTimesForDate([lp.classId], todayDateStr)).get(lp.classId)
-    : undefined;
-
-  const effectiveStartTime =
-    temporarySchedule?.startTime ?? (override as { startTime: string } | null)?.startTime ?? todaySlot?.startTime;
-  const isLate = effectiveStartTime ? computeIsLate(effectiveStartTime) : false;
+  const lp = lpRow as { classId: string } | null;
+  const { isLate } = await resolveCheckInTiming(lp!.classId);
 
   const { data: existing } = await supabase
     .from("meetings")
@@ -440,6 +440,8 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
         originalTeacherName: null,
         substituteReason: null,
         needsNextLessonPlan: false,
+        draftMeetingNumber: 1,
+        draftWeek: 1,
       };
     }
 
@@ -469,6 +471,11 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
     // own meeting is otherwise handled; noPlanForToday already carries its
     // own "create a plan" call-to-action so this would just be a duplicate.
     const needsNextLessonPlan = courseCompleted && !noPlanForToday;
+    // What check_in_with_draft_plan() should number/date the placeholder
+    // plan as, if the teacher checks in without writing one first — only
+    // meaningful when noPlanForToday is true.
+    const draftMeetingNumber = noPlanForToday ? plan.meetingNumber + 1 : plan.meetingNumber;
+    const draftWeek = Math.ceil(draftMeetingNumber / 2);
 
     let meetingStatus = "not_started";
     if (noPlanForToday) meetingStatus = "no_plan_today";
@@ -516,8 +523,40 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
         !noPlanForToday && isSubstitute ? (toOne(meeting?.assignedTeacher)?.users?.fullName ?? null) : null,
       substituteReason: !noPlanForToday && isSubstitute ? (meeting?.substituteReason ?? null) : null,
       needsNextLessonPlan,
+      draftMeetingNumber,
+      draftWeek,
     };
   });
+}
+
+/** Used when the Absensi card is in the "no_plan_today" state — check-in
+ * without an existing lesson plan for this class's next meeting. Creates a
+ * placeholder ("draft") lesson plan, the meeting, and the check-in row all
+ * in one atomic call — see check_in_with_draft_plan() in
+ * 20260911020000_editable_reports_and_draft_plans. The normal path (a plan
+ * already exists) keeps using startClass() above, untouched. */
+export async function checkInWithDraftPlan(
+  classId: string,
+  teacherId: string,
+  meetingNumber: number,
+  week: number,
+  scheduledDate: string,
+): Promise<string> {
+  const supabase = createClient();
+  const { isLate } = await resolveCheckInTiming(classId);
+  const { data, error } = await supabase.rpc("check_in_with_draft_plan", {
+    p_class_id: classId,
+    p_teacher_id: teacherId,
+    p_meeting_number: meetingNumber,
+    p_week: week,
+    p_scheduled_date: scheduledDate,
+    p_is_late: isLate,
+  });
+  if (error) {
+    if (error.message === "NOT_PRIMARY_TEACHER") throw new Error("NOT_PRIMARY_TEACHER");
+    throw error;
+  }
+  return data as string;
 }
 
 export async function updateCheckInPhoto(
@@ -533,29 +572,3 @@ export async function updateCheckInPhoto(
   if (error) throw error;
 }
 
-export async function doCheckOut(input: CheckOutInput): Promise<void> {
-  const supabase = createClient();
-
-  const { data: ci, error: ciErr } = await supabase
-    .from("check_ins")
-    .select("checkInTime")
-    .eq("meetingId", input.meetingId)
-    .single();
-  if (ciErr) throw new Error("Check-in belum dilakukan");
-
-  const now = new Date();
-  const checkInTime = new Date((ci as { checkInTime: string }).checkInTime);
-  const durationMinutes = Math.max(
-    1,
-    Math.round((now.getTime() - checkInTime.getTime()) / 60000),
-  );
-
-  const { error } = await supabase.from("check_outs").insert({
-    meetingId: input.meetingId,
-    teacherId: input.teacherId,
-    checkOutTime: now.toISOString(),
-    durationMinutes,
-    notes: input.notes ?? null,
-  });
-  if (error) throw error;
-}

@@ -24,6 +24,7 @@ interface LessonPlanRow {
   moduleDriveFileId: string | null;
   moduleFileName: string | null;
   createdAt: string;
+  isDraft: boolean;
   classes: { name: string } | null;
   createdByTeacher: { users: { fullName: string } | { fullName: string }[] | null } | { users: { fullName: string } | { fullName: string }[] | null }[] | null;
 }
@@ -33,7 +34,7 @@ const SELECT = `
   learningObjectives, skills, method, procedure, materialsRequired,
   vocabularyFocus, stages, questionsToAsk, differentiationSupport,
   differentiationExtension, differentiationHomework, moduleDriveFileId,
-  moduleFileName, createdAt,
+  moduleFileName, createdAt, isDraft,
   classes(name),
   createdByTeacher:teachers!lesson_plans_createdByTeacherId_fkey(users(fullName))
 `;
@@ -85,6 +86,7 @@ function mapRow(row: LessonPlanRow): LessonPlan {
     moduleFileName: row.moduleFileName,
     createdByTeacherName: toOne(toOne(row.createdByTeacher)?.users)?.fullName ?? "-",
     createdAt: row.createdAt,
+    isDraft: row.isDraft,
   };
 }
 
@@ -134,6 +136,10 @@ function toPayload(input: LessonPlanInput) {
     differentiationHomework: input.differentiationHomework || null,
     moduleDriveFileId: input.moduleDriveFileId || null,
     moduleFileName: input.moduleFileName || null,
+    // A teacher who opens and saves the form is no longer leaving this as a
+    // placeholder — clears the "draft" flag check_in_with_draft_plan() sets
+    // (harmless to set on an already-non-draft plan).
+    isDraft: false,
   };
 }
 
@@ -185,11 +191,16 @@ export async function updateLessonPlan(id: string, input: LessonPlanInput) {
   await assertNotHoliday(input.classId, input.scheduledDate);
 
   const supabase = createClient();
-  const { error } = await supabase
+  // .select() so we can tell "RLS silently matched 0 rows" (edit window
+  // expired, or not the owner) apart from a real success — a plain
+  // .update() with no .select() reports neither as an error.
+  const { data, error } = await supabase
     .from("lesson_plans")
     .update(toPayload(input))
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
   if (error) throw duplicateMeetingNumberError(error);
+  if (!data || data.length === 0) throw new Error("EDIT_WINDOW_EXPIRED");
 }
 
 /** Admin-only — teachers have no delete path for lesson plans by design.

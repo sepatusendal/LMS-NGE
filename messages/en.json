@@ -194,6 +194,7 @@
     "manage": "Manage",
     "changeTutor": "Change Tutor",
     "manageMeeting": "Manage Meeting",
+    "editReport": "Edit Report",
     "checkIn": "Check-in",
     "checkOut": "Check-out",
     "late": "Late",
@@ -216,6 +217,7 @@
     "safe": "Up to date",
     "needsLessonPlan": "Needs Lesson Plan",
     "noPlansForClass": "No lesson plan for this class yet.",
+    "draftBadge": "Draft — fill in",
     "week": "Week {week}",
     "noClassesAssigned": "No classes have been assigned to you yet."
   },
@@ -237,6 +239,7 @@
       "topicRequired": "Topic is required"
     },
     "readOnlyNotice": "You can only view this lesson plan. Only the teacher assigned to this class can edit it.",
+    "editWindowExpiredNotice": "It's been more than 7 days since this meeting's date — the lesson plan can no longer be edited.",
     "sections": {
       "basicInfo": {
         "title": "Basic Info",
@@ -304,7 +307,8 @@
       "deleteSuccess": "Lesson plan deleted successfully",
       "deleteError": "Couldn't delete lesson plan",
       "HOLIDAY_NO_LESSON_PLAN": "This date is a holiday, a lesson plan can't be created for it",
-      "DUPLICATE_MEETING_NUMBER": "This meeting number is already used by another lesson plan in this class. Close this page and open it again from the Lesson Plan menu — the number will be filled in correctly."
+      "DUPLICATE_MEETING_NUMBER": "This meeting number is already used by another lesson plan in this class. Close this page and open it again from the Lesson Plan menu — the number will be filled in correctly.",
+      "EDIT_WINDOW_EXPIRED": "This lesson plan is past its 7-day edit window and can no longer be changed."
     }
   },
   "attendanceForm": {
@@ -314,7 +318,7 @@
     "present": "Present",
     "saved": "Saved",
     "markAllPresent": "Mark all present",
-    "saveAttendance": "Save Attendance",
+    "saveAttendance": "Submit Attendance & Finish Teaching",
     "status": {
       "present": "Present",
       "absent": "Absent",
@@ -323,7 +327,8 @@
     },
     "toasts": {
       "saveError": "Couldn't save attendance",
-      "saveSuccess": "Attendance saved successfully"
+      "saveSuccess": "Attendance saved, class finished",
+      "profileNotReady": "Teacher profile isn't ready yet"
     }
   },
   "reportForm": {
@@ -359,6 +364,8 @@
     "uploadActivityPhoto": "Upload Activity Photo",
     "submitting": "Saving...",
     "submit": "Submit Daily Teaching Report",
+    "update": "Save Changes",
+    "editWindowExpiredNotice": "It's been more than 7 days since this meeting — the report can no longer be edited.",
     "validation": {
       "followUpNoteRequired": "Note is required",
       "actionPlanRequired": "Action plan is required when there's a note about what needs improvement"
@@ -366,7 +373,10 @@
     "toasts": {
       "profileNotReady": "Profile isn't ready yet",
       "saveSuccess": "Daily Teaching Report saved successfully",
-      "saveError": "Couldn't save report"
+      "saveError": "Couldn't save report",
+      "updateSuccess": "Report changes saved",
+      "updateError": "Couldn't save changes",
+      "REPORT_EDIT_NOT_ALLOWED": "This report is past its 7-day edit window, or isn't yours."
     }
   },
   "fileUpload": {
@@ -419,6 +429,8 @@
     "viewHandoverSummary": "View Handover Summary",
     "createLessonPlan": "Create Lesson Plan",
     "startClass": "Start Class",
+    "orWriteLessonPlanFirst": "or write the lesson plan first",
+    "viewOrEditReport": "View/Edit",
     "closeAttendance": "Close Attendance",
     "fillStudentAttendance": "Fill Student Attendance",
     "viewLessonPlan": "View Lesson Plan",
@@ -447,11 +459,16 @@
       "profileNotReady": "Profile isn't ready yet",
       "classStarted": "Class started! Checked in successfully",
       "startClassError": "Couldn't start class",
-      "checkOutSuccess": "Checked out successfully",
-      "checkOutError": "Couldn't check out",
       "HOLIDAY_NO_CLASS": "Today is a holiday, class can't be started",
-      "ALREADY_CHECKED_IN": "This class has already been checked in"
+      "ALREADY_CHECKED_IN": "This class has already been checked in",
+      "NOT_PRIMARY_TEACHER": "Only this class's primary teacher can create a lesson plan. Contact them for this class."
     }
+  },
+  "workflowWizard": {
+    "backToAbsensi": "Back to Absensi",
+    "stepOf": "Step {step} of {total}",
+    "classNotFound": "This class or meeting couldn't be found.",
+    "noPlanYetNotice": "No lesson plan for this meeting yet — that's fine, go ahead and start. You can fill it in later (within 7 days)."
   },
   "changePassword": {
     "title": "Change Password",

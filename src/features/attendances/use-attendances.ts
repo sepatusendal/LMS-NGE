@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import {
   fetchAttendances,
   upsertAttendance,
-  bulkUpsertAttendance,
+  submitAttendanceAndCheckout,
 } from "./queries";
 import { fetchClassAttendanceSummary } from "./admin-queries";
 import type { AttendanceInput, BulkAttendanceInput } from "./schema";
@@ -40,11 +40,14 @@ export function useUpsertAttendance(meetingId: string) {
   });
 }
 
-export function useBulkAttendance(meetingId: string) {
+export function useSubmitAttendanceAndCheckout(meetingId: string, teacherId: string | undefined) {
   const queryClient = useQueryClient();
   const t = useTranslations("attendanceForm.toasts");
   return useMutation({
-    mutationFn: (input: BulkAttendanceInput) => bulkUpsertAttendance(input),
+    mutationFn: (input: BulkAttendanceInput) => {
+      if (!teacherId) throw new Error(t("profileNotReady"));
+      return submitAttendanceAndCheckout({ ...input, teacherId });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...ATTENDANCE_KEY, meetingId] });
       queryClient.invalidateQueries({ queryKey: ["today-classes"] });

@@ -6,8 +6,9 @@ import { Loader2, Check, AlertCircle, CheckCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useClassRoster } from "@/features/classes/use-roster";
-import { useBulkAttendance, useAttendances } from "@/features/attendances/use-attendances";
+import { useSubmitAttendanceAndCheckout, useAttendances } from "@/features/attendances/use-attendances";
 import { ATTENDANCE_STATUS_OPTIONS } from "@/features/attendances/schema";
+import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
 import type { RosterStudent } from "@/features/classes/roster-queries";
 
 const STATUS_STYLE: Record<string, { active: string; idle: string; shortKey: string }> = {
@@ -50,7 +51,8 @@ export function AttendanceForm({ meetingId, classId, onDone }: Props) {
   const t = useTranslations("attendanceForm");
   const { data: roster, isLoading: rosterLoading } = useClassRoster(classId);
   const { data: existing, isLoading: existingLoading } = useAttendances(meetingId);
-  const bulkAttendance = useBulkAttendance(meetingId);
+  const { data: teacher } = useCurrentTeacher();
+  const submitAttendance = useSubmitAttendanceAndCheckout(meetingId, teacher?.teacherId);
 
   const [statusMap, setStatusMap] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
@@ -90,7 +92,7 @@ export function AttendanceForm({ meetingId, classId, onDone }: Props) {
       studentId: s.studentId,
       status: (statusMap[s.studentId] || "PRESENT") as typeof ATTENDANCE_STATUS_OPTIONS[number],
     }));
-    await bulkAttendance.mutateAsync({ meetingId, entries });
+    await submitAttendance.mutateAsync({ meetingId, entries });
     setSaved(true);
     onDone?.();
   }
@@ -167,10 +169,10 @@ export function AttendanceForm({ meetingId, classId, onDone }: Props) {
         <Button
           size="lg"
           className="w-full"
-          disabled={bulkAttendance.isPending}
+          disabled={submitAttendance.isPending}
           onClick={handleSubmit}
         >
-          {bulkAttendance.isPending ? (
+          {submitAttendance.isPending ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             t("saveAttendance")

@@ -194,6 +194,7 @@
     "manage": "Kelola",
     "changeTutor": "Ganti Tutor",
     "manageMeeting": "Kelola Meeting",
+    "editReport": "Edit Report",
     "checkIn": "Check-in",
     "checkOut": "Check-out",
     "late": "Terlambat",
@@ -216,6 +217,7 @@
     "safe": "Aman",
     "needsLessonPlan": "Perlu Lesson Plan",
     "noPlansForClass": "Belum ada lesson plan untuk kelas ini.",
+    "draftBadge": "Draft — lengkapi",
     "week": "Minggu {week}",
     "noClassesAssigned": "Belum ada kelas yang ditugaskan ke Anda."
   },
@@ -237,6 +239,7 @@
       "topicRequired": "Topic wajib diisi"
     },
     "readOnlyNotice": "Kamu hanya bisa melihat lesson plan ini. Hanya teacher yang ditugaskan di kelas ini yang dapat mengedit.",
+    "editWindowExpiredNotice": "Sudah lewat 7 hari sejak tanggal pertemuan ini — lesson plan tidak bisa diedit lagi.",
     "sections": {
       "basicInfo": {
         "title": "Info Dasar",
@@ -304,7 +307,8 @@
       "deleteSuccess": "Lesson plan berhasil dihapus",
       "deleteError": "Gagal menghapus lesson plan",
       "HOLIDAY_NO_LESSON_PLAN": "Tanggal ini adalah hari libur, tidak bisa membuat lesson plan",
-      "DUPLICATE_MEETING_NUMBER": "Nomor pertemuan ini sudah dipakai lesson plan lain di kelas ini. Tutup halaman ini lalu buka lagi dari menu Lesson Plan — nomornya akan otomatis benar."
+      "DUPLICATE_MEETING_NUMBER": "Nomor pertemuan ini sudah dipakai lesson plan lain di kelas ini. Tutup halaman ini lalu buka lagi dari menu Lesson Plan — nomornya akan otomatis benar.",
+      "EDIT_WINDOW_EXPIRED": "Lesson plan ini sudah lewat batas edit 7 hari, tidak bisa diubah lagi."
     }
   },
   "attendanceForm": {
@@ -314,7 +318,7 @@
     "present": "Hadir",
     "saved": "Tersimpan",
     "markAllPresent": "Tandai semua hadir",
-    "saveAttendance": "Simpan Absensi",
+    "saveAttendance": "Submit Absensi & Selesai Mengajar",
     "status": {
       "present": "Hadir",
       "absent": "Alpa",
@@ -323,7 +327,8 @@
     },
     "toasts": {
       "saveError": "Gagal menyimpan absensi",
-      "saveSuccess": "Absensi berhasil disimpan"
+      "saveSuccess": "Absensi tersimpan, kelas selesai",
+      "profileNotReady": "Profil teacher belum siap"
     }
   },
   "reportForm": {
@@ -359,6 +364,8 @@
     "uploadActivityPhoto": "Upload Foto Kegiatan",
     "submitting": "Menyimpan...",
     "submit": "Submit Daily Teaching Report",
+    "update": "Simpan Perubahan",
+    "editWindowExpiredNotice": "Sudah lewat 7 hari sejak pertemuan ini — report tidak bisa diedit lagi.",
     "validation": {
       "followUpNoteRequired": "Catatan wajib diisi",
       "actionPlanRequired": "Action plan wajib diisi kalau ada catatan yang perlu ditingkatkan"
@@ -366,7 +373,10 @@
     "toasts": {
       "profileNotReady": "Profil belum siap",
       "saveSuccess": "Daily Teaching Report berhasil disimpan",
-      "saveError": "Gagal menyimpan report"
+      "saveError": "Gagal menyimpan report",
+      "updateSuccess": "Perubahan report berhasil disimpan",
+      "updateError": "Gagal menyimpan perubahan",
+      "REPORT_EDIT_NOT_ALLOWED": "Report ini sudah lewat batas edit 7 hari, atau bukan report Anda."
     }
   },
   "fileUpload": {
@@ -419,6 +429,8 @@
     "viewHandoverSummary": "Lihat Handover Summary",
     "createLessonPlan": "Buat Lesson Plan",
     "startClass": "Mulai Kelas",
+    "orWriteLessonPlanFirst": "atau isi lesson plan dulu",
+    "viewOrEditReport": "Lihat/Edit",
     "closeAttendance": "Tutup Absensi",
     "fillStudentAttendance": "Isi Absensi Siswa",
     "viewLessonPlan": "Lihat Lesson Plan",
@@ -447,11 +459,16 @@
       "profileNotReady": "Profil belum siap",
       "classStarted": "Kelas dimulai! Check-in berhasil",
       "startClassError": "Gagal memulai kelas",
-      "checkOutSuccess": "Check-out berhasil",
-      "checkOutError": "Gagal check-out",
       "HOLIDAY_NO_CLASS": "Hari ini hari libur, tidak bisa mulai kelas",
-      "ALREADY_CHECKED_IN": "Kelas ini sudah di-check-in"
+      "ALREADY_CHECKED_IN": "Kelas ini sudah di-check-in",
+      "NOT_PRIMARY_TEACHER": "Hanya guru utama kelas ini yang bisa membuat lesson plan. Hubungi guru utama untuk kelas ini."
     }
+  },
+  "workflowWizard": {
+    "backToAbsensi": "Kembali ke Absensi",
+    "stepOf": "Langkah {step} dari {total}",
+    "classNotFound": "Kelas atau pertemuan ini tidak ditemukan.",
+    "noPlanYetNotice": "Lesson plan untuk pertemuan ini belum dibuat — gapapa, langsung mulai aja. Lesson plan-nya bisa dilengkapi belakangan (maksimal 7 hari)."
   },
   "changePassword": {
     "title": "Ganti Password",

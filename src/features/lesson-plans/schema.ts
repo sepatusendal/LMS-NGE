@@ -101,4 +101,8 @@ export interface LessonPlan {
   moduleFileName: string | null;
   createdByTeacherName: string;
   createdAt: string;
+  /** True when this was auto-created by check_in_with_draft_plan() (the
+   * teacher checked in before writing a plan) and hasn't been filled in
+   * yet — still just a placeholder topic. */
+  isDraft: boolean;
 }

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
-import { fetchTodayClasses, startClass, doCheckOut } from "./queries";
+import { fetchTodayClasses, startClass, checkInWithDraftPlan } from "./queries";
 import type { TodayClass } from "./schema";
 
 const TODAY_KEY = ["today-classes"];
@@ -51,21 +51,30 @@ export function useStartClass() {
   });
 }
 
-export function useCheckOut() {
+const DRAFT_CHECK_IN_ERROR_MESSAGES = new Set(["HOLIDAY_NO_CLASS", "NOT_PRIMARY_TEACHER"]);
+
+/** Check-in for a class whose next meeting has no lesson plan yet
+ * ("no_plan_today") — creates a placeholder plan, the meeting, and the
+ * check-in row in one atomic call. See checkInWithDraftPlan() in queries.ts
+ * and check_in_with_draft_plan() in the DB. */
+export function useCheckInWithDraftPlan() {
   const queryClient = useQueryClient();
   const { data: teacher } = useCurrentTeacher();
   const t = useTranslations("workflow.toasts");
 
   return useMutation({
-    mutationFn: async (meetingId: string) => {
+    mutationFn: async (input: { classId: string; meetingNumber: number; week: number; scheduledDate: string }) => {
       if (!teacher?.teacherId) throw new Error(t("profileNotReady"));
-      await doCheckOut({ meetingId, teacherId: teacher.teacherId });
+      return checkInWithDraftPlan(input.classId, teacher.teacherId, input.meetingNumber, input.week, input.scheduledDate);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TODAY_KEY });
-      toast.success(t("checkOutSuccess"));
+      queryClient.invalidateQueries({ queryKey: ["lesson-plans"] });
+      toast.success(t("classStarted"));
     },
     onError: (error) =>
-      toast.error(t("checkOutError"), { description: error.message }),
+      toast.error(t("startClassError"), {
+        description: DRAFT_CHECK_IN_ERROR_MESSAGES.has(error.message) ? t(error.message) : error.message,
+      }),
   });
 }

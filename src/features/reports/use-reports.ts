@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { fetchReport, createReport } from "./queries";
+import { fetchReport, createReport, fetchReportPageContext, updateReport } from "./queries";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
 import type { ReportObjectiveInput } from "./schema";
 
@@ -11,6 +11,14 @@ export function useReport(meetingId: string) {
   return useQuery({
     queryKey: [...REPORT_KEY, meetingId],
     queryFn: () => fetchReport(meetingId),
+    enabled: Boolean(meetingId),
+  });
+}
+
+export function useReportPageContext(meetingId: string) {
+  return useQuery({
+    queryKey: ["report-page-context", meetingId],
+    queryFn: () => fetchReportPageContext(meetingId),
     enabled: Boolean(meetingId),
   });
 }
@@ -50,5 +58,26 @@ export function useCreateReport(meetingId: string) {
     },
     onError: (error) =>
       toast.error(t("saveError"), { description: error.message }),
+  });
+}
+
+const KNOWN_UPDATE_ERRORS = new Set(["REPORT_EDIT_NOT_ALLOWED"]);
+
+export function useUpdateReport(meetingId: string) {
+  const queryClient = useQueryClient();
+  const t = useTranslations("reportForm.toasts");
+
+  return useMutation({
+    mutationFn: (input: { reportId: string } & Parameters<typeof updateReport>[1]) =>
+      updateReport(input.reportId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...REPORT_KEY, meetingId] });
+      queryClient.invalidateQueries({ queryKey: ["today-classes"] });
+      toast.success(t("updateSuccess"));
+    },
+    onError: (error) =>
+      toast.error(t("updateError"), {
+        description: KNOWN_UPDATE_ERRORS.has(error.message) ? t(error.message) : error.message,
+      }),
   });
 }

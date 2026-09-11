@@ -11,13 +11,6 @@ export const checkInSchema = z.object({
 });
 export type CheckInInput = z.infer<typeof checkInSchema>;
 
-export const checkOutSchema = z.object({
-  meetingId: z.string().min(1),
-  teacherId: z.string().min(1),
-  notes: z.string().optional(),
-});
-export type CheckOutInput = z.infer<typeof checkOutSchema>;
-
 export interface TodayClass {
   classId: string;
   className: string;
@@ -50,6 +43,11 @@ export interface TodayClass {
    * reminder only. Never true at the same time as meetingStatus
    * "no_plan_today" (that one already has its own call-to-action). */
   needsNextLessonPlan: boolean;
+  /** What check_in_with_draft_plan() should number/date a placeholder plan
+   * as, if the teacher checks in without one existing yet — only actually
+   * used when meetingStatus is "no_plan_today". */
+  draftMeetingNumber: number;
+  draftWeek: number;
 }
 
 export interface Meeting {

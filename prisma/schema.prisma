@@ -383,6 +383,11 @@ model LessonPlan {
   /// same id/filename pattern as check-in/report photos.
   moduleDriveFileId        String?
   moduleFileName           String?
+  /// True when auto-created by check_in_with_draft_plan() because the
+  /// teacher checked in before writing a plan — placeholder topic, meant to
+  /// be filled in (still subject to the same 7-day edit window as any
+  /// other plan, counted from scheduledDate).
+  isDraft                  Boolean  @default(false)
 
   createdAt DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt DateTime  @updatedAt @db.Timestamptz(3)

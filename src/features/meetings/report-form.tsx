@@ -18,7 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-import { useCreateReport } from "@/features/reports/use-reports";
+import { useCreateReport, useUpdateReport } from "@/features/reports/use-reports";
 import { useClassRoster } from "@/features/classes/use-roster";
 import { FileUpload } from "@/features/drive/file-upload";
 import {
@@ -27,6 +27,7 @@ import {
   OBJECTIVES_KEY,
   type ObjectivesAchieved,
   type ReportInput,
+  type TeachingReport,
 } from "@/features/reports/schema";
 
 const OBJECTIVES_BADGE_VARIANT: Record<ObjectivesAchieved, "default" | "secondary" | "destructive"> = {
@@ -48,24 +49,47 @@ interface Props {
   classId: string;
   learningObjectives: string[];
   curriculumReportFormat?: "STANDARD" | "ALBRIGHT";
+  /** Present when this meeting already has a report — switches the form
+   * into edit mode (prefilled, submits via update_teaching_report instead
+   * of create_teaching_report). */
+  existingReport?: TeachingReport | null;
+  /** True once the 7-day edit window has passed — renders every field
+   * disabled with a notice instead of a submit button, mirroring how
+   * LessonPlanForm handles its own expired/not-owner readOnly state. */
+  readOnly?: boolean;
+  onSubmitSuccess?: () => void;
 }
 
-export function ReportForm({ meetingId, classId, learningObjectives, curriculumReportFormat = "STANDARD" }: Props) {
+export function ReportForm({
+  meetingId,
+  classId,
+  learningObjectives,
+  curriculumReportFormat = "STANDARD",
+  existingReport,
+  readOnly = false,
+  onSubmitSuccess,
+}: Props) {
   const isAlbright = curriculumReportFormat === "ALBRIGHT";
+  const isEdit = Boolean(existingReport);
   const t = useTranslations("reportForm");
   const reportSchema = useMemo(() => buildReportSchema(t), [t]);
   const createReport = useCreateReport(meetingId);
+  const updateReport = useUpdateReport(meetingId);
   const { data: roster, refetch: refetchRoster } = useClassRoster(classId);
-  const [followUps, setFollowUps] = useState<{ studentId: string; studentName: string; note: string }[]>([]);
+  const [followUps, setFollowUps] = useState<{ studentId: string; studentName: string; note: string }[]>(
+    existingReport?.followUps ?? [],
+  );
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [followUpNote, setFollowUpNote] = useState("");
   const [isCheckingRoster, setIsCheckingRoster] = useState(false);
-  const [photoDriveFileId, setPhotoDriveFileId] = useState("");
-  const [photoFileName, setPhotoFileName] = useState("");
+  const [photoDriveFileId, setPhotoDriveFileId] = useState(existingReport?.photoDriveFileId ?? "");
+  const [photoFileName, setPhotoFileName] = useState(existingReport?.photoFileName ?? "");
   // Defaults to every objective achieved — the teacher unchecks the ones
   // that weren't met, rather than picking a flat YES/PARTIALLY/NO status.
   const [objectives, setObjectives] = useState(
-    learningObjectives.map((text) => ({ text, achieved: true })),
+    existingReport && existingReport.objectives.length > 0
+      ? existingReport.objectives.map((o) => ({ text: o.objectiveText, achieved: o.achieved }))
+      : learningObjectives.map((text) => ({ text, achieved: true })),
   );
 
   const {
@@ -77,7 +101,15 @@ export function ReportForm({ meetingId, classId, learningObjectives, curriculumR
     resolver: zodResolver(reportSchema),
     defaultValues: {
       meetingId,
-      skills: [],
+      skills: existingReport?.skills ?? [],
+      whatWentWell: existingReport?.whatWentWell ?? undefined,
+      whatNeedsImprovement: existingReport?.whatNeedsImprovement ?? undefined,
+      actionPlan: existingReport?.actionPlan ?? undefined,
+      nextLessonNotes: existingReport?.nextLessonNotes ?? undefined,
+      homeworkAssigned: existingReport?.homeworkAssigned ?? undefined,
+      languageSkillsFocus: existingReport?.languageSkillsFocus ?? undefined,
+      activitiesLog: existingReport?.activitiesLog ?? undefined,
+      resourcesUsed: existingReport?.resourcesUsed ?? undefined,
       followUps: [],
     },
   });
@@ -125,7 +157,7 @@ export function ReportForm({ meetingId, classId, learningObjectives, curriculumR
 
   async function onSubmit(values: Record<string, unknown>) {
     const v = values as unknown as ReportInput;
-    await createReport.mutateAsync({
+    const payload = {
       skills: isAlbright ? [] : v.skills || [],
       objectives: isAlbright ? [] : objectives,
       whatWentWell: isAlbright ? undefined : v.whatWentWell,
@@ -139,11 +171,28 @@ export function ReportForm({ meetingId, classId, learningObjectives, curriculumR
       followUps: followUps.map((f) => ({ studentId: f.studentId, note: f.note })),
       photoDriveFileId: photoDriveFileId || undefined,
       photoFileName: photoFileName || undefined,
-    });
+    };
+    if (isEdit && existingReport) {
+      await updateReport.mutateAsync({ reportId: existingReport.id, ...payload });
+    } else {
+      await createReport.mutateAsync(payload);
+    }
+    onSubmitSuccess?.();
   }
+
+  const isSubmitting = createReport.isPending || updateReport.isPending;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {readOnly && (
+        <div className="bg-chart-4/10 text-foreground flex items-start gap-2.5 rounded-lg border border-chart-4/20 px-4 py-3 text-sm">
+          <span className="bg-chart-4/20 text-chart-4 mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
+            !
+          </span>
+          <span>{t("editWindowExpiredNotice")}</span>
+        </div>
+      )}
+      <fieldset disabled={readOnly} className="space-y-4 border-0 p-0">
       {isAlbright ? (
         <>
           <div className="space-y-2">
@@ -300,10 +349,13 @@ export function ReportForm({ meetingId, classId, learningObjectives, curriculumR
           }}
         />
       </div>
+      </fieldset>
 
-      <Button type="submit" className="w-full" disabled={createReport.isPending}>
-        {createReport.isPending ? t("submitting") : t("submit")}
-      </Button>
+      {!readOnly && (
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? t("submitting") : isEdit ? t("update") : t("submit")}
+        </Button>
+      )}
     </form>
   );
 }

@@ -122,6 +122,7 @@ export function LessonPlanForm({
   readOnly = false,
   adminMode = false,
   defaultClassId,
+  expiredNotice = false,
 }: {
   lessonPlan?: LessonPlan;
   readOnly?: boolean;
@@ -133,6 +134,10 @@ export function LessonPlanForm({
    * class's "Buat Lesson Plan" card) so a teacher with several classes can't
    * accidentally submit the plan under the wrong one. Ignored in edit mode. */
   defaultClassId?: string;
+  /** True when readOnly is caused by the 7-day edit window having passed
+   * (as opposed to simply not owning the plan) — shows a distinct message
+   * so the teacher understands *why* it's locked. */
+  expiredNotice?: boolean;
 }) {
   const isEdit = Boolean(lessonPlan);
   const router = useRouter();
@@ -281,7 +286,7 @@ export function LessonPlanForm({
           <span className="bg-chart-4/20 text-chart-4 mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
             !
           </span>
-          <span>{t("readOnlyNotice")}</span>
+          <span>{expiredNotice ? t("editWindowExpiredNotice") : t("readOnlyNotice")}</span>
         </div>
       )}
 

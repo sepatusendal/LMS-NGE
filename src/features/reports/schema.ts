@@ -94,5 +94,6 @@ export interface TeachingReport {
   photoDriveFileId: string | null;
   photoFileName: string | null;
   summary: string | null;
+  followUps: { studentId: string; studentName: string; note: string }[];
   createdAt: string;
 }

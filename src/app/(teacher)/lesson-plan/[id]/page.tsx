@@ -11,6 +11,7 @@ import { useDeleteLessonPlan, useLessonPlan } from "@/features/lesson-plans/use-
 import { useMyClasses } from "@/features/classes/use-my-classes";
 import { useCurrentUser } from "@/features/auth/use-current-user";
 import { LoadingState } from "@/components/shared/loading-state";
+import { isWithinEditWindow } from "@/lib/date";
 
 export default function EditLessonPlanPage() {
   const params = useParams<{ id: string }>();
@@ -36,6 +37,9 @@ export default function EditLessonPlanPage() {
         : false),
     [isAdmin, lessonPlan, myClasses],
   );
+  // Admin isn't bound by the 7-day teacher edit window (matching the RLS,
+  // which only gates the teacher_update_own_lesson_plans policy).
+  const isExpired = Boolean(lessonPlan && !isAdmin && !isWithinEditWindow(lessonPlan.scheduledDate));
 
   return (
     <div className="space-y-4">
@@ -82,7 +86,12 @@ export default function EditLessonPlanPage() {
       ) : isLoading || !lessonPlan ? (
         <LoadingState />
       ) : (
-        <LessonPlanForm lessonPlan={lessonPlan} readOnly={!isOwner} adminMode={isAdmin} />
+        <LessonPlanForm
+          lessonPlan={lessonPlan}
+          readOnly={!isOwner || isExpired}
+          adminMode={isAdmin}
+          expiredNotice={isOwner && isExpired}
+        />
       )}
     </div>
   );
