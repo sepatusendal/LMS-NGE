@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   deleteScheduleOverride,
+  fetchAllScheduleOverrides,
   fetchScheduleOverrides,
   upsertScheduleOverride,
 } from "./schedule-override-queries";
@@ -15,6 +16,16 @@ export function useScheduleOverrides(classId: string) {
     queryKey: overridesKey(classId),
     queryFn: () => fetchScheduleOverrides(classId),
     enabled: Boolean(classId),
+  });
+}
+
+/** All overrides across every class, for surfaces that need to resolve a
+ * teacher's effective (split-day) classes, not just their statically owned ones. */
+export function useAllScheduleOverrides(enabled = true) {
+  return useQuery({
+    queryKey: ["schedule-overrides", "all"],
+    queryFn: fetchAllScheduleOverrides,
+    enabled,
   });
 }
 

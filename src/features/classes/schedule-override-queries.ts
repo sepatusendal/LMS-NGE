@@ -41,6 +41,26 @@ export async function fetchScheduleOverrides(classId: string): Promise<ScheduleO
   }));
 }
 
+/** All overrides across every class — used where a teacher's *effective*
+ * (split-day) classes need to be resolved, not just the ones they statically own. */
+export async function fetchAllScheduleOverrides(): Promise<ScheduleOverride[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("class_schedule_overrides")
+    .select("id, classId, dayOfWeek, startTime, endTime, teacherId, teachers(users(fullName))");
+  if (error) throw error;
+
+  return (data as unknown as OverrideRow[]).map((row) => ({
+    id: row.id,
+    classId: row.classId,
+    dayOfWeek: row.dayOfWeek,
+    startTime: row.startTime,
+    endTime: row.endTime,
+    teacherId: row.teacherId,
+    teacherName: row.teachers?.users?.fullName ?? "-",
+  }));
+}
+
 export async function upsertScheduleOverride(input: {
   classId: string;
   dayOfWeek: number;

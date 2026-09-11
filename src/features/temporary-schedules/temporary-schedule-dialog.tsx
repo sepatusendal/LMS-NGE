@@ -18,6 +18,8 @@ import { Label } from "@/components/ui/label";
 import { useClasses } from "@/features/classes/use-classes";
 import { buildDayOptions, GRADE_BAND_OPTIONS, type GradeBand } from "@/features/classes/schema";
 import { useSchools } from "@/features/schools/use-schools";
+import { useTeachers } from "@/features/teachers/use-teachers";
+import { useAllScheduleOverrides } from "@/features/classes/use-schedule-overrides";
 import {
   ALL_DAYS_OF_WEEK,
   buildTemporaryScheduleSchema,
@@ -65,8 +67,10 @@ export function TemporaryScheduleDialog({
   const t = useTranslations("admin.temporarySchedules");
   const tCommon = useTranslations("common");
   const tDay = useTranslations("jadwal.day");
-  const { data: classes } = useClasses("REGULAR", open);
+  const { data: classes } = useClasses(undefined, open);
   const { data: schools } = useSchools();
+  const { data: allTeachers } = useTeachers();
+  const { data: overrides } = useAllScheduleOverrides(open);
   const createSchedule = useCreateTemporarySchedule();
   const updateSchedule = useUpdateTemporarySchedule();
   const isEditing = Boolean(editingBatch);
@@ -106,19 +110,33 @@ export function TemporaryScheduleDialog({
   }, [open, editingBatch?.batchId]);
 
   const teachers = useMemo(() => {
-    const map = new Map<string, string>();
-    (classes ?? []).forEach((c) => map.set(c.teacherId, c.teacherName));
-    return [...map.entries()].sort((a, b) => a[1].localeCompare(b[1]));
-  }, [classes]);
+    return (allTeachers ?? [])
+      .map((t): [string, string] => [t.id, t.fullName])
+      .sort((a, b) => a[1].localeCompare(b[1]));
+  }, [allTeachers]);
+
+  // A class's *effective* teachers include whoever statically owns it plus
+  // anyone covering it on a split day via class_schedule_overrides — e.g. a
+  // class named "Belgrade" statically owned by another teacher can still be
+  // taught by Edy on specific days, and the teacher filter should find it.
+  const effectiveTeachersByClass = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    (classes ?? []).forEach((c) => map.set(c.id, new Set([c.teacherId])));
+    (overrides ?? []).forEach((o) => {
+      if (!map.has(o.classId)) map.set(o.classId, new Set());
+      map.get(o.classId)!.add(o.teacherId);
+    });
+    return map;
+  }, [classes, overrides]);
 
   const visibleClasses = useMemo(() => {
     return (classes ?? []).filter((c) => {
       if (schoolFilter && c.schoolId !== schoolFilter) return false;
-      if (teacherFilter && c.teacherId !== teacherFilter) return false;
+      if (teacherFilter && !effectiveTeachersByClass.get(c.id)?.has(teacherFilter)) return false;
       if (search && !c.name.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [classes, schoolFilter, teacherFilter, search]);
+  }, [classes, schoolFilter, teacherFilter, search, effectiveTeachersByClass]);
 
   // Debounce so the conflict check doesn't fire on every keystroke.
   const [debounced, setDebounced] = useState<TemporaryScheduleInput>(EMPTY_VALUES);
