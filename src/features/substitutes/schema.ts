@@ -25,9 +25,11 @@ export const ABSENCE_REASON_KEY: Record<string, string> = {
 };
 
 export interface CurrentMeetingInfo {
-  lessonPlanId: string;
+  /** Null when the class has no lesson plan yet at all — assigning a
+   * substitute is still possible, a draft plan gets created for it. */
+  lessonPlanId: string | null;
   meetingNumber: number;
-  topic: string;
+  topic: string | null;
   meetingId: string | null;
   hasCheckIn: boolean;
   effectiveTeacherId: string;

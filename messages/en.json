@@ -709,7 +709,7 @@
     },
     "substitutes": {
       "panel": {
-        "noLessonPlanYet": "No lesson plan yet — can't assign a substitute yet.",
+        "noLessonPlanYet": "No lesson plan for this meeting yet — a draft one will be created automatically when you assign a substitute.",
         "title": "Substitute Teacher",
         "meetingLabel": "Meeting {number}: {topic}",
         "taughtBy": "Taught by",
@@ -740,6 +740,7 @@
         "ineligibleNoLessonPlan": "No lesson plan yet",
         "ineligibleAlreadyStarted": "Already started",
         "subBadge": "Sub: {name}",
+        "willCreateDraft": "Auto draft lesson plan",
         "cancelShort": "Cancel",
         "markAbsentTitle": "Mark {name} Absent",
         "scheduledClassCount": "{count} classes scheduled",

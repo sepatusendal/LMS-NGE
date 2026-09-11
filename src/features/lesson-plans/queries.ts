@@ -90,6 +90,51 @@ function mapRow(row: LessonPlanRow): LessonPlan {
   };
 }
 
+/** Creates a placeholder ("draft") lesson plan for the next meeting slot a
+ * class doesn't have one for yet — the admin-side counterpart to
+ * check_in_with_draft_plan() (see 20260911020000_editable_reports_and_draft_plans),
+ * used when assigning a substitute for a class that has no lesson plan at
+ * all yet (e.g. the absent teacher hadn't written one, and admins mark
+ * absences before anyone would ever have checked in). `createdByTeacherId`
+ * is attributed to the class's normal teacher, not the admin — admins have
+ * no Teacher record of their own, same convention as adminMode in
+ * LessonPlanForm. Admin bypasses the teacher_insert_own_lesson_plans RLS
+ * policy via admin_all_lesson_plans, so no special DB function is needed
+ * here (unlike the teacher-facing RPC, which has to satisfy RLS as the
+ * calling teacher). */
+export async function createDraftLessonPlan(
+  classId: string,
+  createdByTeacherId: string,
+  scheduledDate: string,
+): Promise<string> {
+  const supabase = createClient();
+  const { data: existing, error: existingErr } = await supabase
+    .from("lesson_plans")
+    .select("meetingNumber")
+    .eq("classId", classId)
+    .is("deletedAt", null)
+    .order("meetingNumber", { ascending: false })
+    .limit(1);
+  if (existingErr) throw existingErr;
+  const nextNumber = ((existing?.[0] as { meetingNumber: number } | undefined)?.meetingNumber ?? 0) + 1;
+
+  const { data, error } = await supabase
+    .from("lesson_plans")
+    .insert({
+      classId,
+      createdByTeacherId,
+      meetingNumber: nextNumber,
+      week: Math.ceil(nextNumber / 2),
+      scheduledDate,
+      topic: "(Belum diisi)",
+      isDraft: true,
+    })
+    .select("id")
+    .single();
+  if (error) throw duplicateMeetingNumberError(error);
+  return (data as { id: string }).id;
+}
+
 export async function fetchLessonPlans(): Promise<LessonPlan[]> {
   const supabase = createClient();
   const { data, error } = await supabase

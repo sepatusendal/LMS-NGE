@@ -32,7 +32,10 @@ function useIneligibleReason() {
   const t = useTranslations("admin.substitutes.absenceDialog");
   return (r: ClassStatusRow): string | null => {
     if (r.isHoliday) return t("ineligibleHoliday");
-    if (!r.lessonPlanId) return t("ineligibleNoLessonPlan");
+    // No lesson plan yet is no longer a blocker — assignSubstituteForLessonPlan
+    // creates a draft one automatically (mirrors a teacher's own
+    // check_in_with_draft_plan()). Only an already-started meeting still
+    // blocks, since reassigning after check-in isn't allowed.
     if (r.meetingStatus !== "not_started") return t("ineligibleAlreadyStarted");
     return null;
   };
@@ -88,6 +91,10 @@ function ClassRow({
       ) : reasonBlocked ? (
         <Badge variant="secondary" className="shrink-0 text-[10px]">
           {reasonBlocked}
+        </Badge>
+      ) : !row.lessonPlanId ? (
+        <Badge variant="outline" className="text-chart-4 border-chart-4/30 shrink-0 text-[10px]">
+          {t("willCreateDraft")}
         </Badge>
       ) : null}
     </div>
@@ -151,7 +158,7 @@ export function TeacherAbsenceDialog({
       .map((r) => ({
         classId: r.classId,
         className: r.className,
-        lessonPlanId: r.lessonPlanId!,
+        lessonPlanId: r.lessonPlanId,
         scheduledDate: date,
       }));
     if (assignments.length === 0 || !substituteTeacherId || !reason) return;

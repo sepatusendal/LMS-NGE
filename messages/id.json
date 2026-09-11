@@ -709,7 +709,7 @@
     },
     "substitutes": {
       "panel": {
-        "noLessonPlanYet": "Belum ada lesson plan — belum bisa assign substitute.",
+        "noLessonPlanYet": "Belum ada lesson plan untuk pertemuan ini — bakal dibuatkan draft otomatis kalau assign substitute.",
         "title": "Substitute Teacher",
         "meetingLabel": "Meeting {number}: {topic}",
         "taughtBy": "Diajar oleh",
@@ -740,6 +740,7 @@
         "ineligibleNoLessonPlan": "Belum ada lesson plan",
         "ineligibleAlreadyStarted": "Sudah dimulai",
         "subBadge": "Sub: {name}",
+        "willCreateDraft": "Draft lesson plan otomatis",
         "cancelShort": "Batalkan",
         "markAbsentTitle": "Tandai {name} Absen",
         "scheduledClassCount": "{count} kelas terjadwal",

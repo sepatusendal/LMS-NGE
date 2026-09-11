@@ -89,7 +89,9 @@ export function useCancelSubstitute(classId: string) {
 export interface TeacherAbsenceAssignment {
   classId: string;
   className: string;
-  lessonPlanId: string;
+  /** Null when the class has no lesson plan yet — assignSubstituteForLessonPlan
+   * creates a draft one automatically in that case. */
+  lessonPlanId: string | null;
   scheduledDate: string;
 }
 

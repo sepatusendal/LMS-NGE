@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { parseLocalDate, todayLocalDateStr } from "@/lib/date";
 import { findRecurringScheduleConflict, ScheduleConflictError, timeRangesOverlap } from "@/lib/schedule-conflict";
+import { createDraftLessonPlan } from "@/features/lesson-plans/queries";
 import type { CurrentMeetingInfo, HandoverSummary } from "./schema";
 
 export { ScheduleConflictError as SubstituteScheduleConflictError } from "@/lib/schedule-conflict";
@@ -97,10 +98,28 @@ async function resolveEffectiveTeacherForDate(
 
 export async function fetchCurrentMeetingInfo(classId: string): Promise<CurrentMeetingInfo | null> {
   const plan = await resolveCurrentLessonPlan(classId);
-  if (!plan) return null;
-
   const supabase = createClient();
   const effective = await resolveEffectiveTeacherForDate(classId, todayLocalDateStr());
+
+  // No lesson plan at all yet — nothing has happened for this class, so
+  // there's no meeting to look up either. Still return a usable info
+  // object (not null) so the admin can mark the teacher absent; a draft
+  // lesson plan gets created automatically when they do.
+  if (!plan) {
+    return {
+      lessonPlanId: null,
+      meetingNumber: 0,
+      topic: null,
+      meetingId: null,
+      hasCheckIn: false,
+      effectiveTeacherId: effective.teacherId,
+      effectiveTeacherName: effective.teacherName,
+      isSubstituted: false,
+      substituteTeacherId: null,
+      substituteTeacherName: null,
+      substituteReason: null,
+    };
+  }
 
   const { data: meeting, error } = await supabase
     .from("meetings")
@@ -259,7 +278,11 @@ async function findSubstituteScheduleConflict(params: {
  * *next* meeting automatically falls back to the class's normal
  * teacher/override — no separate "revert" step needed. */
 export async function assignSubstituteForLessonPlan(input: {
-  lessonPlanId: string;
+  /** Null when the class has no lesson plan yet for this date — a draft one
+   * is created automatically before assigning the substitute, the same
+   * "don't block on a missing lesson plan" idea as a teacher's own
+   * check_in_with_draft_plan(). */
+  lessonPlanId: string | null;
   classId: string;
   scheduledDate: string;
   substituteTeacherId: string;
@@ -267,6 +290,9 @@ export async function assignSubstituteForLessonPlan(input: {
 }): Promise<void> {
   const supabase = createClient();
   const effective = await resolveEffectiveTeacherForDate(input.classId, input.scheduledDate);
+
+  const lessonPlanId =
+    input.lessonPlanId ?? (await createDraftLessonPlan(input.classId, effective.teacherId, input.scheduledDate));
 
   const targetWindow = await resolveClassTimeWindowForDate(input.classId, input.scheduledDate);
   if (targetWindow) {
@@ -276,7 +302,7 @@ export async function assignSubstituteForLessonPlan(input: {
       startTime: targetWindow.startTime,
       endTime: targetWindow.endTime,
       excludeClassId: input.classId,
-      excludeLessonPlanId: input.lessonPlanId,
+      excludeLessonPlanId: lessonPlanId,
     });
     if (conflict) throw new ScheduleConflictError(conflict);
   }
@@ -284,7 +310,7 @@ export async function assignSubstituteForLessonPlan(input: {
   const { data: existing, error: findErr } = await supabase
     .from("meetings")
     .select("id, check_ins(id)")
-    .eq("lessonPlanId", input.lessonPlanId)
+    .eq("lessonPlanId", lessonPlanId)
     .maybeSingle();
   if (findErr) throw findErr;
 
@@ -305,7 +331,7 @@ export async function assignSubstituteForLessonPlan(input: {
   }
 
   const { error } = await supabase.from("meetings").insert({
-    lessonPlanId: input.lessonPlanId,
+    lessonPlanId,
     assignedTeacherId: effective.teacherId,
     actualTeacherId: input.substituteTeacherId,
     substituteReason: input.reason,
@@ -331,12 +357,13 @@ export async function assignSubstitute(input: {
   reason: string;
 }): Promise<void> {
   const plan = await resolveCurrentLessonPlan(input.classId);
-  if (!plan) throw new Error("Kelas ini belum punya lesson plan");
 
+  // No lesson plan at all yet (nobody's checked in or written one) — assign
+  // for today; assignSubstituteForLessonPlan creates the draft plan itself.
   await assignSubstituteForLessonPlan({
-    lessonPlanId: plan.id,
+    lessonPlanId: plan?.id ?? null,
     classId: input.classId,
-    scheduledDate: plan.scheduledDate,
+    scheduledDate: plan?.scheduledDate ?? todayLocalDateStr(),
     substituteTeacherId: input.substituteTeacherId,
     reason: input.reason,
   });

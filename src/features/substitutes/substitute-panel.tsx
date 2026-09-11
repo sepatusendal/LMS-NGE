@@ -36,14 +36,7 @@ export function SubstitutePanel({ classId }: Props) {
   const [substituteTeacherId, setSubstituteTeacherId] = useState("");
   const [reason, setReason] = useState("");
 
-  if (isLoading) return null;
-  if (!info) {
-    return (
-      <div className="rounded-lg border px-3 py-2.5">
-        <p className="text-muted-foreground text-sm">{t("noLessonPlanYet")}</p>
-      </div>
-    );
-  }
+  if (isLoading || !info) return null;
 
   async function handleAssign() {
     if (!substituteTeacherId || !reason) return;
@@ -68,7 +61,9 @@ export function SubstitutePanel({ classId }: Props) {
       <div>
         <h2 className="font-medium">{t("title")}</h2>
         <p className="text-muted-foreground text-sm">
-          {t("meetingLabel", { number: info.meetingNumber, topic: info.topic })}
+          {info.lessonPlanId
+            ? t("meetingLabel", { number: info.meetingNumber, topic: info.topic ?? "" })
+            : t("noLessonPlanYet")}
         </p>
       </div>
 
