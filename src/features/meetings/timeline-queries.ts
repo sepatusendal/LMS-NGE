@@ -120,7 +120,29 @@ export async function fetchClassTimeline(classId: string): Promise<{
     overrideByDay.set(o.dayOfWeek, o as never);
   });
 
+  // Exact-date substitute from a temporary schedule (e.g. exam-week
+  // coverage) — takes priority over the per-weekday override below, since
+  // it's the more specific of the two.
+  const { data: tempSchedules, error: tsErr } = await supabase
+    .from("class_temporary_schedules")
+    .select("date, teacherId, teachers(users(fullName))")
+    .eq("classId", classId)
+    .in("date", lps.map((lp) => lp.scheduledDate))
+    .not("teacherId", "is", null);
+  if (tsErr) throw tsErr;
+  const tempTeacherByDate = new Map<
+    string,
+    { teacherId: string; teachers: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null }
+  >();
+  (tempSchedules as unknown as { date: string; teacherId: string; teachers: unknown }[]).forEach((row) => {
+    tempTeacherByDate.set(row.date, row as never);
+  });
+
   function resolveScheduledTeacher(scheduledDate: string): { id: string; name: string } {
+    const tempTeacher = tempTeacherByDate.get(scheduledDate);
+    if (tempTeacher) {
+      return { id: tempTeacher.teacherId, name: toOne(tempTeacher.teachers)?.users?.fullName ?? "-" };
+    }
     const override = overrideByDay.get(dayOfWeek(scheduledDate));
     if (override) {
       return { id: override.teacherId, name: toOne(override.teachers)?.users?.fullName ?? "-" };

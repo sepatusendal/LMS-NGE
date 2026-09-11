@@ -100,6 +100,7 @@ model Teacher {
   reportsAsOriginal   TeachingReport[] @relation("ReportOriginalTeacher")
   reportsAsSubstitute TeachingReport[] @relation("ReportSubstituteTeacher")
   scheduleOverrides   ClassScheduleOverride[]
+  temporaryScheduleAssignments ClassTemporarySchedule[]
 
   @@map("teachers")
 }
@@ -272,13 +273,21 @@ model ClassTemporarySchedule {
   startTime String // "HH:mm"
   endTime   String // "HH:mm"
   label     String?
+  // Optional substitute teacher for this class on this date — null means
+  // the class's usual teacher (static or override) still applies; this only
+  // ever narrows who teaches, never widens beyond the temporary schedule's
+  // own date/time window. See resolveEffectiveTeacherForDate/
+  // resolveScheduledTeacher, which treat this as the highest-priority layer.
+  teacherId String?  @db.Uuid
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
-  class Class @relation(fields: [classId], references: [id])
+  class   Class    @relation(fields: [classId], references: [id])
+  teacher Teacher? @relation(fields: [teacherId], references: [id])
 
   @@unique([classId, date])
   @@index([date])
   @@index([batchId])
+  @@index([teacherId])
   @@map("class_temporary_schedules")
 }
 

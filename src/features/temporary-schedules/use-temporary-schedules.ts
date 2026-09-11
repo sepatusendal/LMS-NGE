@@ -69,6 +69,7 @@ export function useTemporaryScheduleConflictsPreview(
     queryKey: [
       "temporary-schedule-conflicts",
       input.classIds,
+      input.teacherOverrides,
       input.dateFrom,
       input.dateTo,
       input.daysOfWeek,

@@ -59,18 +59,31 @@ async function resolveCurrentLessonPlan(classId: string): Promise<LessonPlanRow 
   return sorted.find((p) => !completedIds.has(p.id)) ?? sorted[sorted.length - 1];
 }
 
-/** Resolves the class's normally-scheduled teacher for a given date — the
- * class's own teacherId, unless a recurring per-weekday
- * ClassScheduleOverride hands that weekday to someone else. Used as the
- * "assignedTeacherId" baseline before layering a one-off substitute on top
- * (assignSubstituteForLessonPlan below), so cancelling the substitute always
- * reverts to this. */
+/** Resolves the class's normally-scheduled teacher for a given date —
+ * priority: an exact-date ClassTemporarySchedule substitute (e.g. exam-week
+ * coverage), then a recurring per-weekday ClassScheduleOverride, then the
+ * class's own static teacherId. Used as the "assignedTeacherId" baseline
+ * before layering a one-off substitute on top (assignSubstituteForLessonPlan
+ * below), so cancelling the substitute always reverts to this. */
 async function resolveEffectiveTeacherForDate(
   classId: string,
   dateStr: string,
 ): Promise<{ teacherId: string; teacherName: string }> {
   const supabase = createClient();
   const day = dayOfWeek(dateStr);
+
+  const { data: tempSchedule } = await supabase
+    .from("class_temporary_schedules")
+    .select("teacherId, teachers(id, users(fullName))")
+    .eq("classId", classId)
+    .eq("date", dateStr)
+    .not("teacherId", "is", null)
+    .maybeSingle();
+  const ts = tempSchedule as { teacherId: string; teachers: { id: string; users: { fullName: string } | null } | { id: string; users: { fullName: string } | null }[] | null } | null;
+  const tsTeacher = toOne(ts?.teachers);
+  if (tsTeacher) {
+    return { teacherId: tsTeacher.id, teacherName: tsTeacher.users?.fullName ?? "-" };
+  }
 
   const { data: override } = await supabase
     .from("class_schedule_overrides")

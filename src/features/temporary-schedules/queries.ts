@@ -12,6 +12,8 @@ interface TemporaryScheduleRow {
   endTime: string;
   label: string | null;
   createdAt: string;
+  teacherId: string | null;
+  teachers: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null;
   classes: { name: string } | { name: string }[] | null;
 }
 
@@ -30,7 +32,7 @@ export async function fetchTemporaryScheduleBatches(): Promise<TemporarySchedule
   const supabase = createClient();
   const { data, error } = await supabase
     .from("class_temporary_schedules")
-    .select("batchId, classId, date, startTime, endTime, label, createdAt, classes(name)")
+    .select("batchId, classId, date, startTime, endTime, label, createdAt, teacherId, teachers(users(fullName)), classes(name)")
     .order("date");
   if (error) throw error;
 
@@ -50,6 +52,14 @@ export async function fetchTemporaryScheduleBatches(): Promise<TemporarySchedule
         ...new Set(batchRows.map((r) => toOne(r.classes)?.name ?? "-")),
       ];
       const daysOfWeek = [...new Set(dates.map((d) => parseLocalDate(d).getDay()))].sort((a, b) => a - b);
+      const substituteTeacherByClass: TemporaryScheduleBatch["substituteTeacherByClass"] = {};
+      batchRows.forEach((r) => {
+        if (!r.teacherId || substituteTeacherByClass[r.classId]) return;
+        substituteTeacherByClass[r.classId] = {
+          teacherId: r.teacherId,
+          teacherName: toOne(r.teachers)?.users?.fullName ?? "-",
+        };
+      });
       return {
         batchId,
         label: batchRows[0].label,
@@ -61,6 +71,7 @@ export async function fetchTemporaryScheduleBatches(): Promise<TemporarySchedule
         startTime: batchRows[0].startTime,
         endTime: batchRows[0].endTime,
         createdAt: batchRows[0].createdAt,
+        substituteTeacherByClass,
       };
     })
     .sort((a, b) => b.dateFrom.localeCompare(a.dateFrom));
@@ -91,7 +102,13 @@ async function collectTemporaryScheduleConflicts(
     .select("id, name, teacherId")
     .in("id", input.classIds);
   if (error) throw error;
-  const classes = data as unknown as { id: string; name: string; teacherId: string }[];
+  const rawClasses = data as unknown as { id: string; name: string; teacherId: string }[];
+  // Effective teacher for THIS batch: the substitute picked for that class,
+  // or the class's usual teacher if no substitute was assigned to it.
+  const classes = rawClasses.map((c) => ({
+    ...c,
+    teacherId: input.teacherOverrides[c.id] ?? c.teacherId,
+  }));
 
   for (let i = 0; i < classes.length; i++) {
     for (let j = i + 1; j < classes.length; j++) {
@@ -127,7 +144,7 @@ async function collectTemporaryScheduleConflicts(
 
   const { data: otherData, error: otherError } = await supabase
     .from("class_temporary_schedules")
-    .select("classId, batchId, date, startTime, endTime, classes(name, teacherId)")
+    .select("classId, batchId, date, startTime, endTime, teacherId, classes(name, teacherId)")
     .in("date", dates);
   if (otherError) throw otherError;
   const otherRows = otherData as unknown as {
@@ -136,6 +153,7 @@ async function collectTemporaryScheduleConflicts(
     date: string;
     startTime: string;
     endTime: string;
+    teacherId: string | null;
     classes: { name: string; teacherId: string } | { name: string; teacherId: string }[] | null;
   }[];
 
@@ -145,7 +163,11 @@ async function collectTemporaryScheduleConflicts(
       if (row.batchId === excludeBatchId) continue;
       if (row.classId === c.id) continue;
       const other = toOne(row.classes);
-      if (!other || other.teacherId !== c.teacherId) continue;
+      if (!other) continue;
+      // The other row's effective teacher: its own substitute if it has
+      // one, else that class's usual teacher.
+      const otherEffectiveTeacherId = row.teacherId ?? other.teacherId;
+      if (otherEffectiveTeacherId !== c.teacherId) continue;
       if (!timeRangesOverlap(input.startTime, input.endTime, row.startTime, row.endTime)) continue;
       conflicts.set(
         c.id,
@@ -188,6 +210,7 @@ function buildTemporaryScheduleRows(input: TemporaryScheduleInput, dates: string
       startTime: input.startTime,
       endTime: input.endTime,
       label: input.label || null,
+      teacherId: input.teacherOverrides[classId] ?? null,
     })),
   );
 }
@@ -244,26 +267,29 @@ export async function deleteTemporaryScheduleBatch(batchId: string): Promise<voi
   if (error) throw error;
 }
 
-/** classId -> {startTime, endTime} for every class in `classIds` that has a
- * temporary schedule override covering `date` — the meetings/check-in and
- * monitoring time-resolution logic look this up and, when present, prefer it
- * over the class's normal recurring slot/teacher-override time. */
+/** classId -> {startTime, endTime, teacherId} for every class in `classIds`
+ * that has a temporary schedule override covering `date` — the
+ * meetings/check-in and monitoring time-resolution logic look this up and,
+ * when present, prefer its time over the class's normal recurring
+ * slot/teacher-override time. `teacherId` is null unless a substitute
+ * teacher was assigned for this class on this date; callers that only care
+ * about timing can ignore it. */
 export async function fetchTemporaryScheduleTimesForDate(
   classIds: string[],
   date: string,
-): Promise<Map<string, { startTime: string; endTime: string }>> {
+): Promise<Map<string, { startTime: string; endTime: string; teacherId: string | null }>> {
   if (classIds.length === 0) return new Map();
   const supabase = createClient();
   const { data, error } = await supabase
     .from("class_temporary_schedules")
-    .select("classId, startTime, endTime")
+    .select("classId, startTime, endTime, teacherId")
     .in("classId", [...new Set(classIds)])
     .eq("date", date);
   if (error) throw error;
 
-  const map = new Map<string, { startTime: string; endTime: string }>();
-  (data as unknown as { classId: string; startTime: string; endTime: string }[]).forEach((row) =>
-    map.set(row.classId, { startTime: row.startTime, endTime: row.endTime }),
+  const map = new Map<string, { startTime: string; endTime: string; teacherId: string | null }>();
+  (data as unknown as { classId: string; startTime: string; endTime: string; teacherId: string | null }[]).forEach(
+    (row) => map.set(row.classId, { startTime: row.startTime, endTime: row.endTime, teacherId: row.teacherId }),
   );
   return map;
 }

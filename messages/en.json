@@ -576,6 +576,8 @@
       "allSchools": "All schools",
       "allTeachers": "All teachers",
       "searchClassPlaceholder": "Search class name...",
+      "originalTeacherOption": "Original teacher (unchanged)",
+      "substituteTeacherHeader": "Substitute Teacher",
       "period": "Period",
       "newTime": "New Time",
       "classesHeader": "Classes",

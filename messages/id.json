@@ -576,6 +576,8 @@
       "allSchools": "Semua sekolah",
       "allTeachers": "Semua guru",
       "searchClassPlaceholder": "Cari nama kelas...",
+      "originalTeacherOption": "Guru asli (tidak diganti)",
+      "substituteTeacherHeader": "Guru Pengganti",
       "period": "Periode",
       "newTime": "Jam Baru",
       "classesHeader": "Kelas",

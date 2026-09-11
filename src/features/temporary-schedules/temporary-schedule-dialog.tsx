@@ -34,6 +34,7 @@ import {
 
 const EMPTY_VALUES: TemporaryScheduleInput = {
   classIds: [],
+  teacherOverrides: {},
   label: "",
   dateFrom: "",
   dateTo: "",
@@ -43,8 +44,13 @@ const EMPTY_VALUES: TemporaryScheduleInput = {
 };
 
 function batchToValues(batch: TemporaryScheduleBatch): TemporaryScheduleInput {
+  const teacherOverrides: Record<string, string> = {};
+  Object.entries(batch.substituteTeacherByClass).forEach(([classId, sub]) => {
+    teacherOverrides[classId] = sub.teacherId;
+  });
   return {
     classIds: batch.classIds,
+    teacherOverrides,
     label: batch.label ?? "",
     dateFrom: batch.dateFrom,
     dateTo: batch.dateTo,
@@ -93,6 +99,7 @@ export function TemporaryScheduleDialog({
   const [teacherFilter, setTeacherFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const classIds = watch("classIds");
+  const teacherOverrides = watch("teacherOverrides");
   const daysOfWeek = watch("daysOfWeek");
   const dateFrom = watch("dateFrom");
   const dateTo = watch("dateTo");
@@ -142,11 +149,11 @@ export function TemporaryScheduleDialog({
   const [debounced, setDebounced] = useState<TemporaryScheduleInput>(EMPTY_VALUES);
   useEffect(() => {
     const handle = setTimeout(
-      () => setDebounced({ classIds, label: "", dateFrom, dateTo, daysOfWeek, startTime, endTime }),
+      () => setDebounced({ classIds, teacherOverrides, label: "", dateFrom, dateTo, daysOfWeek, startTime, endTime }),
       400,
     );
     return () => clearTimeout(handle);
-  }, [classIds, dateFrom, dateTo, daysOfWeek, startTime, endTime]);
+  }, [classIds, teacherOverrides, dateFrom, dateTo, daysOfWeek, startTime, endTime]);
 
   const conflictsEnabled = Boolean(
     open &&
@@ -165,9 +172,26 @@ export function TemporaryScheduleDialog({
   const conflictByClassId = useMemo(() => new Map((conflicts ?? []).map((c) => [c.classId, c.message])), [conflicts]);
   const hasConflicts = conflictByClassId.size > 0;
 
+  function removeTeacherOverride(classId: string): Record<string, string> {
+    const rest = { ...teacherOverrides };
+    delete rest[classId];
+    return rest;
+  }
+
   function toggleClass(id: string) {
     const next = classIds.includes(id) ? classIds.filter((c) => c !== id) : [...classIds, id];
     setValue("classIds", next, { shouldValidate: true });
+    if (!next.includes(id) && teacherOverrides[id]) {
+      setValue("teacherOverrides", removeTeacherOverride(id));
+    }
+  }
+
+  function setClassTeacherOverride(classId: string, teacherId: string) {
+    if (!teacherId) {
+      setValue("teacherOverrides", removeTeacherOverride(classId), { shouldValidate: true });
+      return;
+    }
+    setValue("teacherOverrides", { ...teacherOverrides, [classId]: teacherId }, { shouldValidate: true });
   }
 
   function toggleDay(value: string) {
@@ -333,13 +357,14 @@ export function TemporaryScheduleDialog({
               )}
               {visibleClasses.map((c) => {
                 const conflictMessage = conflictByClassId.get(c.id);
+                const isChecked = classIds.includes(c.id);
                 return (
                   <div key={c.id} className="rounded px-1 py-1 hover:bg-muted">
                     <label className="flex items-center gap-2 text-sm">
                       <input
                         type="checkbox"
                         className="accent-primary size-4"
-                        checked={classIds.includes(c.id)}
+                        checked={isChecked}
                         onChange={() => toggleClass(c.id)}
                       />
                       <span className="flex-1">{c.name}</span>
@@ -347,7 +372,25 @@ export function TemporaryScheduleDialog({
                         {c.schoolName} · {c.teacherName}
                       </span>
                     </label>
-                    {classIds.includes(c.id) && conflictMessage && (
+                    {isChecked && (
+                      <div className="pl-6 pt-1">
+                        <select
+                          className="border-input h-7 w-full rounded-md border bg-background px-2 text-xs"
+                          value={teacherOverrides[c.id] ?? ""}
+                          onChange={(e) => setClassTeacherOverride(c.id, e.target.value)}
+                        >
+                          <option value="">{t("originalTeacherOption")}</option>
+                          {teachers
+                            .filter(([id]) => id !== c.teacherId)
+                            .map(([id, name]) => (
+                              <option key={id} value={id}>
+                                {name}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    )}
+                    {isChecked && conflictMessage && (
                       <p className="text-destructive pl-6 text-xs">{conflictMessage}</p>
                     )}
                   </div>

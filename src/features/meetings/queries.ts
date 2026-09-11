@@ -278,11 +278,25 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
       .filter((id): id is string => Boolean(id)),
   );
 
+  // Classes where a temporary schedule (e.g. exam-week coverage) hands
+  // *today's exact date* to this teacher — same "extra class" treatment as
+  // a per-day override below, but scoped to one date instead of a weekday.
+  const { data: myTempSchedules, error: tempErr } = await supabase
+    .from("class_temporary_schedules")
+    .select("classId")
+    .eq("teacherId", teacherId)
+    .eq("date", todayDateStr);
+  if (tempErr) throw tempErr;
+  const myTempScheduleClassIds = new Set(
+    (myTempSchedules as unknown as { classId: string }[]).map((r) => r.classId),
+  );
+
   const resolvedOwnClasses = resolveTodaySlot(ownClasses as unknown as Omit<ClassRow, "scheduleStartTime" | "scheduleEndTime">[], today);
   const ownClassIds = new Set(resolvedOwnClasses.map((c) => c.id));
   const extraClassIds = [
     ...(myTodayOverrides as unknown as { classId: string }[]).map((o) => o.classId),
     ...substituteClassIds,
+    ...myTempScheduleClassIds,
   ].filter((id) => !ownClassIds.has(id));
 
   let extraClasses: ClassRow[] = [];
@@ -299,9 +313,20 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
 
   const candidates = [...resolvedOwnClasses, ...extraClasses];
   const overridesByClass = await fetchTodayOverrides(candidates.map((c) => c.id), today);
+  // A temporary schedule for today's exact date is authoritative for BOTH
+  // time and teacher when it names one — more specific than the per-weekday
+  // override, which is in turn more specific than the class's normal
+  // recurring pattern. A temp schedule with no teacher set only changes the
+  // time, same as before this field existed.
+  const temporarySchedulesByClass = await fetchTemporaryScheduleTimesForDate(
+    candidates.map((c) => c.id),
+    todayDateStr,
+  );
 
-  const withOverrideTime = candidates
+  const todayClasses = candidates
     .filter((c) => {
+      const temp = temporarySchedulesByClass.get(c.id);
+      if (temp?.teacherId) return temp.teacherId === teacherId;
       if (substituteClassIds.has(c.id)) return true;
       const ov = overridesByClass.get(c.id);
       // An override for today is authoritative (may hand the class to someone
@@ -310,21 +335,10 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
       return c.scheduleDaysOfWeek.includes(today);
     })
     .map((c) => {
+      const temp = temporarySchedulesByClass.get(c.id);
+      if (temp) return { ...c, scheduleStartTime: temp.startTime, scheduleEndTime: temp.endTime };
       const ov = overridesByClass.get(c.id);
       return ov ? { ...c, scheduleStartTime: ov.startTime, scheduleEndTime: ov.endTime } : c;
-    });
-
-  // A temporary schedule (e.g. exam-week hours) for today's date wins over
-  // both the per-day teacher override and the class's normal recurring slot
-  // — it only ever changes the time, never who's teaching.
-  const temporaryTimes = await fetchTemporaryScheduleTimesForDate(
-    withOverrideTime.map((c) => c.id),
-    todayDateStr,
-  );
-  const todayClasses = withOverrideTime
-    .map((c) => {
-      const temp = temporaryTimes.get(c.id);
-      return temp ? { ...c, scheduleStartTime: temp.startTime, scheduleEndTime: temp.endTime } : c;
     })
     .sort((a, b) => a.scheduleStartTime.localeCompare(b.scheduleStartTime));
 

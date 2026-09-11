@@ -75,6 +75,25 @@ export function createTemporaryScheduleColumns(
       ),
     },
     {
+      id: "substituteTeachers",
+      header: t("substituteTeacherHeader"),
+      cell: ({ row }) => {
+        const names = [
+          ...new Set(Object.values(row.original.substituteTeacherByClass).map((s) => s.teacherName)),
+        ];
+        if (names.length === 0) return "-";
+        return (
+          <div className="flex flex-wrap gap-1">
+            {names.map((name) => (
+              <Badge key={name} variant="secondary">
+                {name}
+              </Badge>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "label",
       header: t("label"),
       cell: ({ row }) => row.original.label || "-",
