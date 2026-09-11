@@ -426,7 +426,10 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
         moduleDriveFileId: null,
         moduleFileName: null,
         meetingId: null,
-        meetingStatus: "not_started",
+        // No lesson plan has ever been written for this class — there is
+        // nothing to check in against today. Distinct from "not_started"
+        // (which implies a plan is ready and waiting).
+        meetingStatus: "no_plan_today",
         checkInTime: null,
         checkOutTime: null,
         isLate: null,
@@ -436,7 +439,7 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
         isSubstitute: false,
         originalTeacherName: null,
         substituteReason: null,
-        courseCompleted: false,
+        needsNextLessonPlan: false,
       };
     }
 
@@ -452,16 +455,27 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
         (enrolledCountByClass.get(cls.id) ?? 0) === 0);
     const hasReport = Boolean(teachingReport);
 
+    // `courseCompleted` only means "every lesson plan on file already has a
+    // COMPLETED meeting" — it says nothing about whether *today* specifically
+    // has been handled. `plan` in that case is the last plan ever written,
+    // which is very often today's own (already-finished) meeting. Only treat
+    // today as unplannable when that last plan isn't even dated today — that's
+    // the one case where there's genuinely nothing to check in against.
+    const planIsToday = plan.scheduledDate === todayDateStr;
+    const noPlanForToday = courseCompleted && !planIsToday;
+    // Caught up on everything written so far, but the *next* meeting's plan
+    // (next week's, typically) hasn't been created yet — a forward-looking
+    // reminder, not a sign today wasn't done. Only surface it once today's
+    // own meeting is otherwise handled; noPlanForToday already carries its
+    // own "create a plan" call-to-action so this would just be a duplicate.
+    const needsNextLessonPlan = courseCompleted && !noPlanForToday;
+
     let meetingStatus = "not_started";
-    if (hasReport) meetingStatus = "report_submitted";
+    if (noPlanForToday) meetingStatus = "no_plan_today";
+    else if (hasReport) meetingStatus = "report_submitted";
     else if (hasCheckOut) meetingStatus = "checked_out";
     else if (hasAttendance) meetingStatus = "attendance_done";
     else if (hasCheckIn) meetingStatus = "checked_in";
-    // Every lesson plan is COMPLETED and there's nothing left to teach — make
-    // that explicit instead of letting the last plan's own meeting status
-    // (which may still read "not_started"/"checked_in" depending on how it
-    // was marked complete) be mistaken for an upcoming class.
-    if (courseCompleted) meetingStatus = "course_completed";
 
     const isSubstitute = Boolean(
       meeting && meeting.assignedTeacherId !== teacherId && meeting.actualTeacherId === teacherId,
@@ -485,25 +499,23 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
       moduleFileName: plan.moduleFileName,
       meetingId: meeting?.id || null,
       meetingStatus,
-      // `plan`/`meeting` here point at the last, already-taught lesson plan
-      // when courseCompleted is true (see above) — its check-in/out/late/
-      // substitute data belongs to that old, finished meeting, not to
-      // "today". Surfacing it as-is previously made a card that hasn't even
-      // started look like it was already checked in/out (and occasionally
-      // "teaching as a substitute for X"), directly under a card whose
-      // badge says the opposite ("Lesson Plan Needed"). Blank it out so
-      // there's nothing here to misread as current.
-      checkInTime: courseCompleted ? null : checkIn?.checkInTime || null,
-      checkOutTime: courseCompleted ? null : checkOut?.checkOutTime || null,
-      isLate: courseCompleted ? null : (checkIn?.isLate ?? null),
-      durationMinutes: courseCompleted ? null : (checkOut?.durationMinutes ?? null),
+      // `plan`/`meeting` here point at an old, already-finished meeting only
+      // when noPlanForToday is true — its check-in/out/late/substitute data
+      // belongs to that past session, not to "today". Blank it out so
+      // there's nothing here to misread as current. In every other case
+      // (including needsNextLessonPlan) this is genuinely today's meeting,
+      // so its real check-in/out data should surface as usual.
+      checkInTime: noPlanForToday ? null : checkIn?.checkInTime || null,
+      checkOutTime: noPlanForToday ? null : checkOut?.checkOutTime || null,
+      isLate: noPlanForToday ? null : (checkIn?.isLate ?? null),
+      durationMinutes: noPlanForToday ? null : (checkOut?.durationMinutes ?? null),
       hasAttendance,
       hasReport,
-      isSubstitute: courseCompleted ? false : isSubstitute,
+      isSubstitute: noPlanForToday ? false : isSubstitute,
       originalTeacherName:
-        !courseCompleted && isSubstitute ? (toOne(meeting?.assignedTeacher)?.users?.fullName ?? null) : null,
-      substituteReason: !courseCompleted && isSubstitute ? (meeting?.substituteReason ?? null) : null,
-      courseCompleted,
+        !noPlanForToday && isSubstitute ? (toOne(meeting?.assignedTeacher)?.users?.fullName ?? null) : null,
+      substituteReason: !noPlanForToday && isSubstitute ? (meeting?.substituteReason ?? null) : null,
+      needsNextLessonPlan,
     };
   });
 }

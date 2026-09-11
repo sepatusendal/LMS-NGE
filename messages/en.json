@@ -401,10 +401,13 @@
       "checkOut": "Check-out",
       "fillReport": "Fill Report",
       "done": "Done",
-      "courseCompleted": "Lesson Plan Needed"
+      "noPlanToday": "Lesson Plan Needed"
     },
     "meetingTopic": "Meeting {number}: {topic}",
-    "noLessonPlanForMeeting": "No lesson plan for this meeting yet",
+    "noLessonPlanForMeeting": "No lesson plan for today yet",
+    "planAheadTitle": "Plan the next meeting",
+    "planAheadDescription": "The lesson plan for the next meeting hasn't been created yet.",
+    "planAheadCta": "Create now",
     "teachingAsSubstitute": "You're teaching as a substitute for",
     "checkIn": "Check-in",
     "checkOut": "Check-out",

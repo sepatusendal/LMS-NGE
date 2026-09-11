@@ -20,9 +20,6 @@ import { AnnouncementBanner } from "@/features/announcements/announcement-banner
 import { AnnouncementPopup } from "@/features/announcements/announcement-popup";
 import { AlarmClockCheck } from "lucide-react";
 
-// "course_completed" isn't actually done — it means the next lesson plan
-// hasn't been written yet (see class-workflow-card.tsx) — counting it here
-// would make the "X/Y selesai" progress badge lie about today's real state.
 const DONE_STATUSES = new Set(["report_submitted"]);
 
 export default function TodayPage() {

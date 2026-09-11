@@ -401,10 +401,13 @@
       "checkOut": "Check-out",
       "fillReport": "Isi Report",
       "done": "Selesai",
-      "courseCompleted": "Perlu Lesson Plan"
+      "noPlanToday": "Perlu Lesson Plan"
     },
     "meetingTopic": "Meeting {number}: {topic}",
-    "noLessonPlanForMeeting": "Belum ada lesson plan untuk meeting ini",
+    "noLessonPlanForMeeting": "Belum ada lesson plan untuk hari ini",
+    "planAheadTitle": "Rencanakan pertemuan berikutnya",
+    "planAheadDescription": "Lesson plan untuk pertemuan selanjutnya belum dibuat.",
+    "planAheadCta": "Buat sekarang",
     "teachingAsSubstitute": "Anda mengajar sebagai pengganti",
     "checkIn": "Check-in",
     "checkOut": "Check-out",

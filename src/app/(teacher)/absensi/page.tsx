@@ -7,9 +7,6 @@ import { LoadingState } from "@/components/shared/loading-state";
 import { useTodayClasses } from "@/features/meetings/use-today";
 import { ClassWorkflowCard } from "@/features/meetings/class-workflow-card";
 
-// "course_completed" isn't actually done — it means the next lesson plan
-// hasn't been written yet (see class-workflow-card.tsx) — counting it here
-// would make the progress badge lie about how much of today is finished.
 const DONE_STATUSES = new Set(["report_submitted"]);
 
 export default function AbsensiPage() {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const MEETING_STATUS = ["not_started", "checked_in", "attendance_done", "checked_out", "report_submitted", "course_completed"] as const;
+export const MEETING_STATUS = ["not_started", "checked_in", "attendance_done", "checked_out", "report_submitted", "no_plan_today"] as const;
 
 export const checkInSchema = z.object({
   meetingId: z.string().min(1),
@@ -45,11 +45,11 @@ export interface TodayClass {
   isSubstitute: boolean;
   originalTeacherName: string | null;
   substituteReason: string | null;
-  /** True when every lesson plan for this class has a COMPLETED meeting —
-   * there is no "next" plan to teach. Distinguishes "course finished" from
-   * "not started yet" so the UI doesn't show the last completed meeting as
-   * if it were still pending (see meetingStatus "course_completed"). */
-  courseCompleted: boolean;
+  /** True when today's own meeting is fully handled but the *next* lesson
+   * plan (typically next week's) hasn't been written yet — a forward-looking
+   * reminder only. Never true at the same time as meetingStatus
+   * "no_plan_today" (that one already has its own call-to-action). */
+  needsNextLessonPlan: boolean;
 }
 
 export interface Meeting {

@@ -121,6 +121,7 @@ export function LessonPlanForm({
   lessonPlan,
   readOnly = false,
   adminMode = false,
+  defaultClassId,
 }: {
   lessonPlan?: LessonPlan;
   readOnly?: boolean;
@@ -128,6 +129,10 @@ export function LessonPlanForm({
    * class instead of the logged-in teacher's own, and the module-cover
    * banner (which needs teacher-scoped data) is skipped. */
   adminMode?: boolean;
+  /** Pre-selects a class on the new-plan form (e.g. arriving from a specific
+   * class's "Buat Lesson Plan" card) so a teacher with several classes can't
+   * accidentally submit the plan under the wrong one. Ignored in edit mode. */
+  defaultClassId?: string;
 }) {
   const isEdit = Boolean(lessonPlan);
   const router = useRouter();
@@ -194,7 +199,7 @@ export function LessonPlanForm({
           moduleFileName: lessonPlan.moduleFileName ?? "",
         }
       : {
-          classId: "",
+          classId: defaultClassId ?? "",
           meetingNumber: 1,
           week: 1,
           scheduledDate: "",

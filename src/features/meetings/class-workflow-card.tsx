@@ -2,7 +2,22 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Loader2, MapPin, Clock, CheckCircle, Play, LogOut, FileText, Camera, ClipboardCheck } from "lucide-react";
+import {
+  Loader2,
+  MapPin,
+  Clock,
+  CheckCircle,
+  Play,
+  LogOut,
+  FileText,
+  Camera,
+  ClipboardCheck,
+  NotebookPen,
+  CalendarClock,
+  AlertTriangle,
+  Users2,
+  type LucideIcon,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,33 +33,67 @@ import { HandoverSummaryPanel } from "@/features/substitutes/handover-summary-pa
 import { ABSENCE_REASON_LABEL, ABSENCE_REASON_KEY } from "@/features/substitutes/schema";
 import type { TodayClass } from "@/features/meetings/schema";
 
+// Every state carries its own icon on top of color/label — two teachers
+// colorblind to the amber/green distinction (or just glancing quickly on a
+// small phone screen in bright sunlight) still get a distinct shape to read.
 export const STATUS_CONFIG: Record<
   string,
-  { labelKey: string; variant: "default" | "secondary" | "destructive" | "outline"; accent: string; barColor: string }
+  {
+    labelKey: string;
+    variant: "default" | "secondary" | "destructive" | "outline";
+    accent: string;
+    barColor: string;
+    icon: LucideIcon;
+  }
 > = {
-  not_started: { labelKey: "notStarted", variant: "secondary", accent: "text-slate-500", barColor: "bg-slate-300" },
-  checked_in: { labelKey: "fillAttendance", variant: "outline", accent: "text-chart-4", barColor: "bg-chart-4" },
-  attendance_done: { labelKey: "checkOut", variant: "outline", accent: "text-chart-4", barColor: "bg-chart-4" },
-  checked_out: { labelKey: "fillReport", variant: "outline", accent: "text-primary", barColor: "bg-primary" },
+  not_started: {
+    labelKey: "notStarted",
+    variant: "secondary",
+    accent: "text-slate-500",
+    barColor: "bg-slate-300",
+    icon: Clock,
+  },
+  checked_in: {
+    labelKey: "fillAttendance",
+    variant: "outline",
+    accent: "border-chart-4/30 bg-chart-4/10 text-chart-4",
+    barColor: "bg-chart-4",
+    icon: ClipboardCheck,
+  },
+  attendance_done: {
+    labelKey: "checkOut",
+    variant: "outline",
+    accent: "border-chart-4/30 bg-chart-4/10 text-chart-4",
+    barColor: "bg-chart-4",
+    icon: LogOut,
+  },
+  checked_out: {
+    labelKey: "fillReport",
+    variant: "outline",
+    accent: "border-primary/30 bg-primary/10 text-primary",
+    barColor: "bg-primary",
+    icon: FileText,
+  },
   report_submitted: {
     labelKey: "done",
     variant: "outline",
     accent: "border-transparent bg-chart-3 px-2.5 py-1 text-[13px] font-semibold text-primary-foreground",
     barColor: "bg-chart-3",
+    icon: CheckCircle,
   },
-  // Every existing lesson plan for this class has already been taught —
-  // there just isn't a next one written yet. This used to be styled/labeled
-  // identically to "report_submitted" ("Selesai", green) — from a teacher's
-  // side that reads as "today's class is done" even when checked before the
-  // class has started, when the real, actionable meaning is "you haven't
-  // written next week's lesson plan." Styled like `not_started` (neutral,
-  // not a false "success" green) and paired with the same "create lesson
-  // plan" CTA as the no-lesson-plan-at-all case below.
-  course_completed: {
-    labelKey: "courseCompleted",
-    variant: "secondary",
-    accent: "text-slate-500",
-    barColor: "bg-slate-300",
+  // Genuinely nothing to check in against today — either no lesson plan has
+  // ever been written for this class, or every plan on file has already been
+  // taught and none exists for today specifically. Reuses the app's own
+  // amber token (chart-4) rather than a raw Tailwind amber so it stays
+  // theme/dark-mode-correct, but a solid fill + warning icon sets it apart
+  // from the softer "in progress" chart-4 tint above — this one needs
+  // action before the class can even start, those are already underway.
+  no_plan_today: {
+    labelKey: "noPlanToday",
+    variant: "outline",
+    accent: "border-transparent bg-chart-4 px-2.5 py-1 text-[13px] font-semibold text-white",
+    barColor: "bg-chart-4",
+    icon: AlertTriangle,
   },
 };
 
@@ -65,7 +114,8 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
   const dtLocale = locale === "en" ? "en-US" : "id-ID";
 
   const status = STATUS_CONFIG[c.meetingStatus] || STATUS_CONFIG.not_started;
-  const noLp = !c.lessonPlanId;
+  const noPlanToday = c.meetingStatus === "no_plan_today";
+  const newPlanHref = `/lesson-plan/new?classId=${c.classId}`;
 
   return (
     <div className="space-y-3.5">
@@ -95,33 +145,38 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
                     </span>
                   )}
                 </div>
-                {c.courseCompleted ? (
-                  <p className="text-destructive/80 text-xs">{t("noLessonPlanForMeeting")}</p>
-                ) : c.topic ? (
-                  <p className="text-xs font-medium">
-                    {t("meetingTopic", { number: c.meetingNumber, topic: c.topic })}
+                {noPlanToday ? (
+                  <p className="text-chart-4 flex items-center gap-1 text-xs font-medium">
+                    <AlertTriangle className="size-3 shrink-0" />
+                    {t("noLessonPlanForMeeting")}
                   </p>
                 ) : (
-                  <p className="text-destructive/80 text-xs">{t("noLessonPlanForMeeting")}</p>
+                  <p className="text-xs font-medium">
+                    {t("meetingTopic", { number: c.meetingNumber, topic: c.topic ?? "" })}
+                  </p>
                 )}
               </div>
             </div>
-            <Badge variant={status.variant} className={cn("ml-2 shrink-0", status.accent)}>
+            <Badge variant={status.variant} className={cn("ml-2 flex shrink-0 items-center gap-1", status.accent)}>
+              <status.icon className="size-3" />
               {tStatus(status.labelKey)}
             </Badge>
           </div>
 
           {c.isSubstitute && (
-            <div className="bg-amber-50 text-amber-800 mt-3 rounded-md px-3 py-2 text-xs">
-              {t("teachingAsSubstitute")} <span className="font-medium">{c.originalTeacherName}</span>
-              {c.substituteReason && (
-                <>
-                  {" — "}
-                  {ABSENCE_REASON_KEY[c.substituteReason]
-                    ? t(`absenceReason.${ABSENCE_REASON_KEY[c.substituteReason]}`)
-                    : (ABSENCE_REASON_LABEL[c.substituteReason] ?? c.substituteReason)}
-                </>
-              )}
+            <div className="bg-chart-4/10 text-chart-4 mt-3 flex items-start gap-2 rounded-md px-3 py-2 text-xs">
+              <Users2 className="mt-0.5 size-3.5 shrink-0" />
+              <span>
+                {t("teachingAsSubstitute")} <span className="font-medium">{c.originalTeacherName}</span>
+                {c.substituteReason && (
+                  <>
+                    {" — "}
+                    {ABSENCE_REASON_KEY[c.substituteReason]
+                      ? t(`absenceReason.${ABSENCE_REASON_KEY[c.substituteReason]}`)
+                      : (ABSENCE_REASON_LABEL[c.substituteReason] ?? c.substituteReason)}
+                  </>
+                )}
+              </span>
             </div>
           )}
 
@@ -169,13 +224,17 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
           )}
 
           <div className="mt-3 flex flex-wrap gap-2">
-            {(noLp || c.courseCompleted) && (
-              <Link href="/lesson-plan/new" className={cn(buttonVariants({ size: "sm", variant: "outline" }), "w-full")}>
-                {t("createLessonPlan")}
+            {noPlanToday && (
+              <Link
+                href={newPlanHref}
+                className={cn(buttonVariants({ size: "sm" }), "w-full bg-chart-4 text-white hover:bg-chart-4/90")}
+              >
+                <NotebookPen className="size-4" />
+                <span className="ml-1.5">{t("createLessonPlan")}</span>
               </Link>
             )}
 
-            {!noLp && !c.courseCompleted && c.meetingStatus === "not_started" && (
+            {!noPlanToday && c.meetingStatus === "not_started" && (
               <Button
                 size="sm"
                 className="w-full bg-primary hover:bg-primary/80"
@@ -246,12 +305,26 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
               </div>
             )}
 
-            {/* course_completed intentionally has no "all done" box here —
-                it already gets the "Create Lesson Plan" CTA above, and a
-                green checkmark success box right next to it would directly
-                contradict the "Lesson Plan Needed" badge on this same card
-                (this used to render both at once). */}
           </div>
+
+          {/* Forward-looking reminder only — today's own status above
+              (e.g. "Selesai") already reflects that today was handled.
+              This never appears together with the "no_plan_today" badge:
+              that one already carries its own "create a plan" CTA above,
+              so a second one here would just be a confusing duplicate. */}
+          {c.needsNextLessonPlan && (
+            <Link
+              href={newPlanHref}
+              className="mt-2.5 flex items-center gap-2.5 rounded-lg border border-dashed border-chart-4/40 bg-chart-4/5 px-3 py-2.5 text-xs transition-colors hover:bg-chart-4/10"
+            >
+              <CalendarClock className="text-chart-4 size-4 shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="block font-medium text-chart-4">{t("planAheadTitle")}</span>
+                <span className="text-muted-foreground block">{t("planAheadDescription")}</span>
+              </span>
+              <span className="text-chart-4 shrink-0 font-medium whitespace-nowrap">{t("planAheadCta")}</span>
+            </Link>
+          )}
         </CardContent>
       </Card>
 
