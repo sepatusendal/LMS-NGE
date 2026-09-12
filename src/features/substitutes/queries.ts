@@ -32,8 +32,22 @@ interface LessonPlanRow {
   scheduledDate: string;
 }
 
+interface MeetingSummaryRow {
+  lessonPlanId: string;
+  status: string;
+  checkOut: { id: string } | { id: string }[] | null;
+}
+
 /** Same "automatic lesson continuation" rule used for Today's Class (context.md
- * 5.6): first not-yet-COMPLETED meeting by meetingNumber, else the last one. */
+ * 5.6): first not-yet-COMPLETED meeting by meetingNumber, else the last one.
+ *
+ * Exception: a pending plan dated before today that's already been checked
+ * out (nothing left to do except file its report) is skipped — same
+ * stale-meeting bug already fixed for the teacher dashboard in
+ * fetchTodayClasses() (src/features/meetings/queries.ts). Left unfixed here,
+ * it would hijack this lookup forever once its report goes unfiled, pointing
+ * admin's substitute-assignment UI at an old already-checked-in meeting
+ * instead of the class's actual current one. */
 async function resolveCurrentLessonPlan(classId: string): Promise<LessonPlanRow | null> {
   const supabase = createClient();
 
@@ -48,15 +62,29 @@ async function resolveCurrentLessonPlan(classId: string): Promise<LessonPlanRow 
   const sorted = plans as unknown as LessonPlanRow[];
   if (sorted.length === 0) return null;
 
-  const { data: completed, error: mErr } = await supabase
+  const { data: meetings, error: mErr } = await supabase
     .from("meetings")
-    .select("lessonPlanId")
-    .in("lessonPlanId", sorted.map((p) => p.id))
-    .eq("status", "COMPLETED");
+    .select("lessonPlanId, status, checkOut:check_outs(id)")
+    .in("lessonPlanId", sorted.map((p) => p.id));
   if (mErr) throw mErr;
 
-  const completedIds = new Set((completed as unknown as { lessonPlanId: string }[]).map((c) => c.lessonPlanId));
-  return sorted.find((p) => !completedIds.has(p.id)) ?? sorted[sorted.length - 1];
+  const meetingByLp = new Map<string, MeetingSummaryRow>();
+  (meetings as unknown as MeetingSummaryRow[]).forEach((m) => meetingByLp.set(m.lessonPlanId, m));
+  const completedIds = new Set(
+    (meetings as unknown as MeetingSummaryRow[]).filter((m) => m.status === "COMPLETED").map((m) => m.lessonPlanId),
+  );
+
+  const nextPlan = sorted.find((p) => !completedIds.has(p.id)) ?? null;
+  const todayDateStr = todayLocalDateStr();
+  const nextPlanIsStalePast =
+    Boolean(nextPlan) &&
+    nextPlan!.scheduledDate < todayDateStr &&
+    Boolean(toOne(meetingByLp.get(nextPlan!.id)?.checkOut ?? null));
+
+  if (!nextPlanIsStalePast) return nextPlan ?? sorted[sorted.length - 1] ?? null;
+
+  const fallback = sorted[sorted.length - 1];
+  return fallback !== nextPlan ? fallback : null;
 }
 
 /** Resolves the class's normally-scheduled teacher for a given date —

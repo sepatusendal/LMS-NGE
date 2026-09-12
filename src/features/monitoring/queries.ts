@@ -93,8 +93,20 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
   const overrideByClass = new Map<string, OverrideRow>();
   (overrides as unknown as OverrideRow[]).forEach((o) => overrideByClass.set(o.classId, o));
 
+  // A temporary schedule (Jadwal Sementara, e.g. exam-week coverage) for
+  // `date` can add a meeting on a day the class doesn't normally meet and
+  // doesn't have a recurring override either — fetched up front (across
+  // every active class, not just the weekly-pattern/override subset below)
+  // so those classes aren't silently dropped from the board entirely. Same
+  // union the teacher-facing fetchTodayClasses already does in
+  // meetings/queries.ts (myTempScheduleClassIds).
+  const temporaryTimes = await fetchTemporaryScheduleTimesForDate(
+    (allClasses as unknown as ClassRow[]).map((c) => c.id),
+    date,
+  );
+
   const classesToday = (allClasses as unknown as ClassRow[]).filter(
-    (c) => c.scheduleDaysOfWeek.includes(today) || overrideByClass.has(c.id),
+    (c) => c.scheduleDaysOfWeek.includes(today) || overrideByClass.has(c.id) || temporaryTimes.has(c.id),
   );
   if (classesToday.length === 0) return [];
 
@@ -134,10 +146,25 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
 
   const now = Date.now();
 
-  // A temporary schedule (e.g. exam-week hours) for `date` wins over both
-  // the per-day teacher override and the class's normal recurring slot —
-  // it only ever changes the time, never who's teaching.
-  const temporaryTimes = await fetchTemporaryScheduleTimesForDate(classIds, date);
+  // A temporary schedule's own teacherId (e.g. exam-week substitute) wins
+  // over both the per-day override and the class's normal teacher — same
+  // temp > override > default precedence already used above for time.
+  // Needs its own name lookup since fetchTemporaryScheduleTimesForDate only
+  // returns the id.
+  const tempTeacherIds = [
+    ...new Set([...temporaryTimes.values()].map((t) => t.teacherId).filter((id): id is string => Boolean(id))),
+  ];
+  const tempTeacherNameById = new Map<string, string>();
+  if (tempTeacherIds.length > 0) {
+    const { data: tempTeachers, error: ttErr } = await supabase
+      .from("teachers")
+      .select("id, users(fullName)")
+      .in("id", tempTeacherIds);
+    if (ttErr) throw ttErr;
+    (tempTeachers as unknown as { id: string; users: { fullName: string } | { fullName: string }[] | null }[]).forEach(
+      (t) => tempTeacherNameById.set(t.id, toOne(t.users)?.fullName ?? "-"),
+    );
+  }
 
   return classesToday
     .map((cls): ClassStatusRow => {
@@ -147,8 +174,10 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
       const temp = temporaryTimes.get(cls.id);
       const scheduleStartTime = temp?.startTime ?? override?.startTime ?? todaySlot?.startTime ?? "00:00";
       const scheduleEndTime = temp?.endTime ?? override?.endTime ?? todaySlot?.endTime ?? "00:00";
-      const teacherName = overrideTeacher?.users?.fullName ?? cls.teachers?.users?.fullName ?? "-";
-      const teacherId = overrideTeacher?.id ?? cls.teacherId;
+      const teacherId = temp?.teacherId ?? overrideTeacher?.id ?? cls.teacherId;
+      const teacherName = temp?.teacherId
+        ? tempTeacherNameById.get(temp.teacherId) ?? "-"
+        : overrideTeacher?.users?.fullName ?? cls.teachers?.users?.fullName ?? "-";
 
       const lp = lpByClass.get(cls.id) ?? null;
       const meeting = lp ? meetingByLp.get(lp.id) : undefined;

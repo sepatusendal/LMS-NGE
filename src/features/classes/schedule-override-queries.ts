@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
-import { findRecurringScheduleConflict, ScheduleConflictError } from "@/lib/schedule-conflict";
+import { findRecurringScheduleConflict, ScheduleConflictError, timeRangesOverlap } from "@/lib/schedule-conflict";
+import { parseLocalDate, todayLocalDateStr } from "@/lib/date";
 
 export interface ScheduleOverride {
   id: string;
@@ -61,6 +62,54 @@ export async function fetchAllScheduleOverrides(): Promise<ScheduleOverride[]> {
   }));
 }
 
+/** findRecurringScheduleConflict only looks at other recurring commitments
+ * (a teacher's own classes + other overrides) — by its own doc comment, it
+ * doesn't know about one-off `class_temporary_schedules` rows. Since a
+ * ClassScheduleOverride repeats every week, it can still collide with a
+ * *specific future date* that already has a Jadwal Sementara assignment
+ * landing on the same weekday — e.g. an exam-week substitute booking for
+ * every upcoming Wednesday would silently double-book if a new recurring
+ * override also hands that teacher a Wednesday slot. Checked here as the
+ * missing other half of the conflict check (the reverse direction — a new
+ * temp schedule checked against recurring overrides — already happens in
+ * collectTemporaryScheduleConflicts, temporary-schedules/queries.ts). */
+async function findTemporaryScheduleConflictForRecurringSlot(params: {
+  teacherId: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  excludeClassId?: string;
+}): Promise<{ className: string; date: string; startTime: string; endTime: string } | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("class_temporary_schedules")
+    .select("classId, date, startTime, endTime, teacherId, classes(name, teacherId)")
+    .gte("date", todayLocalDateStr());
+  if (error) throw error;
+
+  const rows = data as unknown as {
+    classId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    teacherId: string | null;
+    classes: { name: string; teacherId: string } | { name: string; teacherId: string }[] | null;
+  }[];
+
+  for (const row of rows) {
+    if (row.classId === params.excludeClassId) continue;
+    if (parseLocalDate(row.date).getDay() !== params.dayOfWeek) continue;
+    const cls = Array.isArray(row.classes) ? (row.classes[0] ?? null) : row.classes;
+    if (!cls) continue;
+    // The temp schedule's own substitute if it has one, else that class's usual teacher.
+    const effectiveTeacherId = row.teacherId ?? cls.teacherId;
+    if (effectiveTeacherId !== params.teacherId) continue;
+    if (!timeRangesOverlap(params.startTime, params.endTime, row.startTime, row.endTime)) continue;
+    return { className: cls.name, date: row.date, startTime: row.startTime, endTime: row.endTime };
+  }
+  return null;
+}
+
 export async function upsertScheduleOverride(input: {
   classId: string;
   dayOfWeek: number;
@@ -76,6 +125,25 @@ export async function upsertScheduleOverride(input: {
     excludeClassId: input.classId,
   });
   if (conflict) throw new ScheduleConflictError(conflict);
+
+  const tempConflict = await findTemporaryScheduleConflictForRecurringSlot({
+    teacherId: input.teacherId,
+    dayOfWeek: input.dayOfWeek,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    excludeClassId: input.classId,
+  });
+  if (tempConflict) {
+    throw new ScheduleConflictError(
+      {
+        classId: input.classId,
+        className: tempConflict.className,
+        startTime: tempConflict.startTime,
+        endTime: tempConflict.endTime,
+      },
+      `Guru ini sudah punya jadwal sementara (${tempConflict.className}, ${tempConflict.startTime}-${tempConflict.endTime}) di tanggal ${tempConflict.date}, yang jatuh di hari yang sama dengan jadwal tetap ini.`,
+    );
+  }
 
   const supabase = createClient();
   const { error } = await supabase

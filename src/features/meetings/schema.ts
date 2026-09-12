@@ -48,6 +48,12 @@ export interface TodayClass {
    * used when meetingStatus is "no_plan_today". */
   draftMeetingNumber: number;
   draftWeek: number;
+  /** True when checking in today via the auto-draft flow would create a
+   * lesson plan numbered after one that's already scheduled further in the
+   * future — corrupting meetingNumber/scheduledDate order. Only meaningful
+   * when meetingStatus is "no_plan_today"; the teacher must write today's
+   * plan manually instead (see queries.ts's draftCheckInBlocked comment). */
+  draftCheckInBlocked: boolean;
   /** A past meeting (not today's) that was checked out but never got its
    * report filed — surfaced as its own reminder instead of being shown as
    * today's status, since it has nothing to do with today's class. Null

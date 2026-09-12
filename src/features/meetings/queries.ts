@@ -474,8 +474,9 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
         originalTeacherName: null,
         substituteReason: null,
         needsNextLessonPlan: false,
-        draftMeetingNumber: 1,
-        draftWeek: 1,
+        draftMeetingNumber: nextPlan ? nextPlan.meetingNumber + 1 : 1,
+        draftWeek: Math.ceil((nextPlan ? nextPlan.meetingNumber + 1 : 1) / 2),
+        draftCheckInBlocked: false,
         pendingReportMeetingId,
         pendingReportMeetingNumber,
       };
@@ -507,9 +508,21 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
     // own meeting is otherwise handled; noPlanForToday already carries its
     // own "create a plan" call-to-action so this would just be a duplicate.
     const needsNextLessonPlan = courseCompleted && !noPlanForToday;
+    // Guard against auto-creating a draft plan numbered *after* one that's
+    // already scheduled further out — e.g. a stale unreported past meeting
+    // (nextPlanIsStalePast above) coexisting with a plan someone wrote ahead
+    // of schedule. `plan` here would be that future plan (the `sorted[last]`
+    // fallback), so checking in today via check_in_with_draft_plan() would
+    // get meetingNumber = futurePlan.number + 1 while being dated *earlier*
+    // than it — corrupting the "meetingNumber tracks scheduledDate order"
+    // invariant the class timeline and week numbering rely on. There's still
+    // nothing to check into today, but the teacher must write today's plan
+    // manually (picking an appropriate date/number) instead of via the
+    // blind auto-draft flow.
+    const draftCheckInBlocked = noPlanForToday && plan.scheduledDate > todayDateStr;
     // What check_in_with_draft_plan() should number/date the placeholder
     // plan as, if the teacher checks in without writing one first — only
-    // meaningful when noPlanForToday is true.
+    // meaningful when noPlanForToday is true (and safe when !draftCheckInBlocked).
     const draftMeetingNumber = noPlanForToday ? plan.meetingNumber + 1 : plan.meetingNumber;
     const draftWeek = Math.ceil(draftMeetingNumber / 2);
 
@@ -561,6 +574,7 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
       needsNextLessonPlan,
       draftMeetingNumber,
       draftWeek,
+      draftCheckInBlocked,
       pendingReportMeetingId,
       pendingReportMeetingNumber,
     };

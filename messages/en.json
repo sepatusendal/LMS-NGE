@@ -472,7 +472,8 @@
     "backToAbsensi": "Back to Absensi",
     "stepOf": "Step {step} of {total}",
     "classNotFound": "This class or meeting couldn't be found.",
-    "noPlanYetNotice": "No lesson plan for this meeting yet — that's fine, go ahead and start. You can fill it in later (within 7 days)."
+    "noPlanYetNotice": "No lesson plan for this meeting yet — that's fine, go ahead and start. You can fill it in later (within 7 days).",
+    "draftCheckInBlockedNotice": "A lesson plan already exists for a date after today, so class can't be auto-started. Write today's lesson plan manually first."
   },
   "changePassword": {
     "title": "Change Password",

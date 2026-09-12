@@ -223,7 +223,7 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
           )}
 
           <div className="mt-3 flex flex-col gap-1.5">
-            {noPlanToday && (
+            {noPlanToday && !c.draftCheckInBlocked && (
               <>
                 <Link
                   href={wizardHref(c)}
@@ -240,6 +240,21 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
                   {t("orWriteLessonPlanFirst")}
                 </Link>
               </>
+            )}
+
+            {/* A lesson plan already exists for a date after today (e.g.
+                someone planned ahead while an older meeting's report sat
+                unfiled — see queries.ts draftCheckInBlocked). Auto-starting
+                today would number the new plan after that future one while
+                dating it earlier, so today's plan has to be written by hand. */}
+            {noPlanToday && c.draftCheckInBlocked && (
+              <Link
+                href={newPlanHref}
+                className={cn(buttonVariants({ size: "sm" }), "w-full bg-chart-4 text-white hover:bg-chart-4/90")}
+              >
+                <NotebookPen className="size-4" />
+                <span className="ml-1.5">{t("orWriteLessonPlanFirst")}</span>
+              </Link>
             )}
 
             {!noPlanToday && c.meetingStatus === "not_started" && (

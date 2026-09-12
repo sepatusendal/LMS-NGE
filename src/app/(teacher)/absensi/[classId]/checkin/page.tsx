@@ -5,12 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Play, NotebookPen, MapPin, Clock } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingState } from "@/components/shared/loading-state";
 import { WizardHeader } from "@/features/meetings/wizard-header";
 import { useTodayClasses, useStartClass, useCheckInWithDraftPlan } from "@/features/meetings/use-today";
 import { todayLocalDateStr } from "@/lib/date";
+import { cn } from "@/lib/utils";
 
 export default function CheckInPage() {
   const params = useParams<{ classId: string }>();
@@ -53,6 +54,7 @@ export default function CheckInPage() {
   }
 
   const noPlanToday = c.meetingStatus === "no_plan_today";
+  const draftCheckInBlocked = noPlanToday && c.draftCheckInBlocked;
   const isPending = startClass.isPending || checkInDraft.isPending;
 
   function handleStartClass() {
@@ -95,7 +97,7 @@ export default function CheckInPage() {
 
           {noPlanToday ? (
             <div className="bg-chart-4/10 text-chart-4 rounded-lg px-3 py-2.5 text-sm">
-              {t("noPlanYetNotice")}
+              {draftCheckInBlocked ? t("draftCheckInBlockedNotice") : t("noPlanYetNotice")}
             </div>
           ) : (
             <div>
@@ -104,26 +106,32 @@ export default function CheckInPage() {
             </div>
           )}
 
-          <Button
-            size="lg"
-            className="w-full"
-            disabled={isPending}
-            onClick={handleStartClass}
-          >
-            {isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <>
-                <Play className="size-4" />
-                <span className="ml-1.5">{tWorkflow("startClass")}</span>
-              </>
-            )}
-          </Button>
+          {!draftCheckInBlocked && (
+            <Button
+              size="lg"
+              className="w-full"
+              disabled={isPending}
+              onClick={handleStartClass}
+            >
+              {isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <>
+                  <Play className="size-4" />
+                  <span className="ml-1.5">{tWorkflow("startClass")}</span>
+                </>
+              )}
+            </Button>
+          )}
 
           {noPlanToday && (
             <Link
               href={`/lesson-plan/new?classId=${c.classId}`}
-              className="text-muted-foreground flex items-center justify-center gap-1 text-xs hover:text-foreground"
+              className={
+                draftCheckInBlocked
+                  ? cn(buttonVariants({ size: "lg" }), "w-full")
+                  : "text-muted-foreground flex items-center justify-center gap-1 text-xs hover:text-foreground"
+              }
             >
               <NotebookPen className="size-3" />
               {tWorkflow("orWriteLessonPlanFirst")}

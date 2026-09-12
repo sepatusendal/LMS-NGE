@@ -472,7 +472,8 @@
     "backToAbsensi": "Kembali ke Absensi",
     "stepOf": "Langkah {step} dari {total}",
     "classNotFound": "Kelas atau pertemuan ini tidak ditemukan.",
-    "noPlanYetNotice": "Lesson plan untuk pertemuan ini belum dibuat — gapapa, langsung mulai aja. Lesson plan-nya bisa dilengkapi belakangan (maksimal 7 hari)."
+    "noPlanYetNotice": "Lesson plan untuk pertemuan ini belum dibuat — gapapa, langsung mulai aja. Lesson plan-nya bisa dilengkapi belakangan (maksimal 7 hari).",
+    "draftCheckInBlockedNotice": "Ada lesson plan yang udah dibuat untuk tanggal setelah hari ini, jadi ga bisa mulai kelas otomatis. Buat lesson plan untuk hari ini secara manual dulu."
   },
   "changePassword": {
     "title": "Ganti Password",
