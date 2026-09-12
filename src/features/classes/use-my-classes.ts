@@ -22,13 +22,14 @@ export interface MyClass {
    * Browsing/reading is fine either way; see canAuthorLessonPlans for
    * whether this teacher may create/edit a lesson plan for it. */
   isPrimary: boolean;
-  /** Whether this teacher is allowed to create a lesson plan for this class
-   * at the DB level (RLS). True for the primary teacher and for a
-   * class_temporary_schedules substitute (date-scoped at the RLS layer, but
-   * the class itself is a valid choice here). False for a
-   * ClassScheduleOverride-only substitute — that arrangement is a recurring
-   * weekly cover, not a delegation of plan authorship for the whole class,
-   * so it stays restricted to the primary teacher. */
+  /** Whether this teacher may create a lesson plan for this class at all —
+   * true for the primary teacher, a ClassScheduleOverride substitute
+   * (recurring weekly split-class cover, e.g. "Houstan": Bu Eni Wed, guru
+   * pengganti Sat), and a class_temporary_schedules substitute. The DB-level
+   * RLS check is actually per-date (scheduledDate must fall on the
+   * override's dayOfWeek, or match the temporary schedule's exact date), so
+   * picking this class doesn't guarantee every date will be accepted — just
+   * that at least one date will be. */
   canAuthorLessonPlans: boolean;
   /** The reference module for this class's program (curriculum), stored in
    * Google Drive. Null if the class has no curriculum assigned yet, or the
@@ -115,12 +116,6 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
     missingRows = data as unknown as MyClassRow[];
   }
   const missingRowsById = new Map(missingRows.map((r) => [r.id, r]));
-  // A class reachable via BOTH a weekly override and a temporary-schedule
-  // substitution counts as lesson-plan-eligible (the temporary schedule
-  // wins), so dedupe by class id rather than emitting it twice.
-  const canAuthorByMissingId = new Map(
-    missingIds.map((id) => [id, temporaryScheduleClassIds.includes(id)]),
-  );
 
   const toMyClass = (
     row: MyClassRow,
@@ -150,7 +145,7 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
     ...ownedRows.map((r) => toMyClass(r, true, true)),
     ...missingIds.map((id) => {
       const row = missingRowsById.get(id);
-      return row ? toMyClass(row, false, canAuthorByMissingId.get(id) ?? false) : null;
+      return row ? toMyClass(row, false, true) : null;
     }),
   ]
     .filter((c): c is MyClass => c !== null)

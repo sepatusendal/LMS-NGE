@@ -146,10 +146,10 @@ export function LessonPlanForm({
   const lessonPlanSchema = useMemo(() => buildLessonPlanSchema(t), [t]);
   const { data: myClasses } = useMyClasses();
   const { data: allClasses } = useClasses(undefined, adminMode);
-  // Lesson-plan authorship is restricted at the DB level (RLS) to a class's
-  // primary teacher and to a class_temporary_schedules substitute (Jadwal
-  // Sementara) — a covering teacher reached only via a weekly schedule
-  // override can read plans but not create/own one, so exclude those here.
+  // canAuthorLessonPlans covers the primary teacher plus any substitute the
+  // DB (RLS) actually lets write here — a ClassScheduleOverride cover (their
+  // own weekday only) or a class_temporary_schedules substitute (their own
+  // date only). See use-my-classes.ts.
   const classes = adminMode
     ? allClasses?.map((c) => ({
         id: c.id,
