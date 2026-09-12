@@ -48,6 +48,12 @@ export interface TodayClass {
    * used when meetingStatus is "no_plan_today". */
   draftMeetingNumber: number;
   draftWeek: number;
+  /** A past meeting (not today's) that was checked out but never got its
+   * report filed — surfaced as its own reminder instead of being shown as
+   * today's status, since it has nothing to do with today's class. Null
+   * when there's no such stale meeting. */
+  pendingReportMeetingId: string | null;
+  pendingReportMeetingNumber: number | null;
 }
 
 export interface Meeting {

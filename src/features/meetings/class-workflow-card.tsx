@@ -309,6 +309,26 @@ export function ClassWorkflowCard({ c }: { c: TodayClass }) {
               <span className="text-chart-4 shrink-0 font-medium whitespace-nowrap">{t("planAheadCta")}</span>
             </Link>
           )}
+
+          {/* A past meeting (not today's) that was checked out but never got
+              its report filed — kept out of today's own status above (see
+              queries.ts nextPlanIsStalePast) so it doesn't get mistaken for
+              today's class, but still surfaced so the report isn't lost. */}
+          {c.pendingReportMeetingId && (
+            <Link
+              href={`/absensi/meeting/${c.pendingReportMeetingId}/report`}
+              className="mt-2.5 flex items-center gap-2.5 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-2.5 text-xs transition-colors hover:bg-primary/10"
+            >
+              <FileText className="text-primary size-4 shrink-0" />
+              <span className="min-w-0 flex-1">
+                <span className="block font-medium text-primary">{t("pendingReportTitle")}</span>
+                <span className="text-muted-foreground block">
+                  {t("pendingReportDescription", { number: c.pendingReportMeetingNumber ?? 0 })}
+                </span>
+              </span>
+              <span className="text-primary shrink-0 font-medium whitespace-nowrap">{t("pendingReportCta")}</span>
+            </Link>
+          )}
         </CardContent>
       </Card>
 

@@ -416,13 +416,33 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
     const sorted = [...plans].sort((a, b) => a.meetingNumber - b.meetingNumber);
 
     const nextPlan = sorted.find((lp) => !completedLpIds.has(lp.id));
-    // All lesson plans exist and are COMPLETED: there is no pending meeting.
-    // Don't silently fall back to the last (already-finished) plan as if it
-    // were upcoming — surface it as a distinct "course finished" state.
-    const courseCompleted = !nextPlan && sorted.length > 0;
-    const plan = nextPlan || sorted[sorted.length - 1] || null;
+    // A pending meeting dated before today that was already checked out
+    // (nothing left to do except file its report) has nothing to do with
+    // *today* — but `.find()` above keeps returning it forever, since it
+    // never reaches COMPLETED until someone files that report. That got
+    // displayed as today's own status (e.g. "checked out") for a class the
+    // teacher hadn't touched yet today. Treat it like "no plan for today"
+    // instead, same as the courseCompleted case below, and surface the
+    // stale meeting separately as a reminder so its report doesn't get
+    // silently lost.
+    const nextPlanIsStalePast =
+      Boolean(nextPlan) &&
+      nextPlan!.scheduledDate !== todayDateStr &&
+      nextPlan!.scheduledDate < todayDateStr &&
+      Boolean(toOne(meetByLp.get(nextPlan!.id)?.checkOut));
+    const pendingReportMeeting = nextPlanIsStalePast ? meetByLp.get(nextPlan!.id) : undefined;
+    const pendingReportMeetingId = pendingReportMeeting?.id ?? null;
+    const pendingReportMeetingNumber = nextPlanIsStalePast ? (nextPlan!.meetingNumber ?? null) : null;
 
-    if (!plan) {
+    // All lesson plans exist and are COMPLETED, or the only pending one is
+    // the stale-past meeting above: either way there is no pending meeting
+    // for *today*. Don't silently fall back to the last (already-finished)
+    // plan as if it were upcoming — surface it as a distinct "course
+    // finished" / "no plan today" state.
+    const courseCompleted = (!nextPlan || nextPlanIsStalePast) && sorted.length > 0;
+    const plan = (nextPlanIsStalePast ? null : nextPlan) || sorted[sorted.length - 1] || null;
+
+    if (!plan || (nextPlanIsStalePast && plan === nextPlan)) {
       return {
         classId: cls.id,
         className: cls.name,
@@ -456,6 +476,8 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
         needsNextLessonPlan: false,
         draftMeetingNumber: 1,
         draftWeek: 1,
+        pendingReportMeetingId,
+        pendingReportMeetingNumber,
       };
     }
 
@@ -539,6 +561,8 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
       needsNextLessonPlan,
       draftMeetingNumber,
       draftWeek,
+      pendingReportMeetingId,
+      pendingReportMeetingNumber,
     };
   });
 }
