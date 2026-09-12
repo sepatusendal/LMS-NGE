@@ -213,19 +213,31 @@ export async function fetchCurrentMeetingInfo(classId: string): Promise<CurrentM
   };
 }
 
-/** Resolves the effective start/end time for `classId` on `dateStr`'s
- * weekday — the override's window if one exists for that day, else the
- * class's own recurring slot. Mirrors resolveEffectiveTeacherForDate's
- * override-then-slot precedence, but for the time window instead of the
- * teacher. Returns null if the class doesn't meet that weekday at all
- * (shouldn't normally happen for a lesson plan's own class, but guards
- * against schedule drift). */
+/** Resolves the effective start/end time for `classId` on `dateStr` — a
+ * temp schedule's exact-date window if one exists, else the override's
+ * window for that weekday, else the class's own recurring slot. Mirrors
+ * resolveEffectiveTeacherForDate's temp-then-override-then-slot precedence,
+ * but for the time window instead of the teacher. Returns null if the class
+ * doesn't meet that day at all (shouldn't normally happen for a lesson
+ * plan's own class, but guards against schedule drift). */
 async function resolveClassTimeWindowForDate(
   classId: string,
   dateStr: string,
 ): Promise<{ startTime: string; endTime: string } | null> {
   const supabase = createClient();
   const day = dayOfWeek(dateStr);
+
+  const { data: tempSchedule, error: tsErr } = await supabase
+    .from("class_temporary_schedules")
+    .select("startTime, endTime")
+    .eq("classId", classId)
+    .eq("date", dateStr)
+    .maybeSingle();
+  if (tsErr) throw tsErr;
+  if (tempSchedule) {
+    const ts = tempSchedule as { startTime: string; endTime: string };
+    return { startTime: ts.startTime, endTime: ts.endTime };
+  }
 
   const { data: override, error: ovErr } = await supabase
     .from("class_schedule_overrides")

@@ -81,7 +81,7 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
       .is("deletedAt", null),
     supabase
       .from("class_schedule_overrides")
-      .select("classId")
+      .select("classId, dayOfWeek, startTime, endTime")
       .eq("teacherId", teacherId),
     supabase
       .from("class_temporary_schedules")
@@ -94,15 +94,45 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
 
   const ownedRows = ownedResult.data as unknown as MyClassRow[];
   const ownedIds = new Set(ownedRows.map((r) => r.id));
-  const overrideClassIds = (overrideResult.data as unknown as { classId: string }[])
-    .map((o) => o.classId)
-    .filter((id) => !ownedIds.has(id));
+
+  const overrideRows = overrideResult.data as unknown as (ScheduleSlot & { classId: string })[];
+  // classId -> the exact day(s)/time(s) THIS teacher covers via override —
+  // used below so a class reached only as a covering teacher shows just
+  // their own slot on the Jadwal page, not the class's entire default
+  // weekly pattern (which may include days taught by someone else).
+  const myOverrideSlotsByClass = new Map<string, ScheduleSlot[]>();
+  overrideRows.forEach((o) => {
+    const arr = myOverrideSlotsByClass.get(o.classId) ?? [];
+    arr.push({ dayOfWeek: o.dayOfWeek, startTime: o.startTime, endTime: o.endTime });
+    myOverrideSlotsByClass.set(o.classId, arr);
+  });
+  const overrideClassIds = [...myOverrideSlotsByClass.keys()].filter((id) => !ownedIds.has(id));
+
   const temporaryScheduleClassIds = (
     temporaryScheduleResult.data as unknown as { classId: string }[]
   )
     .map((o) => o.classId)
     .filter((id) => !ownedIds.has(id));
   const missingIds = [...new Set([...overrideClassIds, ...temporaryScheduleClassIds])];
+
+  // A day of one of *my own* classes that's been handed to a different
+  // teacher via override no longer belongs on my schedule either — without
+  // this, an owned class kept showing its full default weekly pattern even
+  // on days a covering teacher had taken over.
+  const awayDaysByOwnedClass = new Map<string, Set<number>>();
+  if (ownedIds.size > 0) {
+    const { data: ownedOverrides, error: ownedOvErr } = await supabase
+      .from("class_schedule_overrides")
+      .select("classId, dayOfWeek, teacherId")
+      .in("classId", [...ownedIds]);
+    if (ownedOvErr) throw ownedOvErr;
+    (ownedOverrides as unknown as { classId: string; dayOfWeek: number; teacherId: string }[]).forEach((o) => {
+      if (o.teacherId === teacherId) return;
+      const set = awayDaysByOwnedClass.get(o.classId) ?? new Set<number>();
+      set.add(o.dayOfWeek);
+      awayDaysByOwnedClass.set(o.classId, set);
+    });
+  }
 
   let missingRows: MyClassRow[] = [];
   if (missingIds.length > 0) {
@@ -121,12 +151,13 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
     row: MyClassRow,
     isPrimary: boolean,
     canAuthorLessonPlans: boolean,
+    effectiveSlots: ScheduleSlot[],
   ): MyClass => ({
     id: row.id,
     name: row.name,
     schoolName: row.schools?.name ?? "-",
     scheduleDaysOfWeek: row.scheduleDaysOfWeek,
-    scheduleSlots: row.class_schedule_slots ?? [],
+    scheduleSlots: effectiveSlots,
     room: row.room,
     isPrimary,
     canAuthorLessonPlans,
@@ -142,10 +173,23 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
   });
 
   return [
-    ...ownedRows.map((r) => toMyClass(r, true, true)),
+    ...ownedRows.map((r) =>
+      toMyClass(
+        r,
+        true,
+        true,
+        (r.class_schedule_slots ?? []).filter((s) => !awayDaysByOwnedClass.get(r.id)?.has(s.dayOfWeek)),
+      ),
+    ),
     ...missingIds.map((id) => {
       const row = missingRowsById.get(id);
-      return row ? toMyClass(row, false, true) : null;
+      if (!row) return null;
+      // A recurring override slot if this teacher covers this class on a
+      // specific weekday every week; otherwise they only reach this class
+      // via a one-off Jadwal Sementara date, which doesn't belong on a
+      // *weekly* schedule view — leave it empty rather than showing the
+      // class's unrelated default weekly pattern as if it were theirs.
+      return toMyClass(row, false, true, myOverrideSlotsByClass.get(id) ?? []);
     }),
   ]
     .filter((c): c is MyClass => c !== null)

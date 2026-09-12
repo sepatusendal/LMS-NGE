@@ -10,9 +10,11 @@ import { ProgressBar, getThresholdColor } from "@/components/shared/progress-bar
 import { useClasses } from "@/features/classes/use-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
 import { useStudents } from "@/features/students/use-students";
+import { useStatusBoard } from "@/features/monitoring/use-monitoring";
 import { computeComplianceRate } from "@/features/lesson-plans/compliance";
 import { buildDayLabelsSundayFirst } from "@/features/classes/schema";
 import { formatRupiah } from "@/lib/currency";
+import { todayLocalDateStr } from "@/lib/date";
 
 function SidebarCard({
   icon: Icon,
@@ -95,16 +97,28 @@ export function TodayCard() {
   const dayLabelsSundayFirst = useMemo(() => buildDayLabelsSundayFirst(tDay), [tDay]);
   const { data: classes, isError: classesError } = useClasses();
   const { data: lessonPlans, isError: lessonPlansError } = useLessonPlans();
-  const isError = classesError || lessonPlansError;
 
   // Deferred to client-only, same as `schedule-chart.tsx`'s `today`: reading
   // the viewer's local clock during SSR can genuinely produce the wrong
   // weekday in the server-rendered HTML, not just a one-time console warning.
   const [today, setToday] = useState<number | null>(null);
-  useEffect(() => setToday(new Date().getDay()), []);
+  const [todayDateStr, setTodayDateStr] = useState<string | null>(null);
+  useEffect(() => {
+    setToday(new Date().getDay());
+    setTodayDateStr(todayLocalDateStr());
+  }, []);
 
-  const todayClasses =
-    today === null ? null : classes?.filter((c) => c.isActive && c.scheduleDaysOfWeek.includes(today)).length ?? 0;
+  // fetchStatusBoard already resolves the *actual* classes meeting today —
+  // recurring weekly pattern, ClassScheduleOverride, and one-off Jadwal
+  // Sementara entries all unioned in, holidays excluded — instead of
+  // filtering raw `classes.scheduleDaysOfWeek` here a third time (see
+  // meetings/queries.ts fetchTodayClasses and monitoring/queries.ts
+  // fetchStatusBoard for the other two independently-written resolvers this
+  // was previously disagreeing with).
+  const { data: statusRows, isError: statusError } = useStatusBoard(todayDateStr ?? "");
+  const isError = classesError || lessonPlansError || statusError;
+
+  const todayClasses = statusRows ? statusRows.filter((r) => !r.isHoliday).length : null;
 
   const complianceRate = useMemo(() => {
     if (!classes || !lessonPlans) return null;

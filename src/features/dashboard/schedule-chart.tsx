@@ -15,6 +15,8 @@ import { AlertCircle, Clock, MapPin, CalendarRange } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useClasses } from "@/features/classes/use-classes";
+import { useAllScheduleOverrides } from "@/features/classes/use-schedule-overrides";
+import type { ScheduleOverride } from "@/features/classes/schedule-override-queries";
 import { buildDayLabelsSundayFirst, getSlotForDay, type Class, type ScheduleSlot } from "@/features/classes/schema";
 
 type ClassWithSlot = Class & { slot: ScheduleSlot | null };
@@ -74,7 +76,17 @@ export function ScheduleChart() {
   const t = useTranslations("admin.dashboard");
   const tDay = useTranslations("jadwal.day");
   const dayLabels = useMemo(() => buildDayLabelsSundayFirst(tDay), [tDay]);
-  const { data: classes, isLoading, isError } = useClasses();
+  const { data: classes, isLoading: classesLoading, isError: classesError } = useClasses();
+  // A ClassScheduleOverride can hand a class to a different teacher on its
+  // existing day (changing who/what time, not whether it meets) or add a
+  // whole extra day beyond the class's default weekly pattern (e.g. a
+  // split-day class like "Houstan": Bu Eni Wed, a covering teacher Sat) —
+  // without this, both the per-day bar counts and the day drilldown list
+  // disagreed with the teacher-facing Jadwal page and admin Status Board,
+  // which already account for overrides.
+  const { data: overrides, isLoading: overridesLoading, isError: overridesError } = useAllScheduleOverrides();
+  const isLoading = classesLoading || overridesLoading;
+  const isError = classesError || overridesError;
   // Deferred to client-only: `new Date().getDay()` reads the viewer's local
   // clock, which can differ from the server's at render time (e.g. near the
   // UTC-midnight/WIB-7am boundary) — computing it during the initial render
@@ -87,23 +99,47 @@ export function ScheduleChart() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const effectiveSelectedDay = selectedDay ?? today;
 
+  const overrideByClassDay = useMemo(() => {
+    const map = new Map<string, ScheduleOverride>();
+    (overrides ?? []).forEach((o) => map.set(`${o.classId}:${o.dayOfWeek}`, o));
+    return map;
+  }, [overrides]);
+
+  // The days a class actually meets, once overrides are folded in — its own
+  // default pattern, unioned with any day an override adds beyond it.
+  const effectiveDaysByClass = useMemo(() => {
+    const map = new Map<string, number[]>();
+    (classes ?? []).forEach((c) => {
+      const overrideDays = (overrides ?? []).filter((o) => o.classId === c.id).map((o) => o.dayOfWeek);
+      map.set(c.id, [...new Set([...c.scheduleDaysOfWeek, ...overrideDays])]);
+    });
+    return map;
+  }, [classes, overrides]);
+
   const chartData = useMemo(() => {
     const counts = new Array(7).fill(0);
     (classes ?? [])
       .filter((c) => c.isActive)
-      .forEach((c) => c.scheduleDaysOfWeek.forEach((d) => (counts[d] += 1)));
+      .forEach((c) => (effectiveDaysByClass.get(c.id) ?? []).forEach((d) => (counts[d] += 1)));
     return dayLabels.map((label, i) => ({ day: label.slice(0, 3), dayIndex: i, Kelas: counts[i] }));
-  }, [classes, dayLabels]);
+  }, [classes, effectiveDaysByClass, dayLabels]);
 
   // Kelas untuk satu hari (diurutkan per jam) — dihitung on-demand per hari
   // yang di-hover/di-tap, bukan semua 7 hari sekaligus di setiap render.
   const getClassesForDay = useMemo(() => {
     return (dayIndex: number): ClassWithSlot[] =>
       (classes ?? [])
-        .filter((c) => c.isActive && c.scheduleDaysOfWeek.includes(dayIndex))
-        .map((c) => ({ ...c, slot: getSlotForDay(c.scheduleSlots, dayIndex) }))
+        .filter((c) => c.isActive && (effectiveDaysByClass.get(c.id) ?? []).includes(dayIndex))
+        .map((c) => {
+          const override = overrideByClassDay.get(`${c.id}:${dayIndex}`);
+          return {
+            ...c,
+            teacherName: override?.teacherName ?? c.teacherName,
+            slot: override ? { dayOfWeek: dayIndex, startTime: override.startTime, endTime: override.endTime } : getSlotForDay(c.scheduleSlots, dayIndex),
+          };
+        })
         .sort((a, b) => (a.slot?.startTime ?? "").localeCompare(b.slot?.startTime ?? ""));
-  }, [classes]);
+  }, [classes, effectiveDaysByClass, overrideByClassDay]);
 
   const selectedList = effectiveSelectedDay === null ? [] : getClassesForDay(effectiveSelectedDay);
 
