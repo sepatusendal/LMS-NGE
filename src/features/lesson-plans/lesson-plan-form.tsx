@@ -146,8 +146,9 @@ export function LessonPlanForm({
   const lessonPlanSchema = useMemo(() => buildLessonPlanSchema(t), [t]);
   const { data: myClasses } = useMyClasses();
   const { data: allClasses } = useClasses(undefined, adminMode);
-  // Lesson-plan authorship is restricted to a class's primary teacher at the
-  // DB level (RLS) — a covering teacher reached only via a weekly schedule
+  // Lesson-plan authorship is restricted at the DB level (RLS) to a class's
+  // primary teacher and to a class_temporary_schedules substitute (Jadwal
+  // Sementara) — a covering teacher reached only via a weekly schedule
   // override can read plans but not create/own one, so exclude those here.
   const classes = adminMode
     ? allClasses?.map((c) => ({
@@ -157,7 +158,7 @@ export function LessonPlanForm({
         scheduleSlots: c.scheduleSlots,
         teacherId: c.teacherId as string | undefined,
       }))
-    : myClasses?.filter((c) => c.isPrimary);
+    : myClasses?.filter((c) => c.canAuthorLessonPlans);
   const { data: existingPlans, isLoading: existingPlansLoading } = useLessonPlans();
   const updateLessonPlan = useUpdateLessonPlan();
 

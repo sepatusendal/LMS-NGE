@@ -17,11 +17,19 @@ export interface MyClass {
   scheduleSlots: ScheduleSlot[];
   room: string | null;
   /** False for a class reached only via a ClassScheduleOverride (a covering
-   * teacher on one weekday) — lesson-plan authorship is restricted to the
-   * class's primary teacher at the DB level, so callers that create/edit
-   * lesson plans should filter to isPrimary classes only. Browsing/reading
-   * is fine for either. */
+   * teacher on one weekday) or a class_temporary_schedules row (Jadwal
+   * Sementara) — only an outright class owner is the "primary" teacher.
+   * Browsing/reading is fine either way; see canAuthorLessonPlans for
+   * whether this teacher may create/edit a lesson plan for it. */
   isPrimary: boolean;
+  /** Whether this teacher is allowed to create a lesson plan for this class
+   * at the DB level (RLS). True for the primary teacher and for a
+   * class_temporary_schedules substitute (date-scoped at the RLS layer, but
+   * the class itself is a valid choice here). False for a
+   * ClassScheduleOverride-only substitute — that arrangement is a recurring
+   * weekly cover, not a delegation of plan authorship for the whole class,
+   * so it stays restricted to the primary teacher. */
+  canAuthorLessonPlans: boolean;
   /** The reference module for this class's program (curriculum), stored in
    * Google Drive. Null if the class has no curriculum assigned yet, or the
    * curriculum has no module uploaded. */
@@ -57,8 +65,13 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
   // (a recurring covering-teacher arrangement, not a one-off substitute
   // event) — see prisma/schema.prisma's ClassScheduleOverride doc comment.
   // Without (b), a teacher covering a class every week could never select
-  // it here to write a lesson plan for it.
-  const [ownedResult, overrideResult] = await Promise.all([
+  // it here to write a lesson plan for it. Plus (c) classes where a
+  // class_temporary_schedules row (Jadwal Sementara) names them as the
+  // substitute for a specific date — lesson-plan authorship for those is
+  // allowed for that date only (see teacher_insert_own_lesson_plans RLS),
+  // but the class still needs to appear here or the form/module lookups
+  // below can't resolve it at all.
+  const [ownedResult, overrideResult, temporaryScheduleResult] = await Promise.all([
     supabase
       .from("classes")
       .select(SELECT)
@@ -69,18 +82,28 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
       .from("class_schedule_overrides")
       .select("classId")
       .eq("teacherId", teacherId),
+    supabase
+      .from("class_temporary_schedules")
+      .select("classId")
+      .eq("teacherId", teacherId),
   ]);
   if (ownedResult.error) throw ownedResult.error;
   if (overrideResult.error) throw overrideResult.error;
+  if (temporaryScheduleResult.error) throw temporaryScheduleResult.error;
 
   const ownedRows = ownedResult.data as unknown as MyClassRow[];
-  const overrideClassIds = (overrideResult.data as unknown as { classId: string }[]).map(
-    (o) => o.classId,
-  );
   const ownedIds = new Set(ownedRows.map((r) => r.id));
-  const missingIds = overrideClassIds.filter((id) => !ownedIds.has(id));
+  const overrideClassIds = (overrideResult.data as unknown as { classId: string }[])
+    .map((o) => o.classId)
+    .filter((id) => !ownedIds.has(id));
+  const temporaryScheduleClassIds = (
+    temporaryScheduleResult.data as unknown as { classId: string }[]
+  )
+    .map((o) => o.classId)
+    .filter((id) => !ownedIds.has(id));
+  const missingIds = [...new Set([...overrideClassIds, ...temporaryScheduleClassIds])];
 
-  let overrideRows: MyClassRow[] = [];
+  let missingRows: MyClassRow[] = [];
   if (missingIds.length > 0) {
     const { data, error } = await supabase
       .from("classes")
@@ -89,10 +112,21 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
       .eq("isActive", true)
       .is("deletedAt", null);
     if (error) throw error;
-    overrideRows = data as unknown as MyClassRow[];
+    missingRows = data as unknown as MyClassRow[];
   }
+  const missingRowsById = new Map(missingRows.map((r) => [r.id, r]));
+  // A class reachable via BOTH a weekly override and a temporary-schedule
+  // substitution counts as lesson-plan-eligible (the temporary schedule
+  // wins), so dedupe by class id rather than emitting it twice.
+  const canAuthorByMissingId = new Map(
+    missingIds.map((id) => [id, temporaryScheduleClassIds.includes(id)]),
+  );
 
-  const toMyClass = (row: MyClassRow, isPrimary: boolean): MyClass => ({
+  const toMyClass = (
+    row: MyClassRow,
+    isPrimary: boolean,
+    canAuthorLessonPlans: boolean,
+  ): MyClass => ({
     id: row.id,
     name: row.name,
     schoolName: row.schools?.name ?? "-",
@@ -100,6 +134,7 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
     scheduleSlots: row.class_schedule_slots ?? [],
     room: row.room,
     isPrimary,
+    canAuthorLessonPlans,
     module:
       row.curriculums?.moduleDriveFileId && row.curriculums.moduleFileName
         ? {
@@ -112,9 +147,14 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
   });
 
   return [
-    ...ownedRows.map((r) => toMyClass(r, true)),
-    ...overrideRows.map((r) => toMyClass(r, false)),
-  ].sort((a, b) => a.name.localeCompare(b.name));
+    ...ownedRows.map((r) => toMyClass(r, true, true)),
+    ...missingIds.map((id) => {
+      const row = missingRowsById.get(id);
+      return row ? toMyClass(row, false, canAuthorByMissingId.get(id) ?? false) : null;
+    }),
+  ]
+    .filter((c): c is MyClass => c !== null)
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function useMyClasses() {

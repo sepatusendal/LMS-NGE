@@ -33,7 +33,7 @@ export default function EditLessonPlanPage() {
     () =>
       isAdmin ||
       (lessonPlan && myClasses
-        ? myClasses.some((c) => c.isPrimary && c.id === lessonPlan.classId)
+        ? myClasses.some((c) => c.canAuthorLessonPlans && c.id === lessonPlan.classId)
         : false),
     [isAdmin, lessonPlan, myClasses],
   );

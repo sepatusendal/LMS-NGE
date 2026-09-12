@@ -308,7 +308,8 @@
       "deleteError": "Couldn't delete lesson plan",
       "HOLIDAY_NO_LESSON_PLAN": "This date is a holiday, a lesson plan can't be created for it",
       "DUPLICATE_MEETING_NUMBER": "This meeting number is already used by another lesson plan in this class. Close this page and open it again from the Lesson Plan menu — the number will be filled in correctly.",
-      "EDIT_WINDOW_EXPIRED": "This lesson plan is past its 7-day edit window and can no longer be changed."
+      "EDIT_WINDOW_EXPIRED": "This lesson plan is past its 7-day edit window and can no longer be changed.",
+      "NOT_AUTHORIZED_FOR_CLASS": "You don't have access to create a lesson plan for this class on that date. If you're a substitute teacher, make sure the date matches your temporary schedule, or contact this class's primary teacher."
     }
   },
   "attendanceForm": {

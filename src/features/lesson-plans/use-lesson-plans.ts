@@ -14,7 +14,12 @@ import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
 
 const LESSON_PLANS_KEY = ["lesson-plans"];
 const TODAY_CLASSES_KEY = ["today-classes"];
-const KNOWN_ERROR_CODES = new Set(["HOLIDAY_NO_LESSON_PLAN", "DUPLICATE_MEETING_NUMBER", "EDIT_WINDOW_EXPIRED"]);
+const KNOWN_ERROR_CODES = new Set([
+  "HOLIDAY_NO_LESSON_PLAN",
+  "DUPLICATE_MEETING_NUMBER",
+  "EDIT_WINDOW_EXPIRED",
+  "NOT_AUTHORIZED_FOR_CLASS",
+]);
 
 export function useLessonPlans() {
   return useQuery({ queryKey: LESSON_PLANS_KEY, queryFn: fetchLessonPlans });

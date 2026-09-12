@@ -308,7 +308,8 @@
       "deleteError": "Gagal menghapus lesson plan",
       "HOLIDAY_NO_LESSON_PLAN": "Tanggal ini adalah hari libur, tidak bisa membuat lesson plan",
       "DUPLICATE_MEETING_NUMBER": "Nomor pertemuan ini sudah dipakai lesson plan lain di kelas ini. Tutup halaman ini lalu buka lagi dari menu Lesson Plan — nomornya akan otomatis benar.",
-      "EDIT_WINDOW_EXPIRED": "Lesson plan ini sudah lewat batas edit 7 hari, tidak bisa diubah lagi."
+      "EDIT_WINDOW_EXPIRED": "Lesson plan ini sudah lewat batas edit 7 hari, tidak bisa diubah lagi.",
+      "NOT_AUTHORIZED_FOR_CLASS": "Anda tidak punya akses untuk membuat lesson plan di kelas ini pada tanggal tersebut. Jika Anda guru pengganti, pastikan tanggal yang dipilih sesuai jadwal sementara Anda, atau hubungi guru utama kelas ini."
     }
   },
   "attendanceForm": {

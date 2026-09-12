@@ -131,7 +131,7 @@ export async function createDraftLessonPlan(
     })
     .select("id")
     .single();
-  if (error) throw duplicateMeetingNumberError(error);
+  if (error) throw mapLessonPlanWriteError(error);
   return (data as { id: string }).id;
 }
 
@@ -203,13 +203,19 @@ async function assertNotHoliday(classId: string, scheduledDate: string) {
   }
 }
 
-/** (classId, meetingNumber) is unique at the DB level — remap the raw
- * constraint-violation error into something a teacher can act on. */
-function duplicateMeetingNumberError(error: { code?: string; message: string }): Error {
+/** Remap raw DB errors from a lesson-plan write into something a teacher can
+ * act on: (classId, meetingNumber) uniqueness violations, and RLS rejecting
+ * the insert outright (e.g. a teacher who isn't the class's primary teacher
+ * and has no class_temporary_schedules row for the chosen date — a real
+ * support case we hit with a Jadwal Sementara substitute picking the wrong
+ * date). Without this, the teacher sees a raw
+ * 'new row violates row-level security policy' message. */
+function mapLessonPlanWriteError(error: { code?: string; message: string }): Error {
   if (error.code === "23505") {
-    return new Error(
-      "DUPLICATE_MEETING_NUMBER",
-    );
+    return new Error("DUPLICATE_MEETING_NUMBER");
+  }
+  if (error.code === "42501") {
+    return new Error("NOT_AUTHORIZED_FOR_CLASS");
   }
   return error instanceof Error ? error : new Error(error.message);
 }
@@ -224,7 +230,7 @@ export async function createLessonPlan(
   const { error } = await supabase
     .from("lesson_plans")
     .insert({ ...toPayload(input), classId: input.classId, createdByTeacherId });
-  if (error) throw duplicateMeetingNumberError(error);
+  if (error) throw mapLessonPlanWriteError(error);
 }
 
 // `classId` is intentionally excluded from the update payload — RLS's
@@ -244,7 +250,7 @@ export async function updateLessonPlan(id: string, input: LessonPlanInput) {
     .update(toPayload(input))
     .eq("id", id)
     .select("id");
-  if (error) throw duplicateMeetingNumberError(error);
+  if (error) throw mapLessonPlanWriteError(error);
   if (!data || data.length === 0) throw new Error("EDIT_WINDOW_EXPIRED");
 }
 

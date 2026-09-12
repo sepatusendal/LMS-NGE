@@ -55,9 +55,10 @@ export default function TeacherClassDetailPage() {
 
   const { data: classItem, isLoading, isFetched } = useClass(classId);
   const { data: roster, isLoading: rosterLoading } = useClassRoster(classId);
-  // Module cover + "isPrimary" (who's allowed to write a lesson plan) aren't
-  // part of the shared admin `Class` shape — pull them from the teacher's
-  // own class list instead, which is already fetched/cached from /kelas.
+  // Module cover + "canAuthorLessonPlans" (who's allowed to write a lesson
+  // plan) aren't part of the shared admin `Class` shape — pull them from the
+  // teacher's own class list instead, which is already fetched/cached from
+  // /kelas.
   const { data: myClasses } = useMyClasses();
   const myClassInfo = myClasses?.find((c) => c.id === classId);
 
@@ -132,7 +133,7 @@ export default function TeacherClassDetailPage() {
       {myClassInfo && (
         <div className="space-y-3">
           <ModuleCoverBanner module={myClassInfo.module} />
-          {myClassInfo.isPrimary && (
+          {myClassInfo.canAuthorLessonPlans && (
             <Link
               href="/lesson-plan/new"
               className={cn(buttonVariants({ size: "sm", variant: "outline" }), "w-full")}
