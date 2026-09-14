@@ -237,7 +237,7 @@ export function TemporaryScheduleDialog({
           <DialogTitle>{isEditing ? t("editTitle") : t("addTitle")}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="label">{t("labelOptional")}</Label>
             <Input id="label" placeholder={t("labelPlaceholder")} {...register("label")} />

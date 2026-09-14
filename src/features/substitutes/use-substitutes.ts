@@ -28,8 +28,13 @@ export function useCurrentMeetingInfo(classId: string) {
 // mutations here don't always know which date's board is currently open on
 // screen, so invalidate every status-board query rather than one specific
 // date; it's a cheap refetch and guarantees the board never goes stale.
+// Also invalidate the teacher-facing "today"/"my classes" caches — a
+// substitute assignment changes what shows up there too, not just the
+// admin-side views.
 function invalidateStatusBoards(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ["monitoring-status-board"] });
+  queryClient.invalidateQueries({ queryKey: ["today-classes"] });
+  queryClient.invalidateQueries({ queryKey: ["my-classes"] });
 }
 
 export function useAssignSubstitute(classId: string) {
@@ -170,7 +175,7 @@ export function useMarkTeacherAbsent() {
       }
     },
     onError: (error) =>
-      toast.error("Gagal menandai guru absen", { description: error.message }),
+      toast.error("Gagal mengatur guru pengganti", { description: error.message }),
   });
 }
 

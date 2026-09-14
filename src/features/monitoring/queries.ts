@@ -58,6 +58,7 @@ interface MeetingRow {
   actualTeacherId: string | null;
   substituteReason: string | null;
   actualTeacher: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null;
+  assignedTeacher: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null;
   checkIn: { checkInTime: string; isLate: boolean } | { checkInTime: string; isLate: boolean }[] | null;
   checkOut: { checkOutTime: string } | { checkOutTime: string }[] | null;
   attendances: { status: string }[] | null;
@@ -135,7 +136,7 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
       ? await supabase
           .from("meetings")
           .select(
-            "id, lessonPlanId, status, assignedTeacherId, actualTeacherId, substituteReason, actualTeacher:teachers!meetings_actualTeacherId_fkey(users(fullName)), checkIn:check_ins(checkInTime, isLate), checkOut:check_outs(checkOutTime), attendances(status), teachingReport:teaching_reports(id)",
+            "id, lessonPlanId, status, assignedTeacherId, actualTeacherId, substituteReason, actualTeacher:teachers!meetings_actualTeacherId_fkey(users(fullName)), assignedTeacher:teachers!meetings_assignedTeacherId_fkey(users(fullName)), checkIn:check_ins(checkInTime, isLate), checkOut:check_outs(checkOutTime), attendances(status), teachingReport:teaching_reports(id)",
           )
           .in("lessonPlanId", lpIds)
       : { data: [], error: null };
@@ -175,9 +176,14 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
       const scheduleStartTime = temp?.startTime ?? override?.startTime ?? todaySlot?.startTime ?? "00:00";
       const scheduleEndTime = temp?.endTime ?? override?.endTime ?? todaySlot?.endTime ?? "00:00";
       const teacherId = temp?.teacherId ?? overrideTeacher?.id ?? cls.teacherId;
+      // The teacher who'd otherwise have this slot — the default to compare
+      // a temp-schedule swap against (override wins over the class's own
+      // teacherId, same precedence as everywhere else in this function).
+      const defaultTeacherId = overrideTeacher?.id ?? cls.teacherId;
+      const defaultTeacherName = overrideTeacher?.users?.fullName ?? cls.teachers?.users?.fullName ?? "-";
       const teacherName = temp?.teacherId
         ? tempTeacherNameById.get(temp.teacherId) ?? "-"
-        : overrideTeacher?.users?.fullName ?? cls.teachers?.users?.fullName ?? "-";
+        : defaultTeacherName;
 
       const lp = lpByClass.get(cls.id) ?? null;
       const meeting = lp ? meetingByLp.get(lp.id) : undefined;
@@ -207,6 +213,11 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
         now > scheduledStart + LATE_GRACE_MINUTES * 60_000;
       const isReportMissing = !isHoliday && meetingStatus === "checked_out";
 
+      const isMeetingSubstitute = Boolean(
+        meeting?.actualTeacherId && meeting.actualTeacherId !== meeting.assignedTeacherId,
+      );
+      const isTempSubstitute = Boolean(temp?.teacherId && temp.teacherId !== defaultTeacherId);
+
       return {
         classId: cls.id,
         className: cls.name,
@@ -227,10 +238,32 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
         checkInTime: checkIn?.checkInTime ?? null,
         checkOutTime: checkOut?.checkOutTime ?? null,
         isLate: checkIn?.isLate ?? null,
-        isSubstitute: Boolean(
-          meeting?.actualTeacherId && meeting.actualTeacherId !== meeting.assignedTeacherId,
-        ),
-        substituteTeacherName: toOne(meeting?.actualTeacher ?? null)?.users?.fullName ?? null,
+        // Two independent mechanisms can put a substitute in this slot: a
+        // one-off Meeting-level assignment (meeting.actualTeacherId, from
+        // "Atur Guru Pengganti" — this is what `isSubstitute` has always
+        // meant, and other consumers of this row (the /substitutes page's
+        // per-teacher grouping + absence dialog, ReassignTutorDialog) rely
+        // on that exact meaning: their `teacherId`/`teacherName` is this
+        // row's nominal owner, and `isSubstitute` says "someone else is
+        // covering *their* class". Do NOT fold the temp-schedule case into
+        // it — for a temp-schedule swap, `teacherId`/`teacherName` above are
+        // already the substitute's own identity (temp wins precedence), so
+        // setting `isSubstitute` there would self-referentially claim the
+        // substitute is substituting for themselves in those consumers.
+        isSubstitute: isMeetingSubstitute,
+        // Unified flag for the Status Board's own display only (Teacher
+        // column name-swap + "Sub" badge) — true for either mechanism.
+        isTeacherSwapped: isMeetingSubstitute || isTempSubstitute,
+        originalTeacherName: isMeetingSubstitute
+          ? (toOne(meeting?.assignedTeacher ?? null)?.users?.fullName ?? defaultTeacherName)
+          : isTempSubstitute
+            ? defaultTeacherName
+            : null,
+        substituteTeacherName: isMeetingSubstitute
+          ? (toOne(meeting?.actualTeacher ?? null)?.users?.fullName ?? null)
+          : isTempSubstitute
+            ? (tempTeacherNameById.get(temp!.teacherId!) ?? null)
+            : null,
         substituteReason: meeting?.substituteReason ?? null,
         attendanceTotal: attendances.length,
         attendancePresent: attendances.filter((a) => a.status === "PRESENT" || a.status === "LATE")

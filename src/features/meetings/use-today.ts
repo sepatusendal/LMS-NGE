@@ -18,6 +18,12 @@ export function useTodayClasses(): {
     queryKey: TODAY_KEY,
     queryFn: () => fetchTodayClasses(teacher!.teacherId),
     enabled: Boolean(teacher?.teacherId),
+    // A substitute assignment or Jadwal Sementara edit made by an admin on a
+    // different device can't push an update into this browser's cache — poll
+    // and refetch on focus so a class newly handed to this teacher (or taken
+    // away) shows up here without them needing to manually reload.
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 
   return {

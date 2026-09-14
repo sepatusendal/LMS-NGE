@@ -58,7 +58,7 @@ function buildExportColumns(
     { header: tCommon("school"), key: "school", width: 22, value: (r) => r.schoolName },
     { header: t("room"), key: "room", width: 14, value: (r) => r.room ?? "-" },
     { header: "Teacher", key: "teacher", width: 22, value: (r) => r.teacherName },
-    { header: "Substitute", key: "substitute", width: 16, value: (r) => (r.isSubstitute ? r.substituteTeacherName ?? tCommon("yes") : "-") },
+    { header: "Substitute", key: "substitute", width: 16, value: (r) => (r.isTeacherSwapped ? r.substituteTeacherName ?? tCommon("yes") : "-") },
     { header: t("substituteReason"), key: "substituteReason", width: 24, value: (r) => r.substituteReason ?? "-" },
     { header: t("time"), key: "time", width: 14, value: (r) => `${r.scheduleStartTime}-${r.scheduleEndTime}` },
     { header: "Meeting", key: "meeting", width: 10, value: (r) => r.meetingNumber },
@@ -279,7 +279,7 @@ export function StatusBoard() {
                               {t("classTypeTraining")}
                             </Badge>
                           )}
-                          {r.isSubstitute && (
+                          {r.isTeacherSwapped && (
                             <Badge variant="outline" className="ml-1.5 text-[10px]">
                               {t("subShort")}
                             </Badge>
@@ -289,7 +289,16 @@ export function StatusBoard() {
                           {r.schoolName}
                         </TableCell>
                         <TableCell className="text-muted-foreground whitespace-nowrap">
-                          {r.teacherName}
+                          {r.isTeacherSwapped && r.originalTeacherName ? (
+                            <div className="leading-tight">
+                              <div className="text-[10px] text-muted-foreground/60 line-through">
+                                {r.originalTeacherName}
+                              </div>
+                              <div className="text-foreground font-medium">{r.teacherName}</div>
+                            </div>
+                          ) : (
+                            r.teacherName
+                          )}
                         </TableCell>
                         <TableCell className="text-muted-foreground whitespace-nowrap">
                           {r.scheduleStartTime}-{r.scheduleEndTime}

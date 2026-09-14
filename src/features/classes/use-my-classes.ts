@@ -202,5 +202,9 @@ export function useMyClasses() {
     queryKey: ["my-classes", teacher?.teacherId],
     queryFn: () => fetchMyClasses(teacher!.teacherId),
     enabled: Boolean(teacher?.teacherId),
+    // A schedule change made elsewhere (admin device) can't invalidate this
+    // browser's cache directly — refetch when the teacher comes back to the
+    // tab so an override/temp-schedule edit shows up without a manual reload.
+    refetchOnWindowFocus: true,
   });
 }

@@ -15,12 +15,24 @@ export function useTemporarySchedules() {
   return useQuery({ queryKey: TEMPORARY_SCHEDULES_KEY, queryFn: fetchTemporaryScheduleBatches });
 }
 
+/** A temp-schedule write changes who teaches a class and/or when — that
+ * affects the admin/coordinator Status Board and the teacher-facing "today"
+ * and "my classes" views too, not just this feature's own batch list. Every
+ * mutation below must invalidate all four so those surfaces don't keep
+ * showing pre-edit data until their own unrelated cache naturally expires. */
+function invalidateScheduleDependents(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: TEMPORARY_SCHEDULES_KEY });
+  queryClient.invalidateQueries({ queryKey: ["monitoring-status-board"] });
+  queryClient.invalidateQueries({ queryKey: ["today-classes"] });
+  queryClient.invalidateQueries({ queryKey: ["my-classes"] });
+}
+
 export function useCreateTemporarySchedule() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: TemporaryScheduleInput) => createTemporarySchedules(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TEMPORARY_SCHEDULES_KEY });
+      invalidateScheduleDependents(queryClient);
       toast.success("Jadwal sementara berhasil dibuat");
     },
     onError: (error) =>
@@ -34,7 +46,7 @@ export function useUpdateTemporarySchedule() {
     mutationFn: ({ batchId, input }: { batchId: string; input: TemporaryScheduleInput }) =>
       updateTemporarySchedule(batchId, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TEMPORARY_SCHEDULES_KEY });
+      invalidateScheduleDependents(queryClient);
       toast.success("Jadwal sementara berhasil diperbarui");
     },
     onError: (error) =>
@@ -47,7 +59,7 @@ export function useDeleteTemporaryScheduleBatch() {
   return useMutation({
     mutationFn: (batchId: string) => deleteTemporaryScheduleBatch(batchId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TEMPORARY_SCHEDULES_KEY });
+      invalidateScheduleDependents(queryClient);
       toast.success("Jadwal sementara dibatalkan");
     },
     onError: (error) =>

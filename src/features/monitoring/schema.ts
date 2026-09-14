@@ -19,6 +19,8 @@ export interface ClassStatusRow {
   checkOutTime: string | null;
   isLate: boolean | null;
   isSubstitute: boolean;
+  isTeacherSwapped: boolean;
+  originalTeacherName: string | null;
   substituteTeacherName: string | null;
   substituteReason: string | null;
   attendanceTotal: number;
