@@ -164,6 +164,16 @@ GRANT EXECUTE ON FUNCTION public.backfill_meeting_admin(
 -- has no such guard (it relies entirely on the UPDATE's own row match), so
 -- it only needs the new p_admin_note parameter and audit-column SETs.
 
+-- CREATE OR REPLACE can't add a parameter to an existing function — Postgres
+-- treats a changed parameter list as a distinct overload instead of a
+-- replacement, so without this DROP the old (p_admin_note-less) signature
+-- stays around alongside the new one and every call becomes ambiguous
+-- ("Could not choose the best candidate function") since p_admin_note has a
+-- DEFAULT and both signatures match a call that omits it.
+DROP FUNCTION IF EXISTS public.create_teaching_report(
+  UUID, UUID, TEXT[], TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, JSONB, TEXT, TEXT, TEXT, TEXT
+);
+
 CREATE OR REPLACE FUNCTION public.create_teaching_report(
   p_meeting_id UUID,
   p_original_teacher_id UUID,
@@ -331,6 +341,12 @@ REVOKE ALL ON FUNCTION public.create_teaching_report(
 GRANT EXECUTE ON FUNCTION public.create_teaching_report(
   UUID, UUID, TEXT[], TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, JSONB, TEXT, TEXT, TEXT, TEXT, TEXT
 ) TO authenticated;
+
+-- Same overload hazard as create_teaching_report() above — drop the old
+-- (p_admin_note-less) signature first so only one candidate remains.
+DROP FUNCTION IF EXISTS public.update_teaching_report(
+  UUID, TEXT[], TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, JSONB, TEXT, TEXT, TEXT, TEXT
+);
 
 CREATE OR REPLACE FUNCTION public.update_teaching_report(
   p_report_id UUID,
