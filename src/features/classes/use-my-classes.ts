@@ -196,12 +196,17 @@ async function fetchMyClasses(teacherId: string): Promise<MyClass[]> {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export function useMyClasses() {
-  const { data: teacher } = useCurrentTeacher();
+/** @param enabled Set to false when the caller already knows the current
+ * user isn't a teacher (e.g. an admin-only screen) — skips the underlying
+ * useCurrentTeacher() lookup too, which would otherwise 406 (no matching
+ * teachers row) on every render. Defaults to true for every teacher-facing
+ * caller. */
+export function useMyClasses(enabled = true) {
+  const { data: teacher } = useCurrentTeacher(enabled);
   return useQuery({
     queryKey: ["my-classes", teacher?.teacherId],
     queryFn: () => fetchMyClasses(teacher!.teacherId),
-    enabled: Boolean(teacher?.teacherId),
+    enabled: enabled && Boolean(teacher?.teacherId),
     // A schedule change made elsewhere (admin device) can't invalidate this
     // browser's cache directly — refetch when the teacher comes back to the
     // tab so an override/temp-schedule edit shows up without a manual reload.

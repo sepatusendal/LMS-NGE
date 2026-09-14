@@ -23,9 +23,16 @@ export function useReportPageContext(meetingId: string) {
   });
 }
 
-export function useCreateReport(meetingId: string) {
+/** @param adminOverride Present when an admin is filing this report on the
+ * tutor's behalf (BackfillSessionDialog / MeetingAdminDialog) — supplies the
+ * teacherId to attribute the report to instead of the logged-in user's own
+ * teacher profile (admin usually has none) and an optional audit note. */
+export function useCreateReport(
+  meetingId: string,
+  adminOverride?: { originalTeacherId: string; adminNote?: string },
+) {
   const queryClient = useQueryClient();
-  const { data: teacher } = useCurrentTeacher();
+  const { data: teacher } = useCurrentTeacher(!adminOverride);
   const t = useTranslations("reportForm.toasts");
 
   return useMutation({
@@ -44,10 +51,12 @@ export function useCreateReport(meetingId: string) {
       photoFileName?: string;
       followUps: { studentId: string; note: string }[];
     }) => {
-      if (!teacher?.teacherId) throw new Error(t("profileNotReady"));
+      const originalTeacherId = adminOverride?.originalTeacherId ?? teacher?.teacherId;
+      if (!originalTeacherId) throw new Error(t("profileNotReady"));
       return createReport({
         meetingId,
-        originalTeacherId: teacher.teacherId,
+        originalTeacherId,
+        adminNote: adminOverride?.adminNote,
         ...input,
       });
     },
@@ -63,13 +72,13 @@ export function useCreateReport(meetingId: string) {
 
 const KNOWN_UPDATE_ERRORS = new Set(["REPORT_EDIT_NOT_ALLOWED"]);
 
-export function useUpdateReport(meetingId: string) {
+export function useUpdateReport(meetingId: string, adminOverride?: { adminNote?: string }) {
   const queryClient = useQueryClient();
   const t = useTranslations("reportForm.toasts");
 
   return useMutation({
     mutationFn: (input: { reportId: string } & Parameters<typeof updateReport>[1]) =>
-      updateReport(input.reportId, input),
+      updateReport(input.reportId, { ...input, adminNote: input.adminNote ?? adminOverride?.adminNote }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...REPORT_KEY, meetingId] });
       queryClient.invalidateQueries({ queryKey: ["today-classes"] });

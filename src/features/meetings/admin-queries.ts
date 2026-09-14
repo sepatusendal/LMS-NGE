@@ -9,6 +9,13 @@ import { createClient } from "@/lib/supabase/client";
 export interface MeetingAdminDetail {
   meetingId: string;
   meetingStatus: string;
+  /** True when this whole meeting was backfilled by an admin via
+   * backfill_meeting_admin() — see 20260915000000 — rather than started by
+   * the tutor's own check-in. Drives the "Diisi Admin" badges on the
+   * check-in/check-out sections below (those two tables don't carry their
+   * own copy of the flag). */
+  isAdminEntered: boolean;
+  adminNote: string | null;
   checkIn: {
     id: string;
     checkInTime: string;
@@ -21,17 +28,7 @@ export interface MeetingAdminDetail {
     durationMinutes: number;
     notes: string | null;
   } | null;
-  report: {
-    id: string;
-    actualTeachingDate: string;
-    skills: string[];
-    objectivesAchieved: string | null;
-    whatWentWell: string | null;
-    whatNeedsImprovement: string | null;
-    nextLessonNotes: string | null;
-    homeworkAssigned: string | null;
-    summary: string | null;
-  } | null;
+  reportId: string | null;
   attendanceCount: number;
 }
 
@@ -41,10 +38,10 @@ export async function fetchMeetingAdminDetail(meetingId: string): Promise<Meetin
     supabase
       .from("meetings")
       .select(`
-        id, status,
+        id, status, "isAdminEntered", "adminNote",
         checkIn:check_ins(id, checkInTime, isLate, notes),
         checkOut:check_outs(id, checkOutTime, durationMinutes, notes),
-        teachingReport:teaching_reports(id, actualTeachingDate, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement, nextLessonNotes, homeworkAssigned, summary)
+        teachingReport:teaching_reports(id)
       `)
       .eq("id", meetingId)
       .single(),
@@ -61,27 +58,21 @@ export async function fetchMeetingAdminDetail(meetingId: string): Promise<Meetin
   const row = meeting as unknown as {
     id: string;
     status: string;
+    isAdminEntered: boolean;
+    adminNote: string | null;
     checkIn: ToOne<{ id: string; checkInTime: string; isLate: boolean; notes: string | null }>;
     checkOut: ToOne<{ id: string; checkOutTime: string; durationMinutes: number; notes: string | null }>;
-    teachingReport: ToOne<{
-      id: string;
-      actualTeachingDate: string;
-      skills: string[];
-      objectivesAchieved: string | null;
-      whatWentWell: string | null;
-      whatNeedsImprovement: string | null;
-      nextLessonNotes: string | null;
-      homeworkAssigned: string | null;
-      summary: string | null;
-    }>;
+    teachingReport: ToOne<{ id: string }>;
   };
 
   return {
     meetingId: row.id,
     meetingStatus: row.status,
+    isAdminEntered: row.isAdminEntered,
+    adminNote: row.adminNote,
     checkIn: toOne(row.checkIn),
     checkOut: toOne(row.checkOut),
-    report: toOne(row.teachingReport),
+    reportId: toOne(row.teachingReport)?.id ?? null,
     attendanceCount: attendanceCount ?? 0,
   };
 }
@@ -136,34 +127,10 @@ export async function deleteCheckOutAdmin(id: string) {
   if (error) throw error;
 }
 
-export interface TeachingReportUpdate {
-  actualTeachingDate: string;
-  skills: string[];
-  objectivesAchieved: string;
-  whatWentWell: string;
-  whatNeedsImprovement: string;
-  nextLessonNotes: string;
-  homeworkAssigned: string;
-  summary: string;
-}
-
-export async function updateTeachingReportAdmin(id: string, input: TeachingReportUpdate) {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("teaching_reports")
-    .update({
-      actualTeachingDate: input.actualTeachingDate,
-      skills: input.skills,
-      objectivesAchieved: input.objectivesAchieved || null,
-      whatWentWell: input.whatWentWell || null,
-      whatNeedsImprovement: input.whatNeedsImprovement || null,
-      nextLessonNotes: input.nextLessonNotes || null,
-      homeworkAssigned: input.homeworkAssigned || null,
-      summary: input.summary || null,
-    })
-    .eq("id", id);
-  if (error) throw error;
-}
+// Report edits now go through ReportForm (features/meetings/report-form.tsx)
+// -> update_teaching_report()/create_teaching_report() RPCs directly, for
+// full field parity with the tutor's own form — see 20260915000000's admin
+// bypass. This file keeps only delete, which has no RPC equivalent.
 
 export async function deleteTeachingReportAdmin(id: string) {
   const supabase = createClient();
@@ -188,7 +155,7 @@ export async function resetMeetingAdmin(meetingId: string) {
 
   const { error: statusError } = await supabase
     .from("meetings")
-    .update({ status: "SCHEDULED" })
+    .update({ status: "SCHEDULED", isAdminEntered: false, adminEnteredByUserId: null, adminNote: null })
     .eq("id", meetingId);
   if (statusError) throw statusError;
 }

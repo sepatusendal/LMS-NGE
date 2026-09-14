@@ -5,6 +5,7 @@ import { Activity, LineChart, ListChecks } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { ComplianceAlert } from "@/features/lesson-plans/compliance-alert";
 import { StatusBoard } from "@/features/monitoring/status-board";
+import { NeverUsedLmsWidget } from "@/features/monitoring/never-used-lms-widget";
 import { AnalyticsCharts } from "@/features/monitoring/analytics-charts";
 import { OverviewStats } from "@/features/dashboard/overview-stats";
 import { RevenueCard, TodayCard } from "@/features/dashboard/overview-sidebar";
@@ -95,6 +96,7 @@ export default function AdminDashboardPage() {
           description={t("operationsDescription")}
         />
         <StatusBoard />
+        <NeverUsedLmsWidget />
       </section>
 
       {/* 4 — Beban gaji tutor (modul keuangan, full width) */}

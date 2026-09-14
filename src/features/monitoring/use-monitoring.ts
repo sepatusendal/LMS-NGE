@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchAnalytics, fetchStatusBoard } from "./queries";
+import { fetchAnalytics, fetchDormantTutors, fetchStatusBoard } from "./queries";
 
 export function useStatusBoard(date: string) {
   return useQuery({
@@ -19,5 +19,14 @@ export function useMonitoringAnalytics(days: number) {
   return useQuery({
     queryKey: ["monitoring-analytics", days],
     queryFn: () => fetchAnalytics(days),
+  });
+}
+
+/** No polling — this is a proactive follow-up list, not a live-updating
+ * board, so a manual refresh (remount / react-query refetch) is enough. */
+export function useDormantTutors(days: number) {
+  return useQuery({
+    queryKey: ["monitoring-dormant-tutors", days],
+    queryFn: () => fetchDormantTutors(days),
   });
 }

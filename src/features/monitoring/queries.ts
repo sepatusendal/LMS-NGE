@@ -2,9 +2,15 @@ import { createClient } from "@/lib/supabase/client";
 import { fetchHolidaySchoolsForDate } from "@/features/holidays/queries";
 import { fetchTemporaryScheduleTimesForDate } from "@/features/temporary-schedules/queries";
 import { formatLocalDateStr } from "@/lib/date";
-import type { AnalyticsPoint, ClassStatusRow } from "./schema";
+import type { AnalyticsPoint, ClassStatusRow, DormantTutorRow } from "./schema";
 
 const LATE_GRACE_MINUTES = 10;
+
+// A tutor with this many or more no-lesson-plan-at-all sessions in the
+// lookback window shows up on the "never used LMS" widget — tunable without
+// touching the query shape. 3 in ~14 days is "this isn't a one-off," not
+// "missed one class."
+const DORMANT_THRESHOLD = 3;
 
 function toOne<T>(rel: T | T[] | null | undefined): T | null {
   if (!rel) return null;
@@ -57,6 +63,7 @@ interface MeetingRow {
   assignedTeacherId: string;
   actualTeacherId: string | null;
   substituteReason: string | null;
+  isAdminEntered: boolean;
   actualTeacher: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null;
   assignedTeacher: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null;
   checkIn: { checkInTime: string; isLate: boolean } | { checkInTime: string; isLate: boolean }[] | null;
@@ -136,7 +143,7 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
       ? await supabase
           .from("meetings")
           .select(
-            "id, lessonPlanId, status, assignedTeacherId, actualTeacherId, substituteReason, actualTeacher:teachers!meetings_actualTeacherId_fkey(users(fullName)), assignedTeacher:teachers!meetings_assignedTeacherId_fkey(users(fullName)), checkIn:check_ins(checkInTime, isLate), checkOut:check_outs(checkOutTime), attendances(status), teachingReport:teaching_reports(id)",
+            "id, lessonPlanId, status, assignedTeacherId, actualTeacherId, substituteReason, \"isAdminEntered\", actualTeacher:teachers!meetings_actualTeacherId_fkey(users(fullName)), assignedTeacher:teachers!meetings_assignedTeacherId_fkey(users(fullName)), checkIn:check_ins(checkInTime, isLate), checkOut:check_outs(checkOutTime), attendances(status), teachingReport:teaching_reports(id)",
           )
           .in("lessonPlanId", lpIds)
       : { data: [], error: null };
@@ -271,6 +278,7 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
         isOverdueCheckIn,
         isReportMissing,
         isHoliday,
+        isAdminEntered: meeting?.isAdminEntered ?? false,
       };
     })
     .sort((a, b) => a.scheduleStartTime.localeCompare(b.scheduleStartTime));
@@ -339,4 +347,115 @@ export async function fetchAnalytics(days: number): Promise<AnalyticsPoint[]> {
       attendanceRate: attendanceTotal > 0 ? Math.round((attendancePresent / attendanceTotal) * 100) : 0,
     };
   });
+}
+
+/** Surfaces tutors whose classes have gone repeatedly untouched — no
+ * lesson_plans row at all for an expected session (which also means no
+ * check-in, since check-in either uses an existing plan or auto-creates a
+ * draft one via check_in_with_draft_plan()) — over the last `days` days.
+ * Deliberately simpler than fetchStatusBoard's per-day resolution: uses each
+ * class's own weekly scheduleDaysOfWeek only, ignoring schedule overrides/
+ * temporary schedules/holidays, since this is a proactive "who might need a
+ * nudge" list, not the authoritative per-day record (that's Status Board) —
+ * a handful of off-by-one days from an override doesn't change who ends up
+ * on this list. */
+export async function fetchDormantTutors(days: number): Promise<DormantTutorRow[]> {
+  const supabase = createClient();
+
+  const dates: string[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    dates.push(formatLocalDateStr(d));
+  }
+  const dowByDate = new Map(dates.map((date) => [date, dayOfWeek(date)]));
+
+  const { data: classes, error: clsErr } = await supabase
+    .from("classes")
+    .select("id, name, teacherId, scheduleDaysOfWeek, teachers(users(fullName))")
+    .eq("isActive", true)
+    .is("deletedAt", null);
+  if (clsErr) throw clsErr;
+
+  type ClassRow = {
+    id: string;
+    name: string;
+    teacherId: string;
+    scheduleDaysOfWeek: number[];
+    teachers: { users: { fullName: string } | null } | { users: { fullName: string } | null }[] | null;
+  };
+  const cls = classes as unknown as ClassRow[];
+  if (cls.length === 0) return [];
+
+  const { data: lessonPlans, error: lpErr } = await supabase
+    .from("lesson_plans")
+    .select("classId, scheduledDate")
+    .in("classId", cls.map((c) => c.id))
+    .gte("scheduledDate", dates[0])
+    .lte("scheduledDate", dates[dates.length - 1])
+    .is("deletedAt", null);
+  if (lpErr) throw lpErr;
+
+  const plannedSet = new Set(
+    (lessonPlans as unknown as { classId: string; scheduledDate: string }[]).map(
+      (lp) => `${lp.classId}|${lp.scheduledDate}`,
+    ),
+  );
+
+  // "Last active" looks further back than the dormancy window itself (a
+  // tutor who wrote one plan 20 days ago but nothing since should still show
+  // that date, not "Belum pernah") — capped at 90 days so the query stays
+  // bounded rather than scanning the whole table.
+  const { data: recentPlans, error: recentErr } = await supabase
+    .from("lesson_plans")
+    .select("createdByTeacherId, scheduledDate")
+    .in("createdByTeacherId", [...new Set(cls.map((c) => c.teacherId))])
+    .gte("scheduledDate", formatLocalDateStr(new Date(Date.now() - 90 * 86_400_000)))
+    .is("deletedAt", null);
+  if (recentErr) throw recentErr;
+
+  const lastActiveByTeacher = new Map<string, string>();
+  (recentPlans as unknown as { createdByTeacherId: string; scheduledDate: string }[]).forEach((lp) => {
+    const current = lastActiveByTeacher.get(lp.createdByTeacherId);
+    if (!current || lp.scheduledDate > current) lastActiveByTeacher.set(lp.createdByTeacherId, lp.scheduledDate);
+  });
+
+  interface Tally {
+    teacherName: string;
+    classNames: Set<string>;
+    expectedSessions: number;
+    missedSessions: number;
+  }
+  const byTeacher = new Map<string, Tally>();
+
+  cls.forEach((c) => {
+    const teacherName = toOne(c.teachers)?.users?.fullName ?? "-";
+    dates.forEach((date) => {
+      if (!c.scheduleDaysOfWeek.includes(dowByDate.get(date) as number)) return;
+      const tally = byTeacher.get(c.teacherId) ?? {
+        teacherName,
+        classNames: new Set<string>(),
+        expectedSessions: 0,
+        missedSessions: 0,
+      };
+      tally.expectedSessions += 1;
+      if (!plannedSet.has(`${c.id}|${date}`)) {
+        tally.missedSessions += 1;
+        tally.classNames.add(c.name);
+      }
+      byTeacher.set(c.teacherId, tally);
+    });
+  });
+
+  return [...byTeacher.entries()]
+    .filter(([, tally]) => tally.missedSessions >= DORMANT_THRESHOLD)
+    .map(([teacherId, tally]) => ({
+      teacherId,
+      teacherName: tally.teacherName,
+      classNames: [...tally.classNames],
+      expectedSessions: tally.expectedSessions,
+      missedSessions: tally.missedSessions,
+      lastActiveDate: lastActiveByTeacher.get(teacherId) ?? null,
+    }))
+    .sort((a, b) => b.missedSessions - a.missedSessions);
 }

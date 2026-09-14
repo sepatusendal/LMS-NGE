@@ -321,6 +321,7 @@ export function ClassTimeline({
             onOpenChange={setManageOpen}
             meetingId={manageEntry?.meetingId ?? null}
             classId={classId}
+            teacherId={manageEntry?.assignedTeacherId ?? ""}
             meetingLabel={manageEntry ? t("meeting", { number: manageEntry.meetingNumber }) + ` — ${manageEntry.topic}` : ""}
           />
         </>

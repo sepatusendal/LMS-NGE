@@ -6,12 +6,10 @@ import {
   deleteCheckInAdmin,
   updateCheckOutAdmin,
   deleteCheckOutAdmin,
-  updateTeachingReportAdmin,
   deleteTeachingReportAdmin,
   resetMeetingAdmin,
   type CheckInUpdate,
   type CheckOutUpdate,
-  type TeachingReportUpdate,
 } from "./admin-queries";
 
 const TODAY_CLASSES_KEY = ["today-classes"];
@@ -78,16 +76,6 @@ export function useMeetingAdminMutations(meetingId: string | null, classId: stri
     onError: (error) => toast.error("Gagal menghapus check-out", { description: error.message }),
   });
 
-  const updateReport = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: TeachingReportUpdate }) =>
-      updateTeachingReportAdmin(id, input),
-    onSuccess: () => {
-      invalidateAll();
-      toast.success("Daily Teaching Report berhasil diperbarui");
-    },
-    onError: (error) => toast.error("Gagal memperbarui report", { description: error.message }),
-  });
-
   const deleteReport = useMutation({
     mutationFn: (id: string) => deleteTeachingReportAdmin(id),
     onSuccess: () => {
@@ -111,7 +99,6 @@ export function useMeetingAdminMutations(meetingId: string | null, classId: stri
     deleteCheckIn,
     updateCheckOut,
     deleteCheckOut,
-    updateReport,
     deleteReport,
     resetMeeting,
   };

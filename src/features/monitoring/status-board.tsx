@@ -2,7 +2,16 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, CheckCircle, Clock, FileWarning, UserRoundCog, UserRoundX } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  FileWarning,
+  PlusCircle,
+  Settings2,
+  UserRoundCog,
+  UserRoundX,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +41,11 @@ import {
   ReassignTutorDialog,
   type ReassignTutorTarget,
 } from "@/features/substitutes/reassign-tutor-dialog";
+import { MeetingAdminDialog } from "@/features/meetings/meeting-admin-dialog";
+import {
+  BackfillSessionDialog,
+  type BackfillSessionTarget,
+} from "./backfill/backfill-session-dialog";
 import { useStatusBoard } from "./use-monitoring";
 import type { ClassStatusRow } from "./schema";
 
@@ -85,6 +99,10 @@ export function StatusBoard() {
   const [teacherId, setTeacherId] = useState("");
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
   const [reassignTarget, setReassignTarget] = useState<ReassignTutorTarget | null>(null);
+  const [backfillDialogOpen, setBackfillDialogOpen] = useState(false);
+  const [backfillTarget, setBackfillTarget] = useState<BackfillSessionTarget | null>(null);
+  const [manageDialogOpen, setManageDialogOpen] = useState(false);
+  const [manageRow, setManageRow] = useState<ClassStatusRow | null>(null);
 
   const { data: schools } = useSchools();
   const { data: teachers } = useTeachers();
@@ -105,6 +123,23 @@ export function StatusBoard() {
       substituteReason: r.substituteReason,
     });
     setReassignDialogOpen(true);
+  }
+
+  function openBackfillDialog(r: ClassStatusRow) {
+    setBackfillTarget({
+      classId: r.classId,
+      className: r.className,
+      schoolName: r.schoolName,
+      teacherId: r.teacherId,
+      teacherName: r.teacherName,
+      scheduledDate: date,
+    });
+    setBackfillDialogOpen(true);
+  }
+
+  function openManageDialog(r: ClassStatusRow) {
+    setManageRow(r);
+    setManageDialogOpen(true);
   }
 
   const filtered = useMemo(() => {
@@ -341,7 +376,7 @@ export function StatusBoard() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="pl-3 text-right">
+                        <TableCell className="pl-3 text-right whitespace-nowrap">
                           {canReassign && (
                             <Button
                               size="icon-sm"
@@ -350,6 +385,26 @@ export function StatusBoard() {
                               onClick={() => openReassignDialog(r)}
                             >
                               <UserRoundCog className="size-4" />
+                            </Button>
+                          )}
+                          {!r.isHoliday && !r.hasLessonPlan && (
+                            <Button
+                              size="icon-sm"
+                              variant="ghost"
+                              title={t("backfillSessionTooltip")}
+                              onClick={() => openBackfillDialog(r)}
+                            >
+                              <PlusCircle className="size-4" />
+                            </Button>
+                          )}
+                          {!r.isHoliday && r.meetingId && (
+                            <Button
+                              size="icon-sm"
+                              variant="ghost"
+                              title={t("manageMeetingTooltip")}
+                              onClick={() => openManageDialog(r)}
+                            >
+                              <Settings2 className="size-4" />
                             </Button>
                           )}
                         </TableCell>
@@ -373,6 +428,19 @@ export function StatusBoard() {
         open={reassignDialogOpen}
         onOpenChange={setReassignDialogOpen}
         target={reassignTarget}
+      />
+      <BackfillSessionDialog
+        open={backfillDialogOpen}
+        onOpenChange={setBackfillDialogOpen}
+        target={backfillTarget}
+      />
+      <MeetingAdminDialog
+        open={manageDialogOpen}
+        onOpenChange={setManageDialogOpen}
+        meetingId={manageRow?.meetingId ?? null}
+        classId={manageRow?.classId ?? ""}
+        teacherId={manageRow?.teacherId ?? ""}
+        meetingLabel={manageRow ? `${manageRow.className} — ${manageRow.topic}` : ""}
       />
     </div>
   );

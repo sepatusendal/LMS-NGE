@@ -14,7 +14,7 @@ export function useComplianceCount() {
   const isTeacher = currentUser?.role === "TEACHER";
 
   const { data: adminClasses, isLoading: adminLoading } = useClasses(undefined, !isTeacher);
-  const { data: myClasses, isLoading: myClassesLoading } = useMyClasses();
+  const { data: myClasses, isLoading: myClassesLoading } = useMyClasses(isTeacher);
   const { data: lessonPlans, isLoading: plansLoading } = useLessonPlans();
 
   const classIds = isTeacher

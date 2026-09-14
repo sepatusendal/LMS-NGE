@@ -75,6 +75,12 @@ model User {
   announcementsAuthored   Announcement[]
   announcementReads       AnnouncementRead[]
 
+  // Admin backfill/correction trail (see 20260915000000) — populated only
+  // when an admin, not the owning teacher, created or fixed the record.
+  lessonPlansAdminEntered    LessonPlan[]
+  meetingsAdminEntered       Meeting[]
+  teachingReportsAdminEntered TeachingReport[]
+
   @@map("users")
 }
 
@@ -398,12 +404,20 @@ model LessonPlan {
   /// other plan, counted from scheduledDate).
   isDraft                  Boolean  @default(false)
 
+  /// True when an admin created or corrected this plan on the tutor's
+  /// behalf (e.g. backfilled from a WhatsApp report) rather than the tutor
+  /// authoring it themselves — see 20260915000000.
+  isAdminEntered       Boolean @default(false)
+  adminEnteredByUserId String? @db.Uuid
+  adminNote            String?
+
   createdAt DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt DateTime  @updatedAt @db.Timestamptz(3)
   deletedAt DateTime? @db.Timestamptz(3)
 
   class            Class    @relation(fields: [classId], references: [id])
   createdByTeacher Teacher  @relation("LessonPlanAuthor", fields: [createdByTeacherId], references: [id])
+  adminEnteredBy   User?    @relation(fields: [adminEnteredByUserId], references: [id])
   meeting          Meeting?
 
   @@unique([classId, meetingNumber])
@@ -419,12 +433,23 @@ model Meeting {
   actualTeacherId   String?       @db.Uuid
   substituteReason  String?
   status            MeetingStatus @default(SCHEDULED)
+
+  /// True when admin created this meeting via backfill_meeting_admin()
+  /// because the tutor never touched the LMS for this session at all — see
+  /// 20260915000000. check_ins/check_outs/attendances don't carry their own
+  /// copy of this flag; a UI reads it here since they only ever exist as
+  /// part of one meeting.
+  isAdminEntered       Boolean @default(false)
+  adminEnteredByUserId String? @db.Uuid
+  adminNote            String?
+
   createdAt         DateTime      @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime      @updatedAt @db.Timestamptz(3)
 
   lessonPlan      LessonPlan @relation(fields: [lessonPlanId], references: [id])
   assignedTeacher Teacher    @relation("MeetingAssignedTeacher", fields: [assignedTeacherId], references: [id])
   actualTeacher   Teacher?   @relation("MeetingActualTeacher", fields: [actualTeacherId], references: [id])
+  adminEnteredBy  User?      @relation(fields: [adminEnteredByUserId], references: [id])
 
   checkIn        CheckIn?
   checkOut       CheckOut?
@@ -527,12 +552,21 @@ model TeachingReport {
   activitiesLog       String?
   resourcesUsed       String?
 
+  /// True when an admin filed or corrected this report on the tutor's
+  /// behalf — see 20260915000000. Set by create_teaching_report()/
+  /// update_teaching_report() when called by an admin, not by direct table
+  /// writes, so it always reflects who actually ran the RPC.
+  isAdminEntered       Boolean @default(false)
+  adminEnteredByUserId String? @db.Uuid
+  adminNote            String?
+
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   meeting           Meeting                    @relation(fields: [meetingId], references: [id])
   originalTeacher   Teacher                    @relation("ReportOriginalTeacher", fields: [originalTeacherId], references: [id])
   substituteTeacher Teacher?                   @relation("ReportSubstituteTeacher", fields: [substituteTeacherId], references: [id])
+  adminEnteredBy    User?                      @relation(fields: [adminEnteredByUserId], references: [id])
   followUps         StudentFollowUp[]
   progressRecords   ProgressRecord[]
   objectives        ReportLearningObjective[]

@@ -40,6 +40,10 @@ async function fetchCurrentTeacher(): Promise<CurrentTeacher> {
   };
 }
 
-export function useCurrentTeacher() {
-  return useQuery({ queryKey: ["current-teacher"], queryFn: fetchCurrentTeacher });
+/** @param enabled Set to false when the caller already knows the current
+ * user has no teacher profile (e.g. an admin filing a report on a tutor's
+ * behalf) — skips a query that would otherwise 406 (no matching row) on
+ * every render. Defaults to true for every teacher-facing caller. */
+export function useCurrentTeacher(enabled = true) {
+  return useQuery({ queryKey: ["current-teacher"], queryFn: fetchCurrentTeacher, enabled });
 }

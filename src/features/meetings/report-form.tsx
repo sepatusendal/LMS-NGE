@@ -57,6 +57,11 @@ interface Props {
    * disabled with a notice instead of a submit button, mirroring how
    * LessonPlanForm handles its own expired/not-owner readOnly state. */
   readOnly?: boolean;
+  /** Present when an admin is filling/correcting this report on the tutor's
+   * behalf (MeetingAdminDialog, BackfillSessionDialog) — attributes the
+   * report to originalTeacherId instead of the logged-in user's own teacher
+   * profile, and tags it with adminNote. See use-reports.ts. */
+  adminOverride?: { originalTeacherId: string; adminNote?: string };
   onSubmitSuccess?: () => void;
 }
 
@@ -67,14 +72,15 @@ export function ReportForm({
   curriculumReportFormat = "STANDARD",
   existingReport,
   readOnly = false,
+  adminOverride,
   onSubmitSuccess,
 }: Props) {
   const isAlbright = curriculumReportFormat === "ALBRIGHT";
   const isEdit = Boolean(existingReport);
   const t = useTranslations("reportForm");
   const reportSchema = useMemo(() => buildReportSchema(t), [t]);
-  const createReport = useCreateReport(meetingId);
-  const updateReport = useUpdateReport(meetingId);
+  const createReport = useCreateReport(meetingId, adminOverride);
+  const updateReport = useUpdateReport(meetingId, adminOverride);
   const { data: roster, refetch: refetchRoster } = useClassRoster(classId);
   const [followUps, setFollowUps] = useState<{ studentId: string; studentName: string; note: string }[]>(
     existingReport?.followUps ?? [],
@@ -184,6 +190,11 @@ export function ReportForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {existingReport?.isAdminEntered && (
+        <Badge variant="outline" className="text-[10px]">
+          {t("adminEnteredBadge")}
+        </Badge>
+      )}
       {readOnly && (
         <div className="bg-chart-4/10 text-foreground flex items-start gap-2.5 rounded-lg border border-chart-4/20 px-4 py-3 text-sm">
           <span className="bg-chart-4/20 text-chart-4 mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold">

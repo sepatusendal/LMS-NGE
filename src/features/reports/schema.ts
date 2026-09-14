@@ -95,5 +95,8 @@ export interface TeachingReport {
   photoFileName: string | null;
   summary: string | null;
   followUps: { studentId: string; studentName: string; note: string }[];
+  isAdminEntered: boolean;
+  adminEnteredByUserId: string | null;
+  adminNote: string | null;
   createdAt: string;
 }

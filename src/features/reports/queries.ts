@@ -94,6 +94,11 @@ export async function createReport(input: {
   photoDriveFileId?: string;
   photoFileName?: string;
   followUps: { studentId: string; note: string }[];
+  /** Set only when an admin is filing this report on the tutor's behalf
+   * (e.g. via BackfillSessionDialog) — ignored server-side unless the
+   * caller is actually an admin. See create_teaching_report() in
+   * 20260915000000. */
+  adminNote?: string;
 }) {
   const supabase = createClient();
 
@@ -118,6 +123,7 @@ export async function createReport(input: {
     p_language_skills_focus: input.languageSkillsFocus || null,
     p_activities_log: input.activitiesLog || null,
     p_resources_used: input.resourcesUsed || null,
+    p_admin_note: input.adminNote || null,
   });
   if (error) throw error;
 }
@@ -145,6 +151,9 @@ export async function updateReport(
     photoDriveFileId?: string;
     photoFileName?: string;
     followUps: { studentId: string; note: string }[];
+    /** See createReport()'s adminNote — only takes effect when the caller
+     * is an admin. */
+    adminNote?: string;
   },
 ) {
   const supabase = createClient();
@@ -163,6 +172,7 @@ export async function updateReport(
     p_language_skills_focus: input.languageSkillsFocus || null,
     p_activities_log: input.activitiesLog || null,
     p_resources_used: input.resourcesUsed || null,
+    p_admin_note: input.adminNote || null,
   });
   if (error) throw error;
 }
