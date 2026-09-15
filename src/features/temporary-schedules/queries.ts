@@ -241,7 +241,10 @@ export async function createTemporarySchedules(input: TemporaryScheduleInput): P
  * date); editing means regenerating that set under the same `batchId` so the
  * list page keeps showing it as one entry. Conflict checks exclude the
  * batch's own existing rows so editing it doesn't fail by "conflicting with
- * itself". */
+ * itself". The delete+insert itself runs inside replace_temporary_schedule_batch()
+ * (20260915050000) as one transaction — doing it as two separate client
+ * calls meant an insert failure after a successful delete silently wiped the
+ * batch instead of leaving it unchanged. */
 export async function updateTemporarySchedule(batchId: string, input: TemporaryScheduleInput): Promise<void> {
   const dates = datesForWeekdays(input.dateFrom, input.dateTo, input.daysOfWeek);
   if (dates.length === 0) {
@@ -250,14 +253,14 @@ export async function updateTemporarySchedule(batchId: string, input: TemporaryS
   await assertNoTemporaryScheduleConflicts(input, dates, batchId);
 
   const supabase = createClient();
-  const { error: deleteError } = await supabase.from("class_temporary_schedules").delete().eq("batchId", batchId);
-  if (deleteError) throw deleteError;
-
   const rows = buildTemporaryScheduleRows(input, dates, batchId);
-  const { error: insertError } = await supabase.from("class_temporary_schedules").insert(rows);
-  if (insertError) {
-    if (insertError.code === "23505") throw new Error(DUPLICATE_SCHEDULE_MESSAGE);
-    throw insertError;
+  const { error } = await supabase.rpc("replace_temporary_schedule_batch", {
+    p_batch_id: batchId,
+    p_rows: rows,
+  });
+  if (error) {
+    if (error.code === "23505") throw new Error(DUPLICATE_SCHEDULE_MESSAGE);
+    throw error;
   }
 }
 
