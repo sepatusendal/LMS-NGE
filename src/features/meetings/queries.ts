@@ -434,12 +434,23 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
     const pendingReportMeetingId = pendingReportMeeting?.id ?? null;
     const pendingReportMeetingNumber = nextPlanIsStalePast ? (nextPlan!.meetingNumber ?? null) : null;
 
+    // The next uncompleted plan by number can be dated *after* today — a
+    // teacher writing ahead (or, for a split-schedule class, a *different*
+    // teacher's own future weekday) shouldn't be offered as something to
+    // check into right now. Fold it into the same "nothing for today" bucket
+    // as courseCompleted below, which already has a dedicated fallback
+    // (draftCheckInBlocked) for "the resolved plan is future-dated" — this
+    // was previously only reachable via the stale-past branch, leaving a gap
+    // where the very first uncompleted plan (not a stale-past one) being
+    // future-dated let check-in attach to it as if it were today's meeting.
+    const nextPlanIsFuture = Boolean(nextPlan) && nextPlan!.scheduledDate > todayDateStr;
+
     // All lesson plans exist and are COMPLETED, or the only pending one is
     // the stale-past meeting above: either way there is no pending meeting
     // for *today*. Don't silently fall back to the last (already-finished)
     // plan as if it were upcoming — surface it as a distinct "course
     // finished" / "no plan today" state.
-    const courseCompleted = (!nextPlan || nextPlanIsStalePast) && sorted.length > 0;
+    const courseCompleted = (!nextPlan || nextPlanIsStalePast || nextPlanIsFuture) && sorted.length > 0;
     const plan = (nextPlanIsStalePast ? null : nextPlan) || sorted[sorted.length - 1] || null;
 
     if (!plan || (nextPlanIsStalePast && plan === nextPlan)) {

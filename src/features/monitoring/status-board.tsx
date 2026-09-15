@@ -387,7 +387,7 @@ export function StatusBoard() {
                               <UserRoundCog className="size-4" />
                             </Button>
                           )}
-                          {!r.isHoliday && !r.hasLessonPlan && (
+                          {!r.isHoliday && !r.meetingId && (
                             <Button
                               size="icon-sm"
                               variant="ghost"
