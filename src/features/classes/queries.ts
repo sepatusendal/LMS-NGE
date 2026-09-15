@@ -118,32 +118,19 @@ async function assertNoScheduleConflict(input: ClassInput, excludeClassId?: stri
   }
 }
 
+// The delete-slots / delete-overrides / upsert-slots steps run atomically
+// inside sync_class_schedule_slots() (20260915060000) — three separate
+// client calls meant an upsert failure after the deletes already succeeded
+// could silently leave a class missing a schedule slot for a day it was
+// supposed to still meet on. See that migration for the full writeup.
 async function syncScheduleSlots(supabase: ReturnType<typeof createClient>, classId: string, input: ClassInput) {
   const days = input.scheduleDaysOfWeek.map(Number);
-  const dayFilter = `(${days.length ? days.join(",") : "-1"})`;
-
-  const { error: deleteError } = await supabase
-    .from("class_schedule_slots")
-    .delete()
-    .eq("classId", classId)
-    .not("dayOfWeek", "in", dayFilter);
-  if (deleteError) throw deleteError;
-
-  // A day dropped from the class's schedule can leave a stale teacher
-  // override behind (it's keyed by classId+dayOfWeek, independent of
-  // whether a slot still exists for that day) — findRecurringScheduleConflict
-  // would then flag a phantom conflict for a day the class no longer meets.
-  const { error: overrideDeleteError } = await supabase
-    .from("class_schedule_overrides")
-    .delete()
-    .eq("classId", classId)
-    .not("dayOfWeek", "in", dayFilter);
-  if (overrideDeleteError) throw overrideDeleteError;
-
-  const { error: upsertError } = await supabase
-    .from("class_schedule_slots")
-    .upsert(toSlots(classId, input), { onConflict: "classId,dayOfWeek" });
-  if (upsertError) throw upsertError;
+  const { error } = await supabase.rpc("sync_class_schedule_slots", {
+    p_class_id: classId,
+    p_days: days,
+    p_slots: toSlots(classId, input),
+  });
+  if (error) throw error;
 }
 
 /** Postgres raises 23505 for the (schoolId, name) unique constraint — this
