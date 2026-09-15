@@ -76,12 +76,18 @@ async function resolveCurrentLessonPlan(classId: string): Promise<LessonPlanRow 
 
   const nextPlan = sorted.find((p) => !completedIds.has(p.id)) ?? null;
   const todayDateStr = todayLocalDateStr();
-  const nextPlanIsStalePast =
-    Boolean(nextPlan) &&
-    nextPlan!.scheduledDate < todayDateStr &&
-    Boolean(toOne(meetingByLp.get(nextPlan!.id)?.checkOut ?? null));
+  // Any uncompleted plan dated before today is stale — regardless of how far
+  // it got (never checked out at all, or checked out with its report still
+  // unfiled). Originally this only excluded the "checked out, report
+  // pending" subset (matching a checkOut-only check), which left a gap
+  // confirmed in production (Edy Muryono, 2026-09-15): a class whose last
+  // meeting was checked in + attendance filled a week earlier but never
+  // checked out would resolve to that stale meeting here too, so assigning
+  // a substitute for it today would attach to last week's half-finished
+  // session instead of today's.
+  const nextPlanIsPast = Boolean(nextPlan) && nextPlan!.scheduledDate < todayDateStr;
 
-  const resolved = !nextPlanIsStalePast
+  const resolved = !nextPlanIsPast
     ? (nextPlan ?? sorted[sorted.length - 1] ?? null)
     : (sorted[sorted.length - 1] !== nextPlan ? sorted[sorted.length - 1] : null);
 

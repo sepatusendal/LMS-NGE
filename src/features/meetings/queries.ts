@@ -425,20 +425,25 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
     const sorted = [...plans].sort((a, b) => a.meetingNumber - b.meetingNumber);
 
     const nextPlan = sorted.find((lp) => !completedLpIds.has(lp.id));
-    // A pending meeting dated before today that was already checked out
-    // (nothing left to do except file its report) has nothing to do with
-    // *today* — but `.find()` above keeps returning it forever, since it
-    // never reaches COMPLETED until someone files that report. That got
-    // displayed as today's own status (e.g. "checked out") for a class the
-    // teacher hadn't touched yet today. Treat it like "no plan for today"
-    // instead, same as the courseCompleted case below, and surface the
-    // stale meeting separately as a reminder so its report doesn't get
-    // silently lost.
-    const nextPlanIsStalePast =
-      Boolean(nextPlan) &&
-      nextPlan!.scheduledDate !== todayDateStr &&
-      nextPlan!.scheduledDate < todayDateStr &&
-      Boolean(toOne(meetByLp.get(nextPlan!.id)?.checkOut));
+    // A pending meeting dated before today has nothing to do with *today* —
+    // but `.find()` above keeps returning it forever, since it never reaches
+    // COMPLETED until someone finishes it. That got displayed as today's own
+    // status (e.g. "checked out", or even just "fill attendance" off a
+    // week-old check-in nobody ever came back to) for a class the teacher
+    // hadn't touched yet today. Treat it like "no plan for today" instead,
+    // same as the courseCompleted case below, regardless of how far that
+    // stale meeting got — confirmed in production (Edy Muryono, 2026-09-15):
+    // a meeting checked in + attendance filled the previous Tuesday but never
+    // checked out was still being offered as "today's" status a week later.
+    const nextPlanIsPast =
+      Boolean(nextPlan) && nextPlan!.scheduledDate !== todayDateStr && nextPlan!.scheduledDate < todayDateStr;
+    // The narrower "already checked out, just needs its report filed" case
+    // gets its own separate reminder below (pendingReportMeeting) so that
+    // report doesn't get silently lost — only meaningful once checkout
+    // happened; a stale meeting that never even got checked out has no
+    // coherent "just file the report" action to surface, it needs the
+    // teacher to properly resume/close it out instead.
+    const nextPlanIsStalePast = nextPlanIsPast && Boolean(toOne(meetByLp.get(nextPlan!.id)?.checkOut));
     const pendingReportMeeting = nextPlanIsStalePast ? meetByLp.get(nextPlan!.id) : undefined;
     const pendingReportMeetingId = pendingReportMeeting?.id ?? null;
     const pendingReportMeetingNumber = nextPlanIsStalePast ? (nextPlan!.meetingNumber ?? null) : null;
@@ -459,10 +464,10 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
     // for *today*. Don't silently fall back to the last (already-finished)
     // plan as if it were upcoming — surface it as a distinct "course
     // finished" / "no plan today" state.
-    const courseCompleted = (!nextPlan || nextPlanIsStalePast || nextPlanIsFuture) && sorted.length > 0;
-    const plan = (nextPlanIsStalePast ? null : nextPlan) || sorted[sorted.length - 1] || null;
+    const courseCompleted = (!nextPlan || nextPlanIsPast || nextPlanIsFuture) && sorted.length > 0;
+    const plan = (nextPlanIsPast ? null : nextPlan) || sorted[sorted.length - 1] || null;
 
-    if (!plan || (nextPlanIsStalePast && plan === nextPlan)) {
+    if (!plan || (nextPlanIsPast && plan === nextPlan)) {
       return {
         classId: cls.id,
         className: cls.name,
@@ -529,8 +534,8 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
     // own "create a plan" call-to-action so this would just be a duplicate.
     const needsNextLessonPlan = courseCompleted && !noPlanForToday;
     // Guard against auto-creating a draft plan numbered *after* one that's
-    // already scheduled further out — e.g. a stale unreported past meeting
-    // (nextPlanIsStalePast above) coexisting with a plan someone wrote ahead
+    // already scheduled further out — e.g. a stale past meeting
+    // (nextPlanIsPast above) coexisting with a plan someone wrote ahead
     // of schedule. `plan` here would be that future plan (the `sorted[last]`
     // fallback), so checking in today via check_in_with_draft_plan() would
     // get meetingNumber = futurePlan.number + 1 while being dated *earlier*
