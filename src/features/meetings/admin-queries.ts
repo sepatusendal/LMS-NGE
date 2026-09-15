@@ -132,9 +132,14 @@ export async function deleteCheckOutAdmin(id: string) {
 // full field parity with the tutor's own form — see 20260915000000's admin
 // bypass. This file keeps only delete, which has no RPC equivalent.
 
+// Runs atomically inside delete_teaching_report_admin() (20260915090000) —
+// report_learning_objectives/student_follow_ups/progress_records all
+// reference teachingReportId with no ON DELETE CASCADE, so a plain delete
+// on teaching_reports directly fails with a foreign-key violation for any
+// report that has them (any report with at least one present student).
 export async function deleteTeachingReportAdmin(id: string) {
   const supabase = createClient();
-  const { error } = await supabase.from("teaching_reports").delete().eq("id", id);
+  const { error } = await supabase.rpc("delete_teaching_report_admin", { p_report_id: id });
   if (error) throw error;
 }
 
