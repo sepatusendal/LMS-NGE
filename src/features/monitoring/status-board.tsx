@@ -387,7 +387,14 @@ export function StatusBoard() {
                               <UserRoundCog className="size-4" />
                             </Button>
                           )}
-                          {!r.isHoliday && !r.meetingId && (
+                          {/* Gated on isOverdueCheckIn (not just !meetingId) so this
+                              can't be clicked for a class simply not due yet today —
+                              admin entering a check-in time for a session the real
+                              tutor hasn't reached would leave startClass() seeing an
+                              existing check-in and throwing ALREADY_CHECKED_IN on
+                              them later. Scoping to "already overdue" keeps this a
+                              true missed-session backfill. */}
+                          {!r.isHoliday && !r.meetingId && r.isOverdueCheckIn && (
                             <Button
                               size="icon-sm"
                               variant="ghost"
