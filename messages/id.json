@@ -411,7 +411,7 @@
     "status": {
       "notStarted": "Belum Mulai",
       "fillAttendance": "Isi Absensi",
-      "checkOut": "Check-out",
+      "checkOut": "Lakukan Check-out",
       "fillReport": "Isi Report",
       "done": "Selesai",
       "noPlanToday": "Perlu Lesson Plan"

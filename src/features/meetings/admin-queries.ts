@@ -96,9 +96,17 @@ export async function updateCheckInAdmin(id: string, input: CheckInUpdate) {
   if (error) throw error;
 }
 
+// Runs atomically inside delete_check_in_admin() (20260915100000) — refuses
+// the delete (CHECKOUT_EXISTS) when a check-out already exists for the same
+// meeting. check_ins/check_outs have no FK to each other, so deleting only
+// the check-in would leave a meeting that reads as "checked out" with no
+// check-in at all: hasCheckOut is checked before hasCheckIn everywhere
+// meetingStatus is derived, so the tutor's own /absensi card would show the
+// "Check-out" badge with no check-in time shown. Use "Reset Meeting" for a
+// meeting that already has a check-out.
 export async function deleteCheckInAdmin(id: string) {
   const supabase = createClient();
-  const { error } = await supabase.from("check_ins").delete().eq("id", id);
+  const { error } = await supabase.rpc("delete_check_in_admin", { p_check_in_id: id });
   if (error) throw error;
 }
 

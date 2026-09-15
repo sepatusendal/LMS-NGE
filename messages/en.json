@@ -411,7 +411,7 @@
     "status": {
       "notStarted": "Not Started",
       "fillAttendance": "Fill Attendance",
-      "checkOut": "Check-out",
+      "checkOut": "Check Out Now",
       "fillReport": "Fill Report",
       "done": "Done",
       "noPlanToday": "Lesson Plan Needed"

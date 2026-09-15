@@ -54,7 +54,12 @@ export function useMeetingAdminMutations(meetingId: string | null, classId: stri
       invalidateAll();
       toast.success("Check-in dihapus — tutor bisa check-in ulang");
     },
-    onError: (error) => toast.error("Gagal menghapus check-in", { description: error.message }),
+    onError: (error) =>
+      toast.error("Gagal menghapus check-in", {
+        description: error.message.includes("CHECKOUT_EXISTS")
+          ? "Meeting ini sudah ada check-out. Pakai \"Reset Meeting\" di bawah untuk menghapus keduanya sekaligus."
+          : error.message,
+      }),
   });
 
   const updateCheckOut = useMutation({
