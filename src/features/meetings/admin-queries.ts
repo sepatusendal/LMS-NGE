@@ -140,22 +140,12 @@ export async function deleteTeachingReportAdmin(id: string) {
 
 /** Deletes the meeting's check-in, check-out, attendances, and report (if
  * any) and resets status back to SCHEDULED — lets the tutor redo the whole
- * meeting from scratch. */
+ * meeting from scratch. Runs atomically inside reset_meeting_admin()
+ * (20260915070000) — the previous 5-separate-calls version could leave the
+ * meeting stuck "COMPLETED" with its child rows already gone if any one
+ * step failed partway. */
 export async function resetMeetingAdmin(meetingId: string) {
   const supabase = createClient();
-  const [checkInRes, checkOutRes, attendanceRes, reportRes] = await Promise.all([
-    supabase.from("check_ins").delete().eq("meetingId", meetingId),
-    supabase.from("check_outs").delete().eq("meetingId", meetingId),
-    supabase.from("attendances").delete().eq("meetingId", meetingId),
-    supabase.from("teaching_reports").delete().eq("meetingId", meetingId),
-  ]);
-  for (const res of [checkInRes, checkOutRes, attendanceRes, reportRes]) {
-    if (res.error) throw res.error;
-  }
-
-  const { error: statusError } = await supabase
-    .from("meetings")
-    .update({ status: "SCHEDULED", isAdminEntered: false, adminEnteredByUserId: null, adminNote: null })
-    .eq("id", meetingId);
-  if (statusError) throw statusError;
+  const { error } = await supabase.rpc("reset_meeting_admin", { p_meeting_id: meetingId });
+  if (error) throw error;
 }
