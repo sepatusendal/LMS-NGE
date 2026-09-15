@@ -466,6 +466,7 @@
       "startClassError": "Couldn't start class",
       "HOLIDAY_NO_CLASS": "Today is a holiday, class can't be started",
       "ALREADY_CHECKED_IN": "This class has already been checked in",
+      "PLAN_NOT_TODAY": "This lesson plan isn't for today. Reload the page and try again.",
       "NOT_PRIMARY_TEACHER": "Only this class's primary teacher can create a lesson plan. Contact them for this class."
     }
   },

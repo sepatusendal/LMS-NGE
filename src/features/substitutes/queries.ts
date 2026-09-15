@@ -81,10 +81,24 @@ async function resolveCurrentLessonPlan(classId: string): Promise<LessonPlanRow 
     nextPlan!.scheduledDate < todayDateStr &&
     Boolean(toOne(meetingByLp.get(nextPlan!.id)?.checkOut ?? null));
 
-  if (!nextPlanIsStalePast) return nextPlan ?? sorted[sorted.length - 1] ?? null;
+  const resolved = !nextPlanIsStalePast
+    ? (nextPlan ?? sorted[sorted.length - 1] ?? null)
+    : (sorted[sorted.length - 1] !== nextPlan ? sorted[sorted.length - 1] : null);
 
-  const fallback = sorted[sorted.length - 1];
-  return fallback !== nextPlan ? fallback : null;
+  // A plan dated after today — whether it's `nextPlan` itself, or the
+  // `sorted[last]` fallback used when nextPlan was stale-past — must never
+  // be handed back as "today's" plan: fetchCurrentMeetingInfo()/
+  // assignSubstitute() below take whatever this returns as authoritative
+  // and act on its scheduledDate, with no equivalent of fetchTodayClasses()'s
+  // courseCompleted/draftCheckInBlocked gating (meetings/queries.ts) to catch
+  // it downstream. Same root cause as that function's nextPlanIsFuture guard
+  // — a teacher (or, on a split-schedule class, a different teacher's own
+  // future weekday) writing a lesson plan ahead of time — but surfacing here
+  // as admin's substitute assignment silently attaching to the wrong future
+  // date instead of today's actual session (confirmed in production: the
+  // Canberra incident, 2026-09-15).
+  if (resolved && resolved.scheduledDate > todayDateStr) return null;
+  return resolved;
 }
 
 /** Resolves the class's normally-scheduled teacher for a given date —

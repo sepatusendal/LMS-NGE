@@ -94,10 +94,19 @@ export async function startClass(
 
   const { data: lpRow } = await supabase
     .from("lesson_plans")
-    .select("classId")
+    .select("classId, scheduledDate")
     .eq("id", lessonPlanId)
     .single();
-  const lp = lpRow as { classId: string } | null;
+  const lp = lpRow as { classId: string; scheduledDate: string } | null;
+  // Belt-and-suspenders against the exact failure mode a production incident
+  // (Canberra, 2026-09-15) exposed: fetchTodayClasses()'s own selection logic
+  // now refuses to offer a future-dated plan as "today's" one to check into
+  // (see nextPlanIsFuture there), but this is the one function that actually
+  // writes the meeting — it shouldn't trust a stale/wrong lessonPlanId from
+  // any caller, today's UI or a future one, over what the plan itself says.
+  if (lp && lp.scheduledDate !== todayLocalDateStr()) {
+    throw new Error("PLAN_NOT_TODAY");
+  }
   const { isLate } = await resolveCheckInTiming(lp!.classId);
 
   const { data: existing } = await supabase

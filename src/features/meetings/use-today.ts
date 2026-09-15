@@ -34,7 +34,7 @@ export function useTodayClasses(): {
   };
 }
 
-const START_CLASS_ERROR_MESSAGES = new Set(["HOLIDAY_NO_CLASS", "ALREADY_CHECKED_IN"]);
+const START_CLASS_ERROR_MESSAGES = new Set(["HOLIDAY_NO_CLASS", "ALREADY_CHECKED_IN", "PLAN_NOT_TODAY"]);
 
 export function useStartClass() {
   const queryClient = useQueryClient();

@@ -466,6 +466,7 @@
       "startClassError": "Gagal memulai kelas",
       "HOLIDAY_NO_CLASS": "Hari ini hari libur, tidak bisa mulai kelas",
       "ALREADY_CHECKED_IN": "Kelas ini sudah di-check-in",
+      "PLAN_NOT_TODAY": "Lesson plan ini bukan untuk hari ini. Muat ulang halaman dan coba lagi.",
       "NOT_PRIMARY_TEACHER": "Hanya guru utama kelas ini yang bisa membuat lesson plan. Hubungi guru utama untuk kelas ini."
     }
   },
