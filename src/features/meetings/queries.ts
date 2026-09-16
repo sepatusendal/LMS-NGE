@@ -53,7 +53,11 @@ function computeIsLate(scheduleStartTime: string): boolean {
 /** Shared by startClass() and checkInWithDraftPlan(): resolves whether
  * check-in counts as late (today's effective start time, with temporary
  * schedule > per-day override > normal recurring slot, same precedence as
- * fetchTodayClasses) and whether today is a holiday for the class's school. */
+ * fetchTodayClasses) and whether today is a holiday for the class's school.
+ * The isLate value computed here is advisory only for the client's own UI —
+ * check_ins_set_is_late() (20260916020000) recomputes it from the server
+ * clock on insert and overrides whatever is sent, so this can't be spoofed
+ * by changing the device's clock. */
 async function resolveCheckInTiming(classId: string): Promise<{ isLate: boolean }> {
   const supabase = createClient();
   const today = getTodayDayOfWeek();

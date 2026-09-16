@@ -28,7 +28,7 @@ export async function GET(
 
   const { data: report, error: reportError } = await supabase
     .from("parent_reports")
-    .select("id, studentId, periodMonth, periodYear, teacherCommentsFinal, status")
+    .select("id, studentId, periodMonth, periodYear, teacherCommentsFinal, status, students(deletedAt)")
     .eq("id", id)
     .single();
   if (reportError || !report) {
@@ -37,6 +37,16 @@ export async function GET(
 
   if (report.status !== "GENERATED") {
     return NextResponse.json({ error: "Laporan belum digenerate" }, { status: 404 });
+  }
+
+  // Unlike the NIS lookup endpoint, this download link (bookmarked or sent
+  // to a parent) has no natural expiry — check the student hasn't been
+  // (soft-)deleted since, so an old link doesn't keep serving a departed
+  // student's report indefinitely.
+  const studentRow = report.students as { deletedAt: string | null } | { deletedAt: string | null }[] | null;
+  const studentDeletedAt = Array.isArray(studentRow) ? studentRow[0]?.deletedAt : studentRow?.deletedAt;
+  if (studentDeletedAt) {
+    return NextResponse.json({ error: "Laporan tidak ditemukan" }, { status: 404 });
   }
 
   try {

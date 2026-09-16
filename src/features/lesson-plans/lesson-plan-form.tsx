@@ -168,6 +168,7 @@ export function LessonPlanForm({
   const [moduleFileName, setModuleFileName] = useState(
     lessonPlan?.moduleFileName ?? "",
   );
+  const [isModuleUploading, setIsModuleUploading] = useState(false);
 
   const {
     register,
@@ -278,7 +279,8 @@ export function LessonPlanForm({
   // error on a slow connection — block the button instead of letting that
   // race happen.
   const meetingNumberPending = !isEdit && existingPlansLoading;
-  const isSubmitting = createLessonPlan.isPending || updateLessonPlan.isPending || meetingNumberPending;
+  const isSubmitting =
+    createLessonPlan.isPending || updateLessonPlan.isPending || meetingNumberPending || isModuleUploading;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pb-6">
@@ -629,6 +631,7 @@ export function LessonPlanForm({
                   setModuleDriveFileId(id);
                   setModuleFileName(name);
                 }}
+                onPendingChange={setIsModuleUploading}
               />
             )}
           </div>

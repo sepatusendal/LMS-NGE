@@ -60,11 +60,11 @@ export async function fetchAnnouncementsAdmin(): Promise<Announcement[]> {
  * so it follows the user across devices.
  *
  * `targetRoles` empty/null = visible to every role (backward compatible
- * with rows created before targeting existed); the actual role restriction
- * is applied here in application code rather than via RLS — the
- * "authenticated_read_announcements" policy already lets any authenticated
- * user SELECT every row (same as before targeting was added), so an
- * untargeted admin query still sees the full list. */
+ * with rows created before targeting existed). The "authenticated_read_announcements"
+ * RLS policy (20260916040000) now enforces the same restriction at the
+ * database level — this filter is UX-level defense in depth (keeps
+ * read/dismiss bookkeeping simple), not the only thing standing between a
+ * non-target role and a row's content. */
 export async function fetchAnnouncementsForCurrentUser(): Promise<Announcement[]> {
   const supabase = createClient();
   const {

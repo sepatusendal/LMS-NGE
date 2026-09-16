@@ -45,6 +45,15 @@
     "inactive": "Inactive",
     "confirmDeleteTitle": "Delete this record?",
     "confirmDeleteDescription": "This action cannot be undone.",
+    "onTime": "On Time",
+    "dateRangeFilter": {
+      "thisWeek": "This Week",
+      "thisMonth": "This Month",
+      "lastMonth": "Last Month"
+    },
+    "columnVisibility": {
+      "columns": "Columns"
+    },
     "dataTable": {
       "searchPlaceholder": "Search...",
       "loading": "Loading data...",
@@ -538,7 +547,14 @@
       "curriculum": "Curriculum",
       "announcements": "Announcements",
       "settings": "Settings",
-      "settingsShort": "Settings"
+      "settingsShort": "Settings",
+      "analytics": "Analytics",
+      "analyticsTutorAttendance": "Tutor Attendance",
+      "analyticsStudentAttendance": "Student Attendance",
+      "analyticsDailyTeachingReport": "Daily Teaching Report",
+      "analyticsLessonPlan": "Lesson Plan",
+      "analyticsClasses": "Classes",
+      "analyticsCustom": "Custom Report"
     },
     "holidays": {
       "title": "Holidays",
@@ -995,7 +1011,143 @@
         "classSummary": "Class Summary",
         "attendanceValue": "{present} / {total} students",
         "viewActivityPhoto": "View activity photo",
-        "homeworkLabel": "Homework"
+        "homeworkLabel": "Homework",
+        "substitutingFor": "Substituting for"
+      }
+    },
+    "analytics": {
+      "columns": {
+        "date": "Date",
+        "teacher": "Teacher",
+        "school": "School",
+        "class": "Class",
+        "meetingNumber": "Meeting",
+        "scheduledTime": "Scheduled Time",
+        "checkInTime": "Check-in Time",
+        "isLate": "Late",
+        "hasPhoto": "Check-in Photo",
+        "checkOutTime": "Check-out Time",
+        "durationMinutes": "Duration (min)",
+        "substitute": "Substitute",
+        "notes": "Notes",
+        "student": "Student",
+        "nis": "NIS",
+        "status": "Status",
+        "totalMeetings": "Total Meetings",
+        "attendanceRate": "Attendance Rate",
+        "topic": "Topic",
+        "skills": "Skills Taught",
+        "attendance": "Attendance",
+        "objectives": "Objectives Achieved",
+        "summary": "Summary",
+        "materialsRequired": "Materials Required",
+        "vocabularyFocus": "Vocabulary Focus",
+        "differentiationSupport": "Differentiation (Support)",
+        "differentiationExtension": "Differentiation (Extension)",
+        "differentiationHomework": "Differentiation (Homework)",
+        "hasModule": "Module Attached",
+        "isDraft": "Draft",
+        "compliant": "Compliant",
+        "curriculum": "Curriculum",
+        "schedule": "Schedule",
+        "enrollment": "Enrollment",
+        "complianceRate": "Lesson Plan Compliance",
+        "reportsFiled": "Reports Filed",
+        "isActive": "Active",
+        "present": "Present",
+        "late": "Late",
+        "excused": "Excused",
+        "absent": "Absent"
+      },
+      "filters": {
+        "allSchools": "All schools",
+        "allClasses": "All classes",
+        "allTeachers": "All teachers",
+        "allStudents": "All students",
+        "reset": "Reset"
+      },
+      "hub": {
+        "title": "Analytics",
+        "subtitle": "Generate detailed reports across attendance, teaching, lesson plans, and classes.",
+        "tutorAttendanceTitle": "Tutor Attendance",
+        "tutorAttendanceDescription": "Check-in/out times, lateness, and substitute coverage per tutor.",
+        "studentAttendanceTitle": "Student Attendance",
+        "studentAttendanceDescription": "Per-student attendance detail and rate across a date range.",
+        "dailyTeachingReportTitle": "Daily Teaching Report",
+        "dailyTeachingReportDescription": "Filterable, exportable version of the submitted teaching reports.",
+        "lessonPlanTitle": "Lesson Plan",
+        "lessonPlanDescription": "Lesson plan content, module attachments, and compliance status.",
+        "classesTitle": "Classes",
+        "classesDescription": "Per-class enrollment, attendance rate, and compliance overview.",
+        "customTitle": "Custom Report",
+        "customDescription": "Build your own report by picking any field — coming soon."
+      },
+      "tutorAttendance": {
+        "title": "Tutor Attendance Report",
+        "subtitle": "{count} check-ins in the selected range.",
+        "empty": "No check-ins in the selected range.",
+        "loadError": "Failed to load the tutor attendance report.",
+        "chartTitle": "On-time vs. late check-ins per tutor",
+        "summary": {
+          "totalCheckIns": "Total Check-ins",
+          "onTimeRate": "On-time Rate",
+          "lateCount": "Late",
+          "substituteCount": "Substitute Sessions"
+        }
+      },
+      "studentAttendance": {
+        "title": "Student Attendance Report",
+        "subtitle": "{count} attendance records in the selected range.",
+        "empty": "No attendance records in the selected range.",
+        "loadError": "Failed to load the student attendance report.",
+        "chartTitle": "Attendance status breakdown",
+        "detailSheet": "Detail",
+        "summarySheet": "Summary",
+        "summary": {
+          "totalStudents": "Total Students",
+          "avgAttendanceRate": "Avg. Attendance Rate",
+          "totalAbsences": "Total Absences"
+        }
+      },
+      "dailyTeachingReport": {
+        "title": "Daily Teaching Report",
+        "subtitle": "{count} reports in the selected range.",
+        "empty": "No reports in the selected range.",
+        "loadError": "Failed to load the daily teaching report.",
+        "chartTitle": "Reports submitted per day",
+        "summary": {
+          "totalReports": "Total Reports",
+          "objectivesAchievedRate": "Objectives Achieved Rate"
+        }
+      },
+      "lessonPlan": {
+        "title": "Lesson Plan Report",
+        "subtitle": "{count} lesson plans in the selected range.",
+        "empty": "No lesson plans in the selected range.",
+        "loadError": "Failed to load the lesson plan report.",
+        "chartTitle": "Compliance per class",
+        "summary": {
+          "totalPlans": "Total Plans",
+          "compliantRate": "Compliant Rate",
+          "draftCount": "Drafts"
+        }
+      },
+      "classes": {
+        "title": "Classes Report",
+        "subtitle": "{count} classes.",
+        "empty": "No classes found.",
+        "loadError": "Failed to load the classes report.",
+        "chartTitle": "Attendance rate per class",
+        "summary": {
+          "totalClasses": "Total Classes",
+          "avgAttendanceRate": "Avg. Attendance Rate",
+          "avgComplianceRate": "Avg. Compliance Rate"
+        }
+      },
+      "custom": {
+        "title": "Custom Report Builder",
+        "description": "Pick any field across attendance, teaching reports, lesson plans, and classes to build your own report, and save it as a reusable template. This is planned as the next step for Analytics.",
+        "comingSoon": "Coming Soon"
       }
     },
     "parentReports": {

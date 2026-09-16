@@ -141,7 +141,7 @@ export function TeacherAbsenceDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, teacherId, date]);
 
-  const teacherOptions = (teachers ?? []).filter((te) => te.id !== teacherId);
+  const teacherOptions = (teachers ?? []).filter((te) => te.id !== teacherId && te.isActive);
   const reasonLabel = (r: string) => (ABSENCE_REASON_KEY[r] ? tReason(ABSENCE_REASON_KEY[r]) : r);
   const dateLabel = parseLocalDate(date).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", {
     weekday: "long",

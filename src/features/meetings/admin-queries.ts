@@ -129,9 +129,14 @@ export async function updateCheckOutAdmin(id: string, input: CheckOutUpdate) {
   if (error) throw error;
 }
 
+// Runs atomically inside delete_check_out_admin() (20260916010000) — refuses
+// the delete (REPORT_EXISTS) when a teaching report already exists for the
+// same meeting. Deleting the check-out alone would leave a meeting that
+// reads as fully COMPLETED (report on file) with no check-out/duration at
+// all. Use "Reset Meeting" for a meeting that already has a report.
 export async function deleteCheckOutAdmin(id: string) {
   const supabase = createClient();
-  const { error } = await supabase.from("check_outs").delete().eq("id", id);
+  const { error } = await supabase.rpc("delete_check_out_admin", { p_check_out_id: id });
   if (error) throw error;
 }
 

@@ -90,6 +90,7 @@ export function ReportForm({
   const [isCheckingRoster, setIsCheckingRoster] = useState(false);
   const [photoDriveFileId, setPhotoDriveFileId] = useState(existingReport?.photoDriveFileId ?? "");
   const [photoFileName, setPhotoFileName] = useState(existingReport?.photoFileName ?? "");
+  const [isPhotoUploading, setIsPhotoUploading] = useState(false);
   // Defaults to every objective achieved — the teacher unchecks the ones
   // that weren't met, rather than picking a flat YES/PARTIALLY/NO status.
   const [objectives, setObjectives] = useState(
@@ -186,7 +187,7 @@ export function ReportForm({
     onSubmitSuccess?.();
   }
 
-  const isSubmitting = createReport.isPending || updateReport.isPending;
+  const isSubmitting = createReport.isPending || updateReport.isPending || isPhotoUploading;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -358,6 +359,7 @@ export function ReportForm({
             setPhotoDriveFileId(id);
             setPhotoFileName(name);
           }}
+          onPendingChange={setIsPhotoUploading}
         />
       </div>
       </fieldset>

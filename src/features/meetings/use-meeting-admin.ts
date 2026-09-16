@@ -78,7 +78,12 @@ export function useMeetingAdminMutations(meetingId: string | null, classId: stri
       invalidateAll();
       toast.success("Check-out dihapus");
     },
-    onError: (error) => toast.error("Gagal menghapus check-out", { description: error.message }),
+    onError: (error) =>
+      toast.error("Gagal menghapus check-out", {
+        description: error.message.includes("REPORT_EXISTS")
+          ? "Meeting ini sudah ada laporan mengajar. Pakai \"Reset Meeting\" di bawah untuk menghapus keduanya sekaligus."
+          : error.message,
+      }),
   });
 
   const deleteReport = useMutation({

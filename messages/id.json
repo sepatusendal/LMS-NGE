@@ -45,6 +45,15 @@
     "inactive": "Nonaktif",
     "confirmDeleteTitle": "Hapus data ini?",
     "confirmDeleteDescription": "Tindakan ini tidak dapat dibatalkan.",
+    "onTime": "Tepat Waktu",
+    "dateRangeFilter": {
+      "thisWeek": "Minggu Ini",
+      "thisMonth": "Bulan Ini",
+      "lastMonth": "Bulan Lalu"
+    },
+    "columnVisibility": {
+      "columns": "Kolom"
+    },
     "dataTable": {
       "searchPlaceholder": "Cari...",
       "loading": "Memuat data...",
@@ -538,7 +547,14 @@
       "curriculum": "Kurikulum",
       "announcements": "Pengumuman",
       "settings": "Pengaturan",
-      "settingsShort": "Atur"
+      "settingsShort": "Atur",
+      "analytics": "Analytics",
+      "analyticsTutorAttendance": "Kehadiran Tutor",
+      "analyticsStudentAttendance": "Kehadiran Siswa",
+      "analyticsDailyTeachingReport": "Daily Teaching Report",
+      "analyticsLessonPlan": "Lesson Plan",
+      "analyticsClasses": "Kelas",
+      "analyticsCustom": "Custom Report"
     },
     "holidays": {
       "title": "Hari Libur",
@@ -995,7 +1011,143 @@
         "classSummary": "Ringkasan Kelas",
         "attendanceValue": "{present} / {total} siswa",
         "viewActivityPhoto": "Lihat foto aktivitas",
-        "homeworkLabel": "PR"
+        "homeworkLabel": "PR",
+        "substitutingFor": "Menggantikan"
+      }
+    },
+    "analytics": {
+      "columns": {
+        "date": "Tanggal",
+        "teacher": "Tutor",
+        "school": "Sekolah",
+        "class": "Kelas",
+        "meetingNumber": "Pertemuan",
+        "scheduledTime": "Jam Jadwal",
+        "checkInTime": "Jam Check-in",
+        "isLate": "Telat",
+        "hasPhoto": "Foto Check-in",
+        "checkOutTime": "Jam Check-out",
+        "durationMinutes": "Durasi (menit)",
+        "substitute": "Guru Pengganti",
+        "notes": "Catatan",
+        "student": "Siswa",
+        "nis": "NIS",
+        "status": "Status",
+        "totalMeetings": "Total Pertemuan",
+        "attendanceRate": "Tingkat Kehadiran",
+        "topic": "Topik",
+        "skills": "Skills Diajarkan",
+        "attendance": "Hadir",
+        "objectives": "Tujuan Tercapai",
+        "summary": "Ringkasan",
+        "materialsRequired": "Materi yang Dibutuhkan",
+        "vocabularyFocus": "Fokus Kosakata",
+        "differentiationSupport": "Diferensiasi (Support)",
+        "differentiationExtension": "Diferensiasi (Extension)",
+        "differentiationHomework": "Diferensiasi (PR)",
+        "hasModule": "Modul Terlampir",
+        "isDraft": "Draft",
+        "compliant": "Compliant",
+        "curriculum": "Kurikulum",
+        "schedule": "Jadwal",
+        "enrollment": "Jumlah Siswa",
+        "complianceRate": "Compliance Lesson Plan",
+        "reportsFiled": "Report Disubmit",
+        "isActive": "Aktif",
+        "present": "Hadir",
+        "late": "Telat",
+        "excused": "Izin",
+        "absent": "Alpha"
+      },
+      "filters": {
+        "allSchools": "Semua sekolah",
+        "allClasses": "Semua kelas",
+        "allTeachers": "Semua tutor",
+        "allStudents": "Semua siswa",
+        "reset": "Reset"
+      },
+      "hub": {
+        "title": "Analytics",
+        "subtitle": "Generate report detail lintas kehadiran, mengajar, lesson plan, dan kelas.",
+        "tutorAttendanceTitle": "Kehadiran Tutor",
+        "tutorAttendanceDescription": "Jam check-in/out, keterlambatan, dan cakupan guru pengganti per tutor.",
+        "studentAttendanceTitle": "Kehadiran Siswa",
+        "studentAttendanceDescription": "Detail dan tingkat kehadiran per siswa dalam rentang tanggal.",
+        "dailyTeachingReportTitle": "Daily Teaching Report",
+        "dailyTeachingReportDescription": "Versi Daily Teaching Report yang bisa difilter dan diexport.",
+        "lessonPlanTitle": "Lesson Plan",
+        "lessonPlanDescription": "Isi lesson plan, modul terlampir, dan status compliance.",
+        "classesTitle": "Kelas",
+        "classesDescription": "Ringkasan jumlah siswa, tingkat kehadiran, dan compliance per kelas.",
+        "customTitle": "Custom Report",
+        "customDescription": "Buat report sendiri dengan memilih field apapun — segera hadir."
+      },
+      "tutorAttendance": {
+        "title": "Report Kehadiran Tutor",
+        "subtitle": "{count} check-in dalam rentang yang dipilih.",
+        "empty": "Belum ada check-in dalam rentang ini.",
+        "loadError": "Gagal memuat report kehadiran tutor.",
+        "chartTitle": "Check-in tepat waktu vs. telat per tutor",
+        "summary": {
+          "totalCheckIns": "Total Check-in",
+          "onTimeRate": "Tingkat Tepat Waktu",
+          "lateCount": "Telat",
+          "substituteCount": "Sesi Guru Pengganti"
+        }
+      },
+      "studentAttendance": {
+        "title": "Report Kehadiran Siswa",
+        "subtitle": "{count} data kehadiran dalam rentang yang dipilih.",
+        "empty": "Belum ada data kehadiran dalam rentang ini.",
+        "loadError": "Gagal memuat report kehadiran siswa.",
+        "chartTitle": "Rincian status kehadiran",
+        "detailSheet": "Detail",
+        "summarySheet": "Ringkasan",
+        "summary": {
+          "totalStudents": "Total Siswa",
+          "avgAttendanceRate": "Rata-rata Tingkat Kehadiran",
+          "totalAbsences": "Total Alpha"
+        }
+      },
+      "dailyTeachingReport": {
+        "title": "Daily Teaching Report",
+        "subtitle": "{count} report dalam rentang yang dipilih.",
+        "empty": "Belum ada report dalam rentang ini.",
+        "loadError": "Gagal memuat daily teaching report.",
+        "chartTitle": "Report disubmit per hari",
+        "summary": {
+          "totalReports": "Total Report",
+          "objectivesAchievedRate": "Tingkat Tujuan Tercapai"
+        }
+      },
+      "lessonPlan": {
+        "title": "Report Lesson Plan",
+        "subtitle": "{count} lesson plan dalam rentang yang dipilih.",
+        "empty": "Belum ada lesson plan dalam rentang ini.",
+        "loadError": "Gagal memuat report lesson plan.",
+        "chartTitle": "Compliance per kelas",
+        "summary": {
+          "totalPlans": "Total Lesson Plan",
+          "compliantRate": "Tingkat Compliant",
+          "draftCount": "Draft"
+        }
+      },
+      "classes": {
+        "title": "Report Kelas",
+        "subtitle": "{count} kelas.",
+        "empty": "Belum ada kelas.",
+        "loadError": "Gagal memuat report kelas.",
+        "chartTitle": "Tingkat kehadiran per kelas",
+        "summary": {
+          "totalClasses": "Total Kelas",
+          "avgAttendanceRate": "Rata-rata Tingkat Kehadiran",
+          "avgComplianceRate": "Rata-rata Compliance"
+        }
+      },
+      "custom": {
+        "title": "Custom Report Builder",
+        "description": "Pilih field apapun lintas kehadiran, teaching report, lesson plan, dan kelas untuk membuat report sendiri, lalu simpan sebagai template. Ini direncanakan sebagai langkah berikutnya untuk Analytics.",
+        "comingSoon": "Segera Hadir"
       }
     },
     "parentReports": {

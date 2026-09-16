@@ -118,6 +118,7 @@ export function TemporaryScheduleDialog({
 
   const teachers = useMemo(() => {
     return (allTeachers ?? [])
+      .filter((t) => t.isActive)
       .map((t): [string, string] => [t.id, t.fullName])
       .sort((a, b) => a[1].localeCompare(b[1]));
   }, [allTeachers]);

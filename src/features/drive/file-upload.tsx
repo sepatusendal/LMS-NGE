@@ -8,6 +8,11 @@ import { useDriveUpload } from "@/features/drive/use-drive-upload";
 
 interface Props {
   onUploaded: (driveFileId: string, fileName: string) => void;
+  /** Fires whenever the upload's pending state changes, so a parent form can
+   * disable its own submit button until the file has actually finished
+   * uploading — onUploaded alone arrives too late to gate a race where the
+   * user submits the form before this resolves. */
+  onPendingChange?: (isPending: boolean) => void;
   currentFile?: string | null;
   accept?: string;
   label?: string;
@@ -15,6 +20,7 @@ interface Props {
 
 export function FileUpload({
   onUploaded,
+  onPendingChange,
   currentFile,
   accept = "image/*",
   label,
@@ -24,6 +30,13 @@ export function FileUpload({
   const t = useTranslations("fileUpload");
   const resolvedLabel = label ?? t("uploadPhoto");
   const [preview, setPreview] = useState<{ url: string; isImage: boolean; name: string } | null>(null);
+
+  useEffect(() => {
+    onPendingChange?.(upload.isPending);
+    // Only the pending flag itself should re-trigger this — onPendingChange
+    // is typically a fresh closure every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [upload.isPending]);
 
   // Revoke the previous blob URL whenever it's replaced or the component
   // unmounts — object URLs otherwise stay pinned in memory for the page's

@@ -59,6 +59,18 @@ export function ClassFormDialog({
   const classSchema = useMemo(() => buildClassSchema(t), [t]);
   const DAY_OPTIONS = useMemo(() => buildDayOptions(tDay), [tDay]);
 
+  // Deactivated teachers can no longer log in to check in — don't offer
+  // them as a new assignment. Keep the class's current teacher in the list
+  // even if they've since been deactivated, so editing an already-assigned
+  // class doesn't render with an unresolvable/blank selection; flag it so
+  // the admin notices and reassigns.
+  const assignableTeachers = useMemo(() => {
+    if (!teachers) return teachers;
+    return teachers
+      .filter((te) => te.isActive || te.id === classItem?.teacherId)
+      .map((te) => (te.isActive ? te : { ...te, fullName: `${te.fullName} (Nonaktif)` }));
+  }, [teachers, classItem?.teacherId]);
+
   const {
     register,
     control,
@@ -169,7 +181,7 @@ export function ClassFormDialog({
               name="teacherId"
               render={({ field }) => (
                 <Select
-                  items={teachers?.map((te) => ({ value: te.id, label: te.fullName }))}
+                  items={assignableTeachers?.map((te) => ({ value: te.id, label: te.fullName }))}
                   value={field.value}
                   onValueChange={field.onChange}
                 >
@@ -177,7 +189,7 @@ export function ClassFormDialog({
                     <SelectValue placeholder={t("selectTeacher")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {teachers?.map((te) => (
+                    {assignableTeachers?.map((te) => (
                       <SelectItem key={te.id} value={te.id}>
                         {te.fullName}
                       </SelectItem>

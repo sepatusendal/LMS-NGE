@@ -123,7 +123,7 @@ export default function ParentReportPage() {
                 </span>
               </h1>
               <p className="text-muted-foreground mx-auto mt-2 max-w-xs text-sm leading-relaxed sm:text-base">
-                Masukkan NIS untuk melihat progres belajar bahasa Inggris si kecil bulan ini 🎈
+                Masukkan Nama Sekolah dan NIS untuk melihat progres belajar bahasa Inggris si kecil bulan ini 🎈
               </p>
             </div>
           </div>
@@ -132,11 +132,11 @@ export default function ParentReportPage() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-[#1e3a5f]">
-                  Nomor Induk Siswa (NIS)
+                  Nama Sekolah - NIS
                 </label>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Contoh: 2024001"
+                    placeholder="Contoh: SDN 1 Bogor-2024001"
                     value={nis}
                     onChange={(e) => setNis(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleLookup()}

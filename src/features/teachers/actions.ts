@@ -68,6 +68,27 @@ export async function setTeacherActiveAction(
 
   const admin = createAdminClient();
 
+  // Deactivating bans the login (below) but previously left classes.teacherId
+  // pointing at this teacher untouched — the class stays "active" on its
+  // weekly schedule with a primary teacher who can no longer log in to
+  // check in, silently stuck. Block deactivation until the classes are
+  // reassigned instead.
+  if (!isActive) {
+    const { data: activeClasses, error: classesError } = await admin
+      .from("classes")
+      .select("name")
+      .eq("teacherId", teacherId)
+      .eq("isActive", true)
+      .is("deletedAt", null);
+    if (classesError) throw new Error(classesError.message);
+    if (activeClasses && activeClasses.length > 0) {
+      const names = (activeClasses as { name: string }[]).map((c) => c.name).join(", ");
+      throw new Error(
+        `Masih jadi pengajar utama di ${activeClasses.length} kelas aktif (${names}) — reassign kelasnya dulu sebelum menonaktifkan.`,
+      );
+    }
+  }
+
   const { error: updateError } = await admin
     .from("teachers")
     .update({ isActive })

@@ -94,7 +94,14 @@ export default function ReportDetailPage() {
           <CardTitle className="text-sm">{t("classSummary")}</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <Field label="Teacher" value={report.teacherName} />
+          <Field
+            label="Teacher"
+            value={
+              report.isSubstitute
+                ? `${report.teacherName} (${t("substitutingFor")} ${report.originalTeacherName})`
+                : report.teacherName
+            }
+          />
           <Field
             label="Attendance"
             value={report.attendanceTotal > 0 ? t("attendanceValue", { present: report.attendancePresent, total: report.attendanceTotal }) : "-"}

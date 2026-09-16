@@ -96,7 +96,7 @@ export function ScheduleOverridesPanel({ classItem }: Props) {
                   />
                 </div>
                 <Select
-                  items={teachers?.map((te) => ({ value: te.id, label: te.fullName }))}
+                  items={teachers?.filter((te) => te.isActive).map((te) => ({ value: te.id, label: te.fullName }))}
                   value={teacherId}
                   onValueChange={(v) => v && setTeacherId(v)}
                 >
@@ -104,7 +104,7 @@ export function ScheduleOverridesPanel({ classItem }: Props) {
                     <SelectValue placeholder={t("selectTutor")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {teachers?.map((te) => (
+                    {teachers?.filter((te) => te.isActive).map((te) => (
                       <SelectItem key={te.id} value={te.id}>
                         {te.fullName}
                       </SelectItem>

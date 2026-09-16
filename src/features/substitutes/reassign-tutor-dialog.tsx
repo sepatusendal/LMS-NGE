@@ -72,7 +72,7 @@ export function ReassignTutorDialog({
 
   if (!target) return null;
 
-  const teacherOptions = (teachers ?? []).filter((te) => te.id !== target.currentTeacherId);
+  const teacherOptions = (teachers ?? []).filter((te) => te.id !== target.currentTeacherId && te.isActive);
   const reasonLabel = (r: string) => (ABSENCE_REASON_KEY[r] ? tReason(ABSENCE_REASON_KEY[r]) : r);
 
   async function handleSave() {
