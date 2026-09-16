@@ -98,6 +98,16 @@ function toPayload(input: StudentInput) {
   };
 }
 
+// students_schoolId_nis_active_key (20260916050000) — NIS must be unique
+// within a school. Surface that as a clear message instead of the raw
+// Postgres constraint-violation text.
+function throwFriendlyNisError(error: { code?: string; message: string }): never {
+  if (error.code === "23505") {
+    throw new Error("NIS ini sudah dipakai siswa lain di sekolah yang sama");
+  }
+  throw new Error(error.message);
+}
+
 export async function createStudent(input: StudentInput) {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -105,7 +115,7 @@ export async function createStudent(input: StudentInput) {
     .insert(toPayload(input))
     .select("id")
     .single();
-  if (error) throw error;
+  if (error) throwFriendlyNisError(error);
 
   if (input.classId) {
     await enrollStudent(input.classId, data.id);
@@ -118,7 +128,7 @@ export async function updateStudent(id: string, input: StudentInput) {
     .from("students")
     .update(toPayload(input))
     .eq("id", id);
-  if (error) throw error;
+  if (error) throwFriendlyNisError(error);
 }
 
 export async function setStudentActive(id: string, isActive: boolean) {

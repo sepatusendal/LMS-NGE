@@ -44,6 +44,36 @@ export async function setAppUserActiveAction(userId: string, isActive: boolean) 
 
   const admin = createAdminClient();
 
+  // This action bans any app user by id — including a TEACHER's userId,
+  // even though the Users page itself only ever lists ADMIN/COORDINATOR
+  // accounts (fetchAppUsers filters by role). setTeacherActiveAction
+  // (features/teachers/actions.ts) has its own "still primary teacher on an
+  // active class" guard, but that guard is bypassed entirely if this action
+  // is called with a teacher's userId directly. Re-check here too so
+  // deactivating a teacher can't silently skip it through this path.
+  if (!isActive) {
+    const { data: teacherRow } = await admin
+      .from("teachers")
+      .select("id")
+      .eq("userId", userId)
+      .maybeSingle();
+    if (teacherRow) {
+      const { data: activeClasses, error: classesError } = await admin
+        .from("classes")
+        .select("name")
+        .eq("teacherId", (teacherRow as { id: string }).id)
+        .eq("isActive", true)
+        .is("deletedAt", null);
+      if (classesError) throw new Error(classesError.message);
+      if (activeClasses && activeClasses.length > 0) {
+        const names = (activeClasses as { name: string }[]).map((c) => c.name).join(", ");
+        throw new Error(
+          `Masih jadi pengajar utama di ${activeClasses.length} kelas aktif (${names}) — reassign kelasnya dulu sebelum menonaktifkan.`,
+        );
+      }
+    }
+  }
+
   const { error: updateError } = await admin
     .from("users")
     .update({ isActive })

@@ -49,7 +49,6 @@ export async function GET(request: NextRequest) {
   if (!identifierRaw) {
     return NextResponse.json({ error: "NIS diperlukan" }, { status: 400 });
   }
-  const nis = identifierRaw; // kept as the rate-limit/lockout key below — the raw combined identifier is granular enough
   const parsed = parseIdentifier(identifierRaw);
   if (!parsed) {
     return NextResponse.json(
@@ -67,7 +66,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const nisLimitResult = rateLimit(`parent-lookup-nis:${nis}`, NIS_LOOKUP_LIMIT);
+  // Normalized, not the raw identifier: the school part is matched
+  // case/whitespace-insensitively below (normalizeForMatch), so keying the
+  // rate limit on the raw text would let someone reset their own bucket
+  // just by varying capitalization/spacing in the school name while
+  // resolving to the exact same (school, nis) target every time.
+  const identifierKey = `${normalizeForMatch(parsed.schoolPart)}:${parsed.nis}`;
+
+  const nisLimitResult = rateLimit(`parent-lookup-nis:${identifierKey}`, NIS_LOOKUP_LIMIT);
   if (!nisLimitResult.ok) {
     return NextResponse.json(
       { error: "Terlalu banyak percobaan. Coba lagi sebentar lagi." },
@@ -75,10 +81,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Harsher tier: only failed lookups for this exact NIS count toward this
-  // one (see NIS_LOOKUP_FAILURE_LOCKOUT above), so peek instead of consuming
-  // an attempt here — a successful lookup below never touches this counter.
-  const lockoutKey = `parent-lookup-nis-lockout:${nis}`;
+  // Harsher tier: only failed lookups for this exact identifier count toward
+  // this one (see NIS_LOOKUP_FAILURE_LOCKOUT above), so peek instead of
+  // consuming an attempt here — a successful lookup below never touches
+  // this counter.
+  const lockoutKey = `parent-lookup-nis-lockout:${identifierKey}`;
   const lockoutCheck = peekRateLimit(lockoutKey, NIS_LOOKUP_FAILURE_LOCKOUT);
   if (!lockoutCheck.ok) {
     return NextResponse.json(

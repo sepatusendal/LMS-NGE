@@ -231,7 +231,15 @@ export async function fetchAdminReports(): Promise<AdminReportListItem[]> {
       className: cls?.name ?? "-",
       classType: cls?.classType ?? "REGULAR",
       schoolName: cls ? (ctx.schoolNameById.get(cls.schoolId) ?? "-") : "-",
-      teacherName: ctx.teacherNameById.get(r.substituteTeacherId ?? r.originalTeacherId) ?? "-",
+      // Who actually taught, per the meeting record — not who happened to
+      // submit the report. teaching_reports.substituteTeacherId is only set
+      // when the report-*submitter* differs from meetings.assignedTeacherId
+      // (create_teaching_report), so it stays NULL whenever the absent
+      // assigned teacher files the report themselves even though a
+      // different teacher's actualTeacherId is on the meeting (e.g. by
+      // phone/from home) — meeting.actualTeacherId is the one field that's
+      // always kept in sync with who really checked in and taught.
+      teacherName: ctx.teacherNameById.get(meeting?.actualTeacherId ?? r.originalTeacherId) ?? "-",
       isSubstitute,
       topic: lp?.topic ?? "-",
       meetingNumber: lp?.meetingNumber ?? 0,
@@ -298,7 +306,9 @@ export async function fetchAdminReportDetail(id: string): Promise<AdminReportDet
     className: cls?.name ?? "-",
     classType: cls?.classType ?? "REGULAR",
     schoolName: cls ? (ctx.schoolNameById.get(cls.schoolId) ?? "-") : "-",
-    teacherName: ctx.teacherNameById.get(report.substituteTeacherId ?? report.originalTeacherId) ?? "-",
+    // See fetchAdminReports() above for why this reads meeting.actualTeacherId
+    // rather than report.substituteTeacherId.
+    teacherName: ctx.teacherNameById.get(meeting?.actualTeacherId ?? report.originalTeacherId) ?? "-",
     isSubstitute,
     originalTeacherName: ctx.teacherNameById.get(report.originalTeacherId) ?? "-",
     topic: lp?.topic ?? "-",
