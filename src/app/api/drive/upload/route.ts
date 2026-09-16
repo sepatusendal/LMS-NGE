@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadFile } from "@/lib/google-drive/drive-client";
 import { createClient } from "@/lib/supabase/server";
-import { isAdminUser } from "@/features/auth/assert-admin";
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -62,10 +61,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!(await isAdminUser(supabase, user.id))) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
+    // Shared upload endpoint (ALL_ROLES per role-routes.ts) — used by admins
+    // (curriculum/report attachments) and teachers alike (teaching report
+    // photos, lesson plan PDFs). Auth is enough; don't gate by admin role.
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const folder = (formData.get("folder") as string) || undefined;
