@@ -19,6 +19,17 @@ import { useMeetingAdminDetail, useMeetingAdminMutations } from "./use-meeting-a
 import { useReportPageContext, useReport } from "@/features/reports/use-reports";
 import { ReportForm } from "./report-form";
 import type { CheckInCreate, CheckInUpdate, CheckOutCreate, CheckOutUpdate } from "./admin-queries";
+import { useClassRoster } from "@/features/classes/use-roster";
+import { useAttendances } from "@/features/attendances/use-attendances";
+import { ATTENDANCE_STATUS_OPTIONS } from "@/features/attendances/schema";
+import type { AttendanceInput } from "@/features/attendances/schema";
+
+const ATTENDANCE_STATUS_STYLE: Record<string, { active: string; idle: string }> = {
+  PRESENT: { active: "border-emerald-600 bg-emerald-600 text-white", idle: "border-emerald-200 bg-emerald-50 text-emerald-700" },
+  ABSENT: { active: "border-red-600 bg-red-600 text-white", idle: "border-red-200 bg-red-50 text-red-700" },
+  EXCUSED: { active: "border-blue-600 bg-blue-600 text-white", idle: "border-blue-200 bg-blue-50 text-blue-700" },
+  LATE: { active: "border-amber-600 bg-amber-600 text-white", idle: "border-amber-200 bg-amber-50 text-amber-700" },
+};
 
 /** "2026-08-13T10:00:00+00:00" -> "2026-08-13T10:00" for a datetime-local input. */
 function toLocalInput(iso: string): string {
@@ -256,6 +267,148 @@ function CreateCheckOutForm({
   );
 }
 
+/** Every currently-enrolled roster student, plus any student who already has
+ * an attendance row for this meeting but has since been unenrolled — same
+ * "don't silently drop a historical record" reasoning as reportForm's
+ * studentNoLongerEnrolled handling, just applied to the roster union instead
+ * of a single follow-up pick. */
+function useAttendanceRoster(classId: string, meetingId: string) {
+  const roster = useClassRoster(classId);
+  const existing = useAttendances(meetingId);
+
+  const rosterIds = new Set((roster.data ?? []).map((s) => s.studentId));
+  const extra = (existing.data ?? [])
+    .filter((a) => !rosterIds.has(a.studentId))
+    .map((a) => ({ studentId: a.studentId, fullName: a.studentName, nis: a.nis, notEnrolled: true }));
+  const students = [...(roster.data ?? []).map((s) => ({ ...s, notEnrolled: false })), ...extra];
+
+  return {
+    students,
+    existing: existing.data ?? [],
+    isLoading: roster.isLoading || existing.isLoading,
+  };
+}
+
+function AttendanceSection({
+  classId,
+  meetingId,
+  onSave,
+  isSaving,
+}: {
+  classId: string;
+  meetingId: string;
+  onSave: (entries: AttendanceInput[]) => void;
+  isSaving: boolean;
+}) {
+  const t = useTranslations("admin.meetingAdmin");
+  const tStatus = useTranslations("attendanceForm.status");
+  const { students, existing, isLoading } = useAttendanceRoster(classId, meetingId);
+
+  const [statusMap, setStatusMap] = useState<Record<string, string>>({});
+  const [notesMap, setNotesMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (isLoading) return;
+    const existingStatus: Record<string, string> = {};
+    const existingNotes: Record<string, string> = {};
+    existing.forEach((a) => {
+      existingStatus[a.studentId] = a.status;
+      existingNotes[a.studentId] = a.notes ?? "";
+    });
+    setStatusMap((prev) => {
+      const map: Record<string, string> = {};
+      students.forEach((s) => {
+        map[s.studentId] = prev[s.studentId] ?? existingStatus[s.studentId] ?? "PRESENT";
+      });
+      return map;
+    });
+    setNotesMap((prev) => {
+      const map: Record<string, string> = {};
+      students.forEach((s) => {
+        map[s.studentId] = prev[s.studentId] ?? existingNotes[s.studentId] ?? "";
+      });
+      return map;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, students.length, existing.length]);
+
+  if (isLoading) {
+    return <p className="text-muted-foreground text-sm">{t("loadingRoster")}</p>;
+  }
+
+  if (students.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+        {t("noRosterNotice")}
+      </div>
+    );
+  }
+
+  function handleSave() {
+    const entries: AttendanceInput[] = students.map((s) => ({
+      meetingId,
+      studentId: s.studentId,
+      status: (statusMap[s.studentId] || "PRESENT") as AttendanceInput["status"],
+      notes: notesMap[s.studentId] || undefined,
+    }));
+    onSave(entries);
+  }
+
+  return (
+    <div className="space-y-3 rounded-lg border p-3">
+      <div className="divide-y">
+        {students.map((s) => (
+          <div key={s.studentId} className="space-y-2 py-2.5 first:pt-0 last:pb-0">
+            <div className="flex items-center justify-between gap-2">
+              <p className="truncate text-sm font-medium">
+                {s.fullName}
+                {s.nis && <span className="text-muted-foreground font-normal"> · {s.nis}</span>}
+              </p>
+              {s.notEnrolled && (
+                <Badge variant="outline" className="shrink-0 text-[10px]">
+                  {t("notEnrolledBadge")}
+                </Badge>
+              )}
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {ATTENDANCE_STATUS_OPTIONS.map((opt) => {
+                const style = ATTENDANCE_STATUS_STYLE[opt];
+                const active = statusMap[s.studentId] === opt;
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setStatusMap((prev) => ({ ...prev, [s.studentId]: opt }))}
+                    className={`rounded-full border px-1.5 py-1.5 text-[11px] font-semibold transition-colors ${active ? style.active : style.idle}`}
+                    aria-pressed={active}
+                  >
+                    {tStatus(opt.toLowerCase())}
+                  </button>
+                );
+              })}
+            </div>
+            <Input
+              placeholder={t("studentNotePlaceholder")}
+              value={notesMap[s.studentId] ?? ""}
+              onChange={(e) => setNotesMap((prev) => ({ ...prev, [s.studentId]: e.target.value }))}
+              className="h-8 text-xs"
+            />
+          </div>
+        ))}
+      </div>
+      <Button
+        type="button"
+        size="sm"
+        className="w-full"
+        disabled={isSaving}
+        onClick={handleSave}
+      >
+        {isSaving ? t("savingAttendance") : t("saveAttendance")}
+      </Button>
+    </div>
+  );
+}
+
 function CheckOutSection({
   checkOut,
   isAdminEntered,
@@ -423,6 +576,16 @@ export function MeetingAdminDialog({
                 isCreating={mutations.createCheckOut.isPending}
                 isSaving={mutations.updateCheckOut.isPending}
                 isDeleting={mutations.deleteCheckOut.isPending}
+              />
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-medium">{t("attendanceSection")}</p>
+              <AttendanceSection
+                classId={classId}
+                meetingId={meetingId as string}
+                onSave={(entries) => mutations.saveAttendance.mutate(entries)}
+                isSaving={mutations.saveAttendance.isPending}
               />
             </div>
 

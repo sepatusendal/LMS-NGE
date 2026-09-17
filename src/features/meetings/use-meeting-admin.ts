@@ -15,6 +15,8 @@ import {
   type CheckOutCreate,
   type CheckOutUpdate,
 } from "./admin-queries";
+import { upsertAttendance } from "@/features/attendances/queries";
+import type { AttendanceInput } from "@/features/attendances/schema";
 
 const TODAY_CLASSES_KEY = ["today-classes"];
 
@@ -36,8 +38,12 @@ export function useMeetingAdminMutations(meetingId: string | null, classId: stri
   const queryClient = useQueryClient();
 
   function invalidateAll() {
-    if (meetingId) queryClient.invalidateQueries({ queryKey: meetingAdminKey(meetingId) });
+    if (meetingId) {
+      queryClient.invalidateQueries({ queryKey: meetingAdminKey(meetingId) });
+      queryClient.invalidateQueries({ queryKey: ["attendances", meetingId] });
+    }
     queryClient.invalidateQueries({ queryKey: ["class-timeline", classId] });
+    queryClient.invalidateQueries({ queryKey: ["class-attendance-summary", classId] });
     queryClient.invalidateQueries({ queryKey: ["admin-reports"] });
     queryClient.invalidateQueries({ queryKey: TODAY_CLASSES_KEY });
   }
@@ -122,6 +128,20 @@ export function useMeetingAdminMutations(meetingId: string | null, classId: stri
     onError: (error) => toast.error("Gagal menghapus report", { description: error.message }),
   });
 
+  // Saves the whole roster's attendance in one go — same per-row upsert
+  // (attendances RLS already grants admin unrestricted access) the tutor's
+  // own AttendanceForm uses, just without the submit_attendance_and_checkout
+  // RPC's side effect of also creating a check-out, since admin is usually
+  // fixing attendance for a meeting whose check-out already exists.
+  const saveAttendance = useMutation({
+    mutationFn: (entries: AttendanceInput[]) => Promise.all(entries.map((e) => upsertAttendance(e))),
+    onSuccess: () => {
+      invalidateAll();
+      toast.success("Absensi siswa berhasil disimpan");
+    },
+    onError: (error) => toast.error("Gagal menyimpan absensi siswa", { description: error.message }),
+  });
+
   const resetMeeting = useMutation({
     mutationFn: () => resetMeetingAdmin(meetingId as string),
     onSuccess: () => {
@@ -138,6 +158,7 @@ export function useMeetingAdminMutations(meetingId: string | null, classId: stri
     createCheckOut,
     updateCheckOut,
     deleteCheckOut,
+    saveAttendance,
     deleteReport,
     resetMeeting,
   };
