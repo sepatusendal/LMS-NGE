@@ -3,6 +3,8 @@
 import { useState } from "react";
 import {
   type ColumnDef,
+  type OnChangeFn,
+  type VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -29,6 +31,8 @@ interface DataTableProps<TData, TValue> {
   isLoading?: boolean;
   isError?: boolean;
   errorMessage?: string;
+  columnVisibility?: VisibilityState;
+  onColumnVisibilityChange?: OnChangeFn<VisibilityState>;
 }
 
 export function DataTable<TData, TValue>({
@@ -38,15 +42,20 @@ export function DataTable<TData, TValue>({
   isLoading,
   isError,
   errorMessage,
+  columnVisibility: controlledColumnVisibility,
+  onColumnVisibilityChange,
 }: DataTableProps<TData, TValue>) {
   const t = useTranslations("common.dataTable");
   const [globalFilter, setGlobalFilter] = useState("");
+  const [internalColumnVisibility, setInternalColumnVisibility] = useState<VisibilityState>({});
+  const columnVisibility = controlledColumnVisibility ?? internalColumnVisibility;
 
   const table = useReactTable({
     data,
     columns,
-    state: { globalFilter },
+    state: { globalFilter, columnVisibility },
     onGlobalFilterChange: setGlobalFilter,
+    onColumnVisibilityChange: onColumnVisibilityChange ?? setInternalColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),

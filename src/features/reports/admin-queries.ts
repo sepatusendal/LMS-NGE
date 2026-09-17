@@ -196,15 +196,21 @@ async function buildContext(reports: ReportRow[]) {
   return { meetingById, lpById, clsById, schoolNameById, teacherNameById, attendanceByMeeting };
 }
 
-export async function fetchAdminReports(): Promise<AdminReportListItem[]> {
+export async function fetchAdminReports(filters?: {
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<AdminReportListItem[]> {
   const supabase = createClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("teaching_reports")
     .select(
       "id, meetingId, originalTeacherId, substituteTeacherId, actualTeachingDate, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement, actionPlan, nextLessonNotes, homeworkAssigned, summary, photoDriveFileId, languageSkillsFocus, activitiesLog, resourcesUsed",
     )
     .order("actualTeachingDate", { ascending: false });
+  if (filters?.dateFrom) query = query.gte("actualTeachingDate", filters.dateFrom);
+  if (filters?.dateTo) query = query.lte("actualTeachingDate", filters.dateTo);
+  const { data, error } = await query;
   if (error) throw error;
 
   const reports = data as unknown as ReportRow[];

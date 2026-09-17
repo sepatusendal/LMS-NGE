@@ -17,6 +17,9 @@ import {
   UserRoundX,
   Presentation,
   Megaphone,
+  BarChart3,
+  UserRoundCheck,
+  Sparkles,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { AppSidebar, type NavItem } from "@/components/shared/app-sidebar";
@@ -32,6 +35,19 @@ function buildAdminNavItems(
   return [
     { href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
     { href: "/substitutes", label: t("substitutes"), icon: UserRoundX },
+    {
+      label: t("analytics"),
+      icon: BarChart3,
+      children: [
+        { href: "/analytics", label: t("analyticsOverview"), icon: BarChart3, exact: true },
+        { href: "/analytics/tutor-attendance", label: t("analyticsTutorAttendance"), icon: UserRoundCheck },
+        { href: "/analytics/student-attendance", label: t("analyticsStudentAttendance"), icon: Users },
+        { href: "/analytics/daily-teaching-report", label: t("analyticsDailyTeachingReport"), icon: NotebookTabs },
+        { href: "/analytics/lesson-plan", label: t("analyticsLessonPlan"), icon: CalendarDays },
+        { href: "/analytics/classes", label: t("analyticsClasses"), icon: BookOpen },
+        { href: "/analytics/custom", label: t("analyticsCustom"), icon: Sparkles },
+      ],
+    },
     {
       label: t("management"),
       icon: Building2,

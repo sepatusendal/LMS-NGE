@@ -19,6 +19,10 @@ export interface NavChild {
   icon: LucideIcon;
   /** Small count pill next to the label — e.g. classes needing a lesson plan. */
   badge?: number;
+  /** Match this child's href exactly rather than as a path prefix — for a
+   * group's own "index"/"overview" child, whose href would otherwise be a
+   * path-ancestor of every sibling href and stay highlighted on all of them. */
+  exact?: boolean;
 }
 
 export interface NavItem {
@@ -29,6 +33,10 @@ export interface NavItem {
   /** Small count pill next to the label. Left unset on a group, it rolls up
    * to the sum of its children's badges — set explicitly to override. */
   badge?: number;
+}
+
+function isPathActive(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 function NavBadge({ count }: { count?: number }) {
@@ -53,10 +61,10 @@ export function NavSection({
   const hasChildren = Boolean(item.children?.length);
 
   const isParentActive = item.children
-    ? item.children.some((c) => pathname.startsWith(c.href))
+    ? item.children.some((c) => isPathActive(pathname, c.href))
     : false;
 
-  const isDirectActive = item.href ? pathname.startsWith(item.href) : false;
+  const isDirectActive = item.href ? isPathActive(pathname, item.href) : false;
 
   const [expanded, setExpanded] = useState(isParentActive);
 
@@ -110,7 +118,7 @@ export function NavSection({
       {expanded && item.children && (
         <div className="mt-1 ml-4 flex flex-col gap-0.5 border-l pl-3">
           {item.children.map((child) => {
-            const isChildActive = pathname.startsWith(child.href);
+            const isChildActive = child.exact ? pathname === child.href : isPathActive(pathname, child.href);
             return (
               <Link
                 key={child.href}
