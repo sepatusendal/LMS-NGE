@@ -36,19 +36,6 @@ function buildAdminNavItems(
     { href: "/dashboard", label: t("dashboard"), icon: LayoutDashboard },
     { href: "/substitutes", label: t("substitutes"), icon: UserRoundX },
     {
-      label: t("analytics"),
-      icon: BarChart3,
-      children: [
-        { href: "/analytics", label: t("analyticsOverview"), icon: BarChart3, exact: true },
-        { href: "/analytics/tutor-attendance", label: t("analyticsTutorAttendance"), icon: UserRoundCheck },
-        { href: "/analytics/student-attendance", label: t("analyticsStudentAttendance"), icon: Users },
-        { href: "/analytics/daily-teaching-report", label: t("analyticsDailyTeachingReport"), icon: NotebookTabs },
-        { href: "/analytics/lesson-plan", label: t("analyticsLessonPlan"), icon: CalendarDays },
-        { href: "/analytics/classes", label: t("analyticsClasses"), icon: BookOpen },
-        { href: "/analytics/custom", label: t("analyticsCustom"), icon: Sparkles },
-      ],
-    },
-    {
       label: t("management"),
       icon: Building2,
       children: [
@@ -66,6 +53,19 @@ function buildAdminNavItems(
     { href: "/teachers", label: t("teachers"), icon: GraduationCap },
     { href: "/users", label: t("users"), icon: ShieldUser },
     { href: "/curriculum", label: t("curriculum"), icon: ListChecks },
+    {
+      label: t("analytics"),
+      icon: BarChart3,
+      children: [
+        { href: "/analytics", label: t("analyticsOverview"), icon: BarChart3, exact: true },
+        { href: "/analytics/tutor-attendance", label: t("analyticsTutorAttendance"), icon: UserRoundCheck },
+        { href: "/analytics/student-attendance", label: t("analyticsStudentAttendance"), icon: Users },
+        { href: "/analytics/daily-teaching-report", label: t("analyticsDailyTeachingReport"), icon: NotebookTabs },
+        { href: "/analytics/lesson-plan", label: t("analyticsLessonPlan"), icon: CalendarDays },
+        { href: "/analytics/classes", label: t("analyticsClasses"), icon: BookOpen },
+        { href: "/analytics/custom", label: t("analyticsCustom"), icon: Sparkles },
+      ],
+    },
     { href: "/announcements", label: t("announcements"), icon: Megaphone },
     { href: "/settings", label: t("settings"), icon: Settings },
   ];
