@@ -165,26 +165,24 @@ export function AppSidebar({
   }
 
   return (
-    <aside className="sticky top-0 flex h-dvh w-60 shrink-0 flex-col justify-between self-start border-r p-4 max-md:hidden">
-      <div className="space-y-6">
-        <div className="space-y-1">
-          <Image
-            src="/brand/nufa-logo.png"
-            alt="NUFA Global Education"
-            width={140}
-            height={40}
-          />
-          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-            {roleLabel}
-          </p>
-        </div>
-        <nav className="flex flex-col gap-1 overflow-y-auto">
-          {navItems.map((item) => (
-            <NavSection key={item.label} item={item} pathname={pathname} />
-          ))}
-        </nav>
+    <aside className="sticky top-0 flex h-dvh w-60 shrink-0 flex-col self-start border-r p-4 max-md:hidden">
+      <div className="shrink-0 space-y-1">
+        <Image
+          src="/brand/nufa-logo.png"
+          alt="NUFA Global Education"
+          width={140}
+          height={40}
+        />
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          {roleLabel}
+        </p>
       </div>
-      <div className="space-y-2">
+      <nav className="mt-6 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
+        {navItems.map((item) => (
+          <NavSection key={item.label} item={item} pathname={pathname} />
+        ))}
+      </nav>
+      <div className="shrink-0 space-y-2 pt-2">
         {showLanguageSwitcher && <LanguageSwitcher className="w-full" />}
         <ThemeSwitcher className="w-full" />
         <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
@@ -205,7 +203,7 @@ export function MobileNavDrawerList({
   onNavigate?: () => void;
 }) {
   return (
-    <nav className="flex flex-col gap-1 overflow-y-auto">
+    <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
       {navItems.map((item) => (
         <NavSection key={item.label} item={item} pathname={pathname} onNavigate={onNavigate} />
       ))}
