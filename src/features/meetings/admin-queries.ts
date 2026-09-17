@@ -104,16 +104,21 @@ export interface CheckInUpdate {
   notes: string;
 }
 
+// Runs through update_check_in_admin() (20260917010000) rather than a plain
+// table update — moving a check-in to a different calendar day (correcting
+// a wrong date, not just a wrong time) needs the linked lesson_plans.
+// scheduledDate re-derived too, since every admin-facing "what date is this
+// meeting" view (Status Board, Analytics reports) is keyed on scheduledDate,
+// not checkInTime. A plain update left the meeting stuck under its old date
+// everywhere despite the corrected check-in time.
 export async function updateCheckInAdmin(id: string, input: CheckInUpdate) {
   const supabase = createClient();
-  const { error } = await supabase
-    .from("check_ins")
-    .update({
-      checkInTime: input.checkInTime,
-      isLate: input.isLate,
-      notes: input.notes || null,
-    })
-    .eq("id", id);
+  const { error } = await supabase.rpc("update_check_in_admin", {
+    p_check_in_id: id,
+    p_check_in_time: input.checkInTime,
+    p_is_late: input.isLate,
+    p_notes: input.notes || null,
+  });
   if (error) throw error;
 }
 
