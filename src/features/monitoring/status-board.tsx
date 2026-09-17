@@ -329,7 +329,9 @@ export function StatusBoard() {
                               <div className="text-[10px] text-muted-foreground/60 line-through">
                                 {r.originalTeacherName}
                               </div>
-                              <div className="text-foreground font-medium">{r.teacherName}</div>
+                              <div className="text-foreground font-medium">
+                                {r.substituteTeacherName ?? r.teacherName}
+                              </div>
                             </div>
                           ) : (
                             r.teacherName
