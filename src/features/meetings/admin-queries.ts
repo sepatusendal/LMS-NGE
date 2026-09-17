@@ -77,6 +77,27 @@ export async function fetchMeetingAdminDetail(meetingId: string): Promise<Meetin
   };
 }
 
+export interface CheckInCreate {
+  checkInTime: string;
+  isLate: boolean;
+  notes: string;
+}
+
+// For a meeting that already exists (lesson plan + meeting created by the
+// tutor as normal) but never got a check-in at all — the gap
+// backfill_meeting_admin() doesn't cover, since that RPC creates a whole new
+// meeting from scratch. See create_check_in_admin() (20260917000000).
+export async function createCheckInAdmin(meetingId: string, input: CheckInCreate) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("create_check_in_admin", {
+    p_meeting_id: meetingId,
+    p_check_in_time: input.checkInTime,
+    p_is_late: input.isLate,
+    p_notes: input.notes || null,
+  });
+  if (error) throw error;
+}
+
 export interface CheckInUpdate {
   checkInTime: string;
   isLate: boolean;
@@ -107,6 +128,27 @@ export async function updateCheckInAdmin(id: string, input: CheckInUpdate) {
 export async function deleteCheckInAdmin(id: string) {
   const supabase = createClient();
   const { error } = await supabase.rpc("delete_check_in_admin", { p_check_in_id: id });
+  if (error) throw error;
+}
+
+export interface CheckOutCreate {
+  checkOutTime: string;
+  /** null lets create_check_out_admin() derive it from the checkIn/checkOut gap. */
+  durationMinutes: number | null;
+  notes: string;
+}
+
+// Same gap as createCheckInAdmin above, for check-out — needs an existing
+// check-in on the meeting first (create_check_in_admin/the tutor's own check-
+// in), same ordering rule as everywhere else in this workflow.
+export async function createCheckOutAdmin(meetingId: string, input: CheckOutCreate) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("create_check_out_admin", {
+    p_meeting_id: meetingId,
+    p_check_out_time: input.checkOutTime,
+    p_duration_minutes: input.durationMinutes,
+    p_notes: input.notes || null,
+  });
   if (error) throw error;
 }
 

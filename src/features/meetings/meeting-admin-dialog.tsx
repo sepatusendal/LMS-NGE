@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMeetingAdminDetail, useMeetingAdminMutations } from "./use-meeting-admin";
 import { useReportPageContext, useReport } from "@/features/reports/use-reports";
 import { ReportForm } from "./report-form";
-import type { CheckInUpdate, CheckOutUpdate } from "./admin-queries";
+import type { CheckInCreate, CheckInUpdate, CheckOutCreate, CheckOutUpdate } from "./admin-queries";
 
 /** "2026-08-13T10:00:00+00:00" -> "2026-08-13T10:00" for a datetime-local input. */
 function toLocalInput(iso: string): string {
@@ -31,18 +31,80 @@ function fromLocalInput(local: string): string {
   return new Date(local).toISOString();
 }
 
+function CreateCheckInForm({
+  onCreate,
+  isCreating,
+}: {
+  onCreate: (input: CheckInCreate) => void;
+  isCreating: boolean;
+}) {
+  const t = useTranslations("admin.meetingAdmin");
+  const [checkInTime, setCheckInTime] = useState(() => toLocalInput(new Date().toISOString()));
+  const [isLate, setIsLate] = useState(false);
+  const [notes, setNotes] = useState("");
+
+  return (
+    <div className="space-y-3 rounded-lg border border-dashed p-3">
+      <p className="text-sm text-muted-foreground">{t("noCheckInYet")}</p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="new-ci-time" className="text-xs">{t("checkInTime")}</Label>
+          <Input
+            id="new-ci-time"
+            type="datetime-local"
+            value={checkInTime}
+            onChange={(e) => setCheckInTime(e.target.value)}
+          />
+        </div>
+        <label className="flex items-center gap-2 self-end pb-2 text-sm">
+          <input
+            type="checkbox"
+            checked={isLate}
+            onChange={(e) => setIsLate(e.target.checked)}
+            className="accent-primary size-4"
+          />
+          {t("isLate")}
+        </label>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="new-ci-notes" className="text-xs">{t("notes")}</Label>
+        <Textarea
+          id="new-ci-notes"
+          rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </div>
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          size="sm"
+          disabled={isCreating || !checkInTime}
+          onClick={() => onCreate({ checkInTime: fromLocalInput(checkInTime), isLate, notes })}
+        >
+          {isCreating ? t("adding") : t("addCheckIn")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function CheckInSection({
   checkIn,
   isAdminEntered,
+  onCreate,
   onSave,
   onDelete,
+  isCreating,
   isSaving,
   isDeleting,
 }: {
   checkIn: { id: string; checkInTime: string; isLate: boolean; notes: string | null } | null;
   isAdminEntered: boolean;
+  onCreate: (input: CheckInCreate) => void;
   onSave: (id: string, input: CheckInUpdate) => void;
   onDelete: (id: string) => void;
+  isCreating: boolean;
   isSaving: boolean;
   isDeleting: boolean;
 }) {
@@ -60,11 +122,7 @@ function CheckInSection({
   }, [checkIn]);
 
   if (!checkIn) {
-    return (
-      <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-        {t("noCheckInYet")}
-      </div>
-    );
+    return <CreateCheckInForm onCreate={onCreate} isCreating={isCreating} />;
   }
 
   return (
@@ -132,18 +190,88 @@ function CheckInSection({
   );
 }
 
+function CreateCheckOutForm({
+  onCreate,
+  isCreating,
+}: {
+  onCreate: (input: CheckOutCreate) => void;
+  isCreating: boolean;
+}) {
+  const t = useTranslations("admin.meetingAdmin");
+  const [checkOutTime, setCheckOutTime] = useState(() => toLocalInput(new Date().toISOString()));
+  const [durationMinutes, setDurationMinutes] = useState("");
+  const [notes, setNotes] = useState("");
+
+  return (
+    <div className="space-y-3 rounded-lg border border-dashed p-3">
+      <p className="text-sm text-muted-foreground">{t("noCheckOutYet")}</p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="new-co-time" className="text-xs">{t("checkOutTime")}</Label>
+          <Input
+            id="new-co-time"
+            type="datetime-local"
+            value={checkOutTime}
+            onChange={(e) => setCheckOutTime(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="new-co-duration" className="text-xs">{t("durationMinutes")}</Label>
+          <Input
+            id="new-co-duration"
+            type="number"
+            min={0}
+            placeholder={t("durationAutoHint")}
+            value={durationMinutes}
+            onChange={(e) => setDurationMinutes(e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="new-co-notes" className="text-xs">{t("notes")}</Label>
+        <Textarea
+          id="new-co-notes"
+          rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+      </div>
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          size="sm"
+          disabled={isCreating || !checkOutTime}
+          onClick={() =>
+            onCreate({
+              checkOutTime: fromLocalInput(checkOutTime),
+              durationMinutes: durationMinutes === "" ? null : Number(durationMinutes),
+              notes,
+            })
+          }
+        >
+          {isCreating ? t("adding") : t("addCheckOut")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function CheckOutSection({
   checkOut,
   isAdminEntered,
+  onCreate,
   onSave,
   onDelete,
+  isCreating,
   isSaving,
   isDeleting,
 }: {
   checkOut: { id: string; checkOutTime: string; durationMinutes: number; notes: string | null } | null;
   isAdminEntered: boolean;
+  onCreate: (input: CheckOutCreate) => void;
   onSave: (id: string, input: CheckOutUpdate) => void;
   onDelete: (id: string) => void;
+  isCreating: boolean;
   isSaving: boolean;
   isDeleting: boolean;
 }) {
@@ -161,11 +289,7 @@ function CheckOutSection({
   }, [checkOut]);
 
   if (!checkOut) {
-    return (
-      <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-        {t("noCheckOutYet")}
-      </div>
-    );
+    return <CreateCheckOutForm onCreate={onCreate} isCreating={isCreating} />;
   }
 
   return (
@@ -279,8 +403,10 @@ export function MeetingAdminDialog({
               <CheckInSection
                 checkIn={data.checkIn}
                 isAdminEntered={data.isAdminEntered}
+                onCreate={(input) => mutations.createCheckIn.mutate(input)}
                 onSave={(id, input) => mutations.updateCheckIn.mutate({ id, input })}
                 onDelete={(id) => mutations.deleteCheckIn.mutate(id)}
+                isCreating={mutations.createCheckIn.isPending}
                 isSaving={mutations.updateCheckIn.isPending}
                 isDeleting={mutations.deleteCheckIn.isPending}
               />
@@ -291,8 +417,10 @@ export function MeetingAdminDialog({
               <CheckOutSection
                 checkOut={data.checkOut}
                 isAdminEntered={data.isAdminEntered}
+                onCreate={(input) => mutations.createCheckOut.mutate(input)}
                 onSave={(id, input) => mutations.updateCheckOut.mutate({ id, input })}
                 onDelete={(id) => mutations.deleteCheckOut.mutate(id)}
+                isCreating={mutations.createCheckOut.isPending}
                 isSaving={mutations.updateCheckOut.isPending}
                 isDeleting={mutations.deleteCheckOut.isPending}
               />

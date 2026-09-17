@@ -2,13 +2,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   fetchMeetingAdminDetail,
+  createCheckInAdmin,
   updateCheckInAdmin,
   deleteCheckInAdmin,
+  createCheckOutAdmin,
   updateCheckOutAdmin,
   deleteCheckOutAdmin,
   deleteTeachingReportAdmin,
   resetMeetingAdmin,
+  type CheckInCreate,
   type CheckInUpdate,
+  type CheckOutCreate,
   type CheckOutUpdate,
 } from "./admin-queries";
 
@@ -38,6 +42,15 @@ export function useMeetingAdminMutations(meetingId: string | null, classId: stri
     queryClient.invalidateQueries({ queryKey: TODAY_CLASSES_KEY });
   }
 
+  const createCheckIn = useMutation({
+    mutationFn: (input: CheckInCreate) => createCheckInAdmin(meetingId as string, input),
+    onSuccess: () => {
+      invalidateAll();
+      toast.success("Check-in berhasil ditambahkan");
+    },
+    onError: (error) => toast.error("Gagal menambahkan check-in", { description: error.message }),
+  });
+
   const updateCheckIn = useMutation({
     mutationFn: ({ id, input }: { id: string; input: CheckInUpdate }) =>
       updateCheckInAdmin(id, input),
@@ -58,6 +71,20 @@ export function useMeetingAdminMutations(meetingId: string | null, classId: stri
       toast.error("Gagal menghapus check-in", {
         description: error.message.includes("CHECKOUT_EXISTS")
           ? "Meeting ini sudah ada check-out. Pakai \"Reset Meeting\" di bawah untuk menghapus keduanya sekaligus."
+          : error.message,
+      }),
+  });
+
+  const createCheckOut = useMutation({
+    mutationFn: (input: CheckOutCreate) => createCheckOutAdmin(meetingId as string, input),
+    onSuccess: () => {
+      invalidateAll();
+      toast.success("Check-out berhasil ditambahkan");
+    },
+    onError: (error) =>
+      toast.error("Gagal menambahkan check-out", {
+        description: error.message.includes("CHECK_IN_REQUIRED_BEFORE_CHECK_OUT")
+          ? "Meeting ini belum ada check-in. Tambahkan check-in dulu."
           : error.message,
       }),
   });
@@ -105,8 +132,10 @@ export function useMeetingAdminMutations(meetingId: string | null, classId: stri
   });
 
   return {
+    createCheckIn,
     updateCheckIn,
     deleteCheckIn,
+    createCheckOut,
     updateCheckOut,
     deleteCheckOut,
     deleteReport,
