@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import { draftTeacherComments, getStudentPeriodData } from "./period-data";
 import type { ParentReportDraft, ParentReportListItem, StudentPeriodData } from "./schema";
 
@@ -20,15 +21,20 @@ export async function fetchStudentPeriodData(
 
 export async function fetchParentReports(): Promise<ParentReportListItem[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("parent_reports")
-    .select(
-      "id, studentId, periodMonth, periodYear, status, pdfDriveFileId, pdfFileName, generatedAt, students(fullName, schools(name))",
-    )
-    .order("createdAt", { ascending: false });
-  if (error) throw error;
+  // One row per student per month — a full batch of a few months crosses the
+  // 1000-row response cap, so this is paged.
+  const data = await fetchAllPages<Record<string, unknown>>((from, to) =>
+    supabase
+      .from("parent_reports")
+      .select(
+        "id, studentId, periodMonth, periodYear, status, pdfDriveFileId, pdfFileName, generatedAt, students(fullName, schools(name))",
+      )
+      .order("createdAt", { ascending: false })
+      .order("id")
+      .range(from, to),
+  );
 
-  return (data ?? []).map((row) => {
+  return data.map((row) => {
     const student = toOne(
       row.students as unknown as
         | { fullName: string; schools: { name: string } | { name: string }[] | null }

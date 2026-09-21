@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllPages, fetchInChunks } from "@/lib/supabase/paginate";
 
 export interface StudentAbsence {
   meetingId: string;
@@ -48,36 +49,38 @@ export async function fetchClassAttendanceSummary(
 ): Promise<StudentAttendanceSummary[]> {
   const supabase = createClient();
 
-  const { data: lessonPlans, error: lpErr } = await supabase
-    .from("lesson_plans")
-    .select("id, meetingNumber, topic, scheduledDate")
-    .eq("classId", classId)
-    .is("deletedAt", null);
-  if (lpErr) throw lpErr;
-  const lpById = new Map(
-    (lessonPlans as unknown as LessonPlanRow[]).map((lp) => [lp.id, lp]),
+  const lessonPlans = await fetchAllPages<LessonPlanRow>((from, to) =>
+    supabase
+      .from("lesson_plans")
+      .select("id, meetingNumber, topic, scheduledDate")
+      .eq("classId", classId)
+      .is("deletedAt", null)
+      .order("id")
+      .range(from, to),
   );
+  const lpById = new Map(lessonPlans.map((lp) => [lp.id, lp]));
   if (lpById.size === 0) return [];
 
-  const { data: meetings, error: meetErr } = await supabase
-    .from("meetings")
-    .select("id, lessonPlanId")
-    .in("lessonPlanId", [...lpById.keys()]);
-  if (meetErr) throw meetErr;
-  const lpByMeeting = new Map(
-    (meetings as unknown as MeetingRow[]).map((m) => [m.id, lpById.get(m.lessonPlanId)]),
+  const meetings = await fetchInChunks<MeetingRow>([...lpById.keys()], (chunk, from, to) =>
+    supabase.from("meetings").select("id, lessonPlanId").in("lessonPlanId", chunk).order("id").range(from, to),
   );
+  const lpByMeeting = new Map(meetings.map((m) => [m.id, lpById.get(m.lessonPlanId)]));
   const meetingIds = [...lpByMeeting.keys()];
   if (meetingIds.length === 0) return [];
 
-  const { data: attendances, error: attErr } = await supabase
-    .from("attendances")
-    .select("meetingId, studentId, status, students(fullName, nis)")
-    .in("meetingId", meetingIds);
-  if (attErr) throw attErr;
+  // A class with a full term of meetings x a full roster crosses the
+  // 1000-row response cap, which silently dropped attendance records.
+  const attendances = await fetchInChunks<AttendanceRow>(meetingIds, (chunk, from, to) =>
+    supabase
+      .from("attendances")
+      .select("meetingId, studentId, status, students(fullName, nis)")
+      .in("meetingId", chunk)
+      .order("id")
+      .range(from, to),
+  );
 
   const byStudent = new Map<string, StudentAttendanceSummary>();
-  (attendances as unknown as AttendanceRow[]).forEach((a) => {
+  attendances.forEach((a) => {
     const lp = lpByMeeting.get(a.meetingId);
     let entry = byStudent.get(a.studentId);
     if (!entry) {

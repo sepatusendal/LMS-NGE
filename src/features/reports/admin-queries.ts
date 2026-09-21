@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllPages, fetchInChunks } from "@/lib/supabase/paginate";
+import { formatLocalDateStr, parseLocalDate } from "@/lib/date";
 import type { ObjectivesAchieved } from "./schema";
 import type { ClassType } from "@/features/classes/schema";
 
@@ -86,32 +88,38 @@ interface ReportRow {
 async function buildFollowUpsAndObjectives(reportIds: string[]) {
   const supabase = createClient();
 
-  const { data: followUps, error: fuErr } = await supabase
-    .from("student_follow_ups")
-    .select("teachingReportId, note, students(fullName)")
-    .in("teachingReportId", reportIds);
-  if (fuErr) throw fuErr;
+  const followUps = await fetchInChunks<{
+    teachingReportId: string;
+    note: string;
+    students: { fullName: string } | { fullName: string }[] | null;
+  }>(reportIds, (chunk, from, to) =>
+    supabase
+      .from("student_follow_ups")
+      .select("teachingReportId, note, students(fullName)")
+      .in("teachingReportId", chunk)
+      .order("id")
+      .range(from, to),
+  );
   const followUpsByReport = new Map<string, { studentName: string; note: string }[]>();
-  (
-    followUps as unknown as {
-      teachingReportId: string;
-      note: string;
-      students: { fullName: string } | { fullName: string }[] | null;
-    }[]
-  ).forEach((f) => {
+  followUps.forEach((f) => {
     const s = Array.isArray(f.students) ? f.students[0] : f.students;
     const list = followUpsByReport.get(f.teachingReportId) ?? [];
     list.push({ studentName: s?.fullName ?? "-", note: f.note });
     followUpsByReport.set(f.teachingReportId, list);
   });
 
-  const { data: objectives, error: objErr } = await supabase
-    .from("report_learning_objectives")
-    .select("teachingReportId, achieved")
-    .in("teachingReportId", reportIds);
-  if (objErr) throw objErr;
+  const objectives = await fetchInChunks<{ teachingReportId: string; achieved: boolean }>(
+    reportIds,
+    (chunk, from, to) =>
+      supabase
+        .from("report_learning_objectives")
+        .select("teachingReportId, achieved")
+        .in("teachingReportId", chunk)
+        .order("id")
+        .range(from, to),
+  );
   const objectivesByReport = new Map<string, { total: number; achieved: number }>();
-  (objectives as unknown as { teachingReportId: string; achieved: boolean }[]).forEach((o) => {
+  objectives.forEach((o) => {
     const cur = objectivesByReport.get(o.teachingReportId) ?? { total: 0, achieved: 0 };
     cur.total += 1;
     if (o.achieved) cur.achieved += 1;
@@ -125,68 +133,80 @@ async function buildContext(reports: ReportRow[]) {
   const supabase = createClient();
 
   const meetingIds = [...new Set(reports.map((r) => r.meetingId))];
-  const { data: meetings, error: meetErr } = await supabase
-    .from("meetings")
-    .select("id, lessonPlanId, assignedTeacherId, actualTeacherId")
-    .in("id", meetingIds);
-  if (meetErr) throw meetErr;
-  const meetingById = new Map(
-    (meetings as unknown as { id: string; lessonPlanId: string; assignedTeacherId: string; actualTeacherId: string | null }[]).map(
-      (m) => [m.id, m],
-    ),
+  const meetings = await fetchInChunks<{
+    id: string;
+    lessonPlanId: string;
+    assignedTeacherId: string;
+    actualTeacherId: string | null;
+  }>(meetingIds, (chunk, from, to) =>
+    supabase
+      .from("meetings")
+      .select("id, lessonPlanId, assignedTeacherId, actualTeacherId")
+      .in("id", chunk)
+      .order("id")
+      .range(from, to),
   );
+  const meetingById = new Map(meetings.map((m) => [m.id, m]));
 
   const lessonPlanIds = [...new Set(Array.from(meetingById.values()).map((m) => m.lessonPlanId))];
-  const { data: lessonPlans, error: lpErr } = await supabase
-    .from("lesson_plans")
-    .select("id, classId, topic, meetingNumber, scheduledDate")
-    .in("id", lessonPlanIds);
-  if (lpErr) throw lpErr;
-  const lpById = new Map(
-    (lessonPlans as unknown as { id: string; classId: string; topic: string; meetingNumber: number; scheduledDate: string }[]).map(
-      (lp) => [lp.id, lp],
-    ),
+  const lessonPlans = await fetchInChunks<{
+    id: string;
+    classId: string;
+    topic: string;
+    meetingNumber: number;
+    scheduledDate: string;
+  }>(lessonPlanIds, (chunk, from, to) =>
+    supabase
+      .from("lesson_plans")
+      .select("id, classId, topic, meetingNumber, scheduledDate")
+      .in("id", chunk)
+      .order("id")
+      .range(from, to),
   );
+  const lpById = new Map(lessonPlans.map((lp) => [lp.id, lp]));
 
   const classIds = [...new Set(Array.from(lpById.values()).map((lp) => lp.classId))];
-  const { data: classes, error: clsErr } = await supabase
-    .from("classes")
-    .select("id, name, schoolId, classType")
-    .in("id", classIds);
-  if (clsErr) throw clsErr;
-  const clsById = new Map(
-    (classes as unknown as { id: string; name: string; schoolId: string; classType: ClassType }[]).map((c) => [c.id, c]),
+  const classes = await fetchInChunks<{ id: string; name: string; schoolId: string; classType: ClassType }>(
+    classIds,
+    (chunk, from, to) =>
+      supabase.from("classes").select("id, name, schoolId, classType").in("id", chunk).order("id").range(from, to),
   );
+  const clsById = new Map(classes.map((c) => [c.id, c]));
 
   const schoolIds = [...new Set(Array.from(clsById.values()).map((c) => c.schoolId))];
-  const { data: schools, error: schErr } = await supabase.from("schools").select("id, name").in("id", schoolIds);
-  if (schErr) throw schErr;
-  const schoolNameById = new Map((schools as unknown as { id: string; name: string }[]).map((s) => [s.id, s.name]));
+  const schools = await fetchInChunks<{ id: string; name: string }>(schoolIds, (chunk, from, to) =>
+    supabase.from("schools").select("id, name").in("id", chunk).order("id").range(from, to),
+  );
+  const schoolNameById = new Map(schools.map((s) => [s.id, s.name]));
 
   const teacherIds = [
     ...new Set(
       Array.from(meetingById.values()).flatMap((m) => [m.assignedTeacherId, m.actualTeacherId].filter(Boolean) as string[]),
     ),
   ];
-  const { data: teachers, error: teachErr } = await supabase
-    .from("teachers")
-    .select("id, users(fullName)")
-    .in("id", teacherIds);
-  if (teachErr) throw teachErr;
+  const teachers = await fetchInChunks<{
+    id: string;
+    users: { fullName: string } | { fullName: string }[] | null;
+  }>(teacherIds, (chunk, from, to) =>
+    supabase.from("teachers").select("id, users(fullName)").in("id", chunk).order("id").range(from, to),
+  );
   const teacherNameById = new Map(
-    (teachers as unknown as { id: string; users: { fullName: string } | { fullName: string }[] | null }[]).map((t) => {
+    teachers.map((t) => {
       const u = Array.isArray(t.users) ? t.users[0] : t.users;
       return [t.id, u?.fullName ?? "-"];
     }),
   );
 
-  const { data: attendances, error: attErr } = await supabase
-    .from("attendances")
-    .select("meetingId, status")
-    .in("meetingId", meetingIds);
-  if (attErr) throw attErr;
+  // attendances is the biggest table here (one row per student per meeting) —
+  // a single unpaged query is silently cut off at 1000 rows, which made the
+  // present/total counts wrong for most reports once the table outgrew that.
+  const attendances = await fetchInChunks<{ meetingId: string; status: string }>(
+    meetingIds,
+    (chunk, from, to) =>
+      supabase.from("attendances").select("meetingId, status").in("meetingId", chunk).order("id").range(from, to),
+  );
   const attendanceByMeeting = new Map<string, { present: number; total: number }>();
-  (attendances as unknown as { meetingId: string; status: string }[]).forEach((a) => {
+  attendances.forEach((a) => {
     const cur = attendanceByMeeting.get(a.meetingId) ?? { present: 0, total: 0 };
     cur.total += 1;
     if (a.status === "PRESENT" || a.status === "LATE") cur.present += 1;
@@ -196,30 +216,44 @@ async function buildContext(reports: ReportRow[]) {
   return { meetingById, lpById, clsById, schoolNameById, teacherNameById, attendanceByMeeting };
 }
 
+function dayBefore(dateStr: string): string {
+  const d = parseLocalDate(dateStr);
+  d.setDate(d.getDate() - 1);
+  return formatLocalDateStr(d);
+}
+
 export async function fetchAdminReports(filters?: {
   dateFrom?: string;
   dateTo?: string;
 }): Promise<AdminReportListItem[]> {
   const supabase = createClient();
 
-  let query = supabase
-    .from("teaching_reports")
-    .select(
-      "id, meetingId, originalTeacherId, substituteTeacherId, actualTeachingDate, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement, actionPlan, nextLessonNotes, homeworkAssigned, summary, photoDriveFileId, languageSkillsFocus, activitiesLog, resourcesUsed",
-    )
-    .order("actualTeachingDate", { ascending: false });
-  if (filters?.dateFrom) query = query.gte("actualTeachingDate", filters.dateFrom);
-  if (filters?.dateTo) query = query.lte("actualTeachingDate", filters.dateTo);
-  const { data, error } = await query;
-  if (error) throw error;
-
-  const reports = data as unknown as ReportRow[];
+  // teaching_reports.actualTeachingDate is the day the report was *filed*
+  // (create_teaching_report stores CURRENT_DATE, and the 7-day edit window's
+  // RLS keys off it too), not the day the class was taught — the two differ
+  // for every late or admin-entered report. Reports are dated and filtered by
+  // the class date (the lesson plan's scheduledDate) below; this DB-side bound
+  // only narrows the fetch. A report is never filed before its class, so
+  // "filed on/after dateFrom" can't drop one whose class is in range — the
+  // extra day of slack covers the UTC-vs-WIB day boundary (CURRENT_DATE is
+  // evaluated in UTC).
+  const reports = await fetchAllPages<ReportRow>((from, to) => {
+    let query = supabase
+      .from("teaching_reports")
+      .select(
+        "id, meetingId, originalTeacherId, substituteTeacherId, actualTeachingDate, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement, actionPlan, nextLessonNotes, homeworkAssigned, summary, photoDriveFileId, languageSkillsFocus, activitiesLog, resourcesUsed",
+      )
+      .order("actualTeachingDate", { ascending: false })
+      .order("id");
+    if (filters?.dateFrom) query = query.gte("actualTeachingDate", dayBefore(filters.dateFrom));
+    return query.range(from, to);
+  });
   if (reports.length === 0) return [];
 
   const ctx = await buildContext(reports);
   const { followUpsByReport, objectivesByReport } = await buildFollowUpsAndObjectives(reports.map((r) => r.id));
 
-  return reports.map((r) => {
+  const items = reports.map((r): AdminReportListItem => {
     const meeting = ctx.meetingById.get(r.meetingId);
     const lp = meeting ? ctx.lpById.get(meeting.lessonPlanId) : undefined;
     const cls = lp ? ctx.clsById.get(lp.classId) : undefined;
@@ -232,7 +266,8 @@ export async function fetchAdminReports(filters?: {
     return {
       id: r.id,
       meetingId: r.meetingId,
-      actualTeachingDate: r.actualTeachingDate,
+      // Class date, not filing date — see the note above the query.
+      actualTeachingDate: lp?.scheduledDate ?? r.actualTeachingDate,
       classId: lp?.classId ?? "",
       className: cls?.name ?? "-",
       classType: cls?.classType ?? "REGULAR",
@@ -267,6 +302,14 @@ export async function fetchAdminReports(filters?: {
       followUps: followUpsByReport.get(r.id) ?? [],
     };
   });
+
+  return items
+    .filter(
+      (item) =>
+        (!filters?.dateFrom || item.actualTeachingDate >= filters.dateFrom) &&
+        (!filters?.dateTo || item.actualTeachingDate <= filters.dateTo),
+    )
+    .sort((a, b) => b.actualTeachingDate.localeCompare(a.actualTeachingDate) || a.id.localeCompare(b.id));
 }
 
 export async function fetchAdminReportDetail(id: string): Promise<AdminReportDetail | null> {
@@ -308,7 +351,8 @@ export async function fetchAdminReportDetail(id: string): Promise<AdminReportDet
   return {
     id: report.id,
     meetingId: report.meetingId,
-    actualTeachingDate: report.actualTeachingDate,
+    // Class date, not filing date — see fetchAdminReports().
+    actualTeachingDate: lp?.scheduledDate ?? report.actualTeachingDate,
     className: cls?.name ?? "-",
     classType: cls?.classType ?? "REGULAR",
     schoolName: cls ? (ctx.schoolNameById.get(cls.schoolId) ?? "-") : "-",

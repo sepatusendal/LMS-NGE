@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllPages, fetchInChunks } from "@/lib/supabase/paginate";
 import { formatLocalDateStr } from "@/lib/date";
 import type { FollowUpRow, ReportNoteRow, ReportStats, TeacherAttendanceRow } from "./schema";
 
@@ -54,14 +55,15 @@ export async function fetchTeacherAttendanceDetail(days: number): Promise<Teache
   const supabase = createClient();
   const since = daysAgoLocalMidnightISO(days);
 
-  const { data, error } = await supabase
-    .from("check_ins")
-    .select("teacherId, checkInTime, isLate, teachers(users(fullName)), meetings(assignedTeacherId, actualTeacherId)")
-    .gte("checkInTime", since)
-    .order("checkInTime", { ascending: false });
-  if (error) throw error;
-
-  const rows = data as unknown as CheckInDetailRow[];
+  const rows = await fetchAllPages<CheckInDetailRow>((from, to) =>
+    supabase
+      .from("check_ins")
+      .select("teacherId, checkInTime, isLate, teachers(users(fullName)), meetings(assignedTeacherId, actualTeacherId)")
+      .gte("checkInTime", since)
+      .order("checkInTime", { ascending: false })
+      .order("id")
+      .range(from, to),
+  );
   const assignedTeacherIds = [
     ...new Set(
       rows
@@ -70,17 +72,12 @@ export async function fetchTeacherAttendanceDetail(days: number): Promise<Teache
     ),
   ];
 
-  const { data: assignedTeachers, error: teacherErr } = await supabase
-    .from("teachers")
-    .select("id, users(fullName)")
-    .in("id", assignedTeacherIds.length > 0 ? assignedTeacherIds : ["00000000-0000-0000-0000-000000000000"]);
-  if (teacherErr) throw teacherErr;
-  const assignedNameById = new Map(
-    (assignedTeachers as unknown as { id: string; users: { fullName: string } | null }[]).map((t) => [
-      t.id,
-      t.users?.fullName ?? "-",
-    ]),
+  const assignedTeachers = await fetchInChunks<{ id: string; users: { fullName: string } | null }>(
+    assignedTeacherIds,
+    (chunk, from, to) =>
+      supabase.from("teachers").select("id, users(fullName)").in("id", chunk).order("id").range(from, to),
   );
+  const assignedNameById = new Map(assignedTeachers.map((t) => [t.id, t.users?.fullName ?? "-"]));
 
   return rows.map((row) => {
     const meeting = toOne(row.meetings);
@@ -101,13 +98,14 @@ export async function fetchTeacherAttendance(days: number): Promise<TeacherAtten
   const supabase = createClient();
   const since = daysAgoLocalMidnightISO(days);
 
-  const { data, error } = await supabase
-    .from("check_ins")
-    .select("teacherId, isLate, teachers(users(fullName))")
-    .gte("checkInTime", since);
-  if (error) throw error;
-
-  const rows = data as unknown as CheckInRow[];
+  const rows = await fetchAllPages<CheckInRow>((from, to) =>
+    supabase
+      .from("check_ins")
+      .select("teacherId, isLate, teachers(users(fullName))")
+      .gte("checkInTime", since)
+      .order("id")
+      .range(from, to),
+  );
   const byTeacher = new Map<string, TeacherAttendanceRow>();
 
   rows.forEach((row) => {
@@ -134,6 +132,7 @@ export async function fetchTeacherAttendance(days: number): Promise<TeacherAtten
 interface MeetingReportRow {
   status: string;
   lesson_plans: { scheduledDate: string } | { scheduledDate: string }[] | null;
+  checkOut: { id: string } | { id: string }[] | null;
   teaching_reports: { objectivesAchieved: string | null } | { objectivesAchieved: string | null }[] | null;
 }
 
@@ -142,17 +141,19 @@ export async function fetchReportStats(days: number): Promise<ReportStats> {
   const since = daysAgoStr(days * 2);
   const currentSince = daysAgoStr(days);
 
-  const { data, error } = await supabase
-    .from("meetings")
-    .select(
-      "status, lesson_plans!inner(scheduledDate), teaching_reports(objectivesAchieved)",
-    )
-    .gte("lesson_plans.scheduledDate", since);
-  if (error) throw error;
-
-  const rows = data as unknown as MeetingReportRow[];
+  const rows = await fetchAllPages<MeetingReportRow>((from, to) =>
+    supabase
+      .from("meetings")
+      .select(
+        "status, lesson_plans!inner(scheduledDate), checkOut:check_outs(id), teaching_reports(objectivesAchieved)",
+      )
+      .gte("lesson_plans.scheduledDate", since)
+      .order("id")
+      .range(from, to),
+  );
 
   let totalCompletedMeetings = 0;
+  let totalPendingReports = 0;
   let totalReportsSubmitted = 0;
   let previousReportsSubmitted = 0;
   const objectivesCount: Record<string, number> = { YES: 0, PARTIALLY: 0, NO: 0 };
@@ -163,7 +164,17 @@ export async function fetchReportStats(days: number): Promise<ReportStats> {
     const report = toOne(row.teaching_reports);
     const inCurrentPeriod = Boolean(lp && lp.scheduledDate >= currentSince);
 
-    if (inCurrentPeriod && row.status === "COMPLETED") totalCompletedMeetings += 1;
+    // meetings.status only becomes COMPLETED when the teaching report is filed
+    // (create_teaching_report), so it can't be the "class finished" signal —
+    // counting it made "Kelas selesai" always equal "Laporan masuk" and the
+    // "Belum ada laporan" tile permanently 0. A class is finished once it has
+    // a check-out (or, for admin-entered sessions, a report); a report is
+    // still owed while that finished class has none.
+    const isFinished = Boolean(toOne(row.checkOut)) || Boolean(report) || row.status === "COMPLETED";
+    if (inCurrentPeriod && isFinished) {
+      totalCompletedMeetings += 1;
+      if (!report) totalPendingReports += 1;
+    }
 
     if (report) {
       if (inCurrentPeriod) {
@@ -189,7 +200,7 @@ export async function fetchReportStats(days: number): Promise<ReportStats> {
     totalCompletedMeetings,
     totalReportsSubmitted,
     previousReportsSubmitted,
-    totalPendingReports: Math.max(0, totalCompletedMeetings - totalReportsSubmitted),
+    totalPendingReports,
     objectives: [
       { label: "Tercapai", value: objectivesCount.YES ?? 0 },
       { label: "Sebagian", value: objectivesCount.PARTIALLY ?? 0 },
@@ -282,11 +293,15 @@ export async function fetchOpenFollowUps(limit = 8): Promise<FollowUpRow[]> {
 export async function fetchReportNotes(limit = 8): Promise<ReportNoteRow[]> {
   const supabase = createClient();
 
+  // Ordered by filing date to keep the fetch cheap; the date shown to the
+  // admin is the class date resolved below (actualTeachingDate is when the
+  // report was filed, which lags the class for late/admin-entered reports).
   const { data: reports, error: repErr } = await supabase
     .from("teaching_reports")
     .select("meetingId, summary, actualTeachingDate")
     .not("summary", "is", null)
     .order("actualTeachingDate", { ascending: false })
+    .order("id")
     .limit(limit);
   if (repErr) throw repErr;
 
@@ -306,12 +321,12 @@ export async function fetchReportNotes(limit = 8): Promise<ReportNoteRow[]> {
   const lessonPlanIds = [...new Set(Array.from(lessonPlanIdByMeeting.values()))];
   const { data: lessonPlans, error: lpErr } = await supabase
     .from("lesson_plans")
-    .select("id, classId")
+    .select("id, classId, scheduledDate")
     .in("id", lessonPlanIds);
   if (lpErr) throw lpErr;
-  const classIdByLp = new Map(
-    (lessonPlans as unknown as { id: string; classId: string }[]).map((lp) => [lp.id, lp.classId]),
-  );
+  const lpRows = lessonPlans as unknown as { id: string; classId: string; scheduledDate: string }[];
+  const classIdByLp = new Map(lpRows.map((lp) => [lp.id, lp.classId]));
+  const dateByLp = new Map(lpRows.map((lp) => [lp.id, lp.scheduledDate]));
 
   const classIds = [...new Set(Array.from(classIdByLp.values()))];
   const { data: classes, error: clsErr } = await supabase
@@ -329,7 +344,7 @@ export async function fetchReportNotes(limit = 8): Promise<ReportNoteRow[]> {
     return {
       className: (classId && classNameById.get(classId)) ?? "-",
       note: r.summary,
-      date: r.actualTeachingDate,
+      date: (lessonPlanId && dateByLp.get(lessonPlanId)) || r.actualTeachingDate,
     };
   });
 }
@@ -343,8 +358,7 @@ interface PayrollCheckInRow {
 
 interface PayrollTeacherRow {
   id: string;
-  feePerMeeting: number | null;
-  users: { fullName: string } | null;
+  users: { fullName: string } | { fullName: string }[] | null;
 }
 
 export interface TutorPayrollRow {
@@ -368,14 +382,17 @@ export async function fetchTutorPayroll(from?: string | null, to?: string | null
 
   // Kehadiran ditandai oleh baris check-in. Yang dibayar = tutor yang HADIR
   // (substitute kalau ada): meeting.actualTeacherId, fallback ke assignedTeacherId.
-  let query = supabase.from("check_ins").select("meetings(assignedTeacherId, actualTeacherId)");
-  if (from) query = query.gte("checkInTime", from);
-  if (to) query = query.lt("checkInTime", to);
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  const rows = data as unknown as PayrollCheckInRow[];
+  // Paged: this feeds a payout figure, and a single unpaged select is cut off
+  // at 1000 rows without any error — which would under-report what is owed.
+  const rows = await fetchAllPages<PayrollCheckInRow>((pageFrom, pageTo) => {
+    let query = supabase
+      .from("check_ins")
+      .select("meetings(assignedTeacherId, actualTeacherId)")
+      .order("id");
+    if (from) query = query.gte("checkInTime", from);
+    if (to) query = query.lt("checkInTime", to);
+    return query.range(pageFrom, pageTo);
+  });
   const attendanceByTeacher = new Map<string, number>();
   let orphanedCheckInCount = 0;
   rows.forEach((row) => {
@@ -397,16 +414,26 @@ export async function fetchTutorPayroll(from?: string | null, to?: string | null
     return { rows: [], totalAttended: 0, totalExpense: 0, unbilledCount: 0, orphanedCheckInCount };
   }
 
-  const { data: teachers, error: teacherErr } = await supabase
-    .from("teachers")
-    .select("id, feePerMeeting, users(fullName)")
-    .in("id", teacherIds);
-  if (teacherErr) throw teacherErr;
+  // Rates come from teacher_fees (admin-only); no row = fee not set.
+  const [teachers, fees] = await Promise.all([
+    fetchInChunks<PayrollTeacherRow>(teacherIds, (chunk, from, to) =>
+      supabase.from("teachers").select("id, users(fullName)").in("id", chunk).order("id").range(from, to),
+    ),
+    fetchInChunks<{ teacherId: string; feePerMeeting: number }>(teacherIds, (chunk, from, to) =>
+      supabase
+        .from("teacher_fees")
+        .select("teacherId, feePerMeeting")
+        .in("teacherId", chunk)
+        .order("teacherId")
+        .range(from, to),
+    ),
+  ]);
+  const rateByTeacher = new Map(fees.map((f) => [f.teacherId, f.feePerMeeting]));
 
   const feeById = new Map(
-    (teachers as unknown as PayrollTeacherRow[]).map((t) => [
+    teachers.map((t) => [
       t.id,
-      { fee: t.feePerMeeting, name: t.users?.fullName ?? "-" },
+      { fee: rateByTeacher.get(t.id) ?? null, name: toOne(t.users)?.fullName ?? "-" },
     ]),
   );
 

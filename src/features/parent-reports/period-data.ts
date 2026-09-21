@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchAllPages, fetchInChunks } from "@/lib/supabase/paginate";
 import type {
   AttendanceSummary,
   StudentPeriodClassInfo,
@@ -51,43 +52,53 @@ export async function getStudentPeriodData(
       ? `${periodYear + 1}-01-01`
       : `${periodYear}-${String(periodMonth + 1).padStart(2, "0")}-01`;
 
-  const { data: periodLessonPlanRows, error: periodLpError } = await supabase
-    .from("lesson_plans")
-    .select("id, classId, scheduledDate, topic, meetingNumber, skills")
-    .gte("scheduledDate", periodStart)
-    .lt("scheduledDate", periodEndExclusive);
-  if (periodLpError) throw periodLpError;
+  // Every class's plans for the month (not just this student's) — paged, and
+  // every `.in()` below is chunked, so neither the 1000-row response cap nor
+  // the request-URL length limit can silently cut the period short as the
+  // school grows.
+  const periodLessonPlanRows = await fetchAllPages<Record<string, unknown>>((from, to) =>
+    supabase
+      .from("lesson_plans")
+      .select("id, classId, scheduledDate, topic, meetingNumber, skills")
+      .gte("scheduledDate", periodStart)
+      .lt("scheduledDate", periodEndExclusive)
+      .order("id")
+      .range(from, to),
+  );
 
-  const lessonPlanById = new Map((periodLessonPlanRows ?? []).map((lp) => [lp.id as string, lp]));
+  const lessonPlanById = new Map(periodLessonPlanRows.map((lp) => [lp.id as string, lp]));
   const periodLessonPlanIds = Array.from(lessonPlanById.keys());
 
   if (periodLessonPlanIds.length === 0) {
     return emptyPeriodData(student, periodMonth, periodYear);
   }
 
-  const { data: periodMeetingRows, error: periodMeetingError } = await supabase
-    .from("meetings")
-    .select("id, lessonPlanId")
-    .in("lessonPlanId", periodLessonPlanIds);
-  if (periodMeetingError) throw periodMeetingError;
-
-  const lessonPlanIdByMeeting = new Map(
-    (periodMeetingRows ?? []).map((m) => [m.id as string, m.lessonPlanId as string]),
+  const periodMeetingRows = await fetchInChunks<{ id: string; lessonPlanId: string }>(
+    periodLessonPlanIds,
+    (chunk, from, to) =>
+      supabase.from("meetings").select("id, lessonPlanId").in("lessonPlanId", chunk).order("id").range(from, to),
   );
 
-  const { data: attendanceRows, error: attendanceError } = await supabase
-    .from("attendances")
-    .select("id, status, meetingId")
-    .eq("studentId", studentId)
-    .in("meetingId", Array.from(lessonPlanIdByMeeting.keys()));
-  if (attendanceError) throw attendanceError;
+  const lessonPlanIdByMeeting = new Map(periodMeetingRows.map((m) => [m.id, m.lessonPlanId]));
+
+  const attendanceRows = await fetchInChunks<{ id: string; status: string; meetingId: string }>(
+    Array.from(lessonPlanIdByMeeting.keys()),
+    (chunk, from, to) =>
+      supabase
+        .from("attendances")
+        .select("id, status, meetingId")
+        .eq("studentId", studentId)
+        .in("meetingId", chunk)
+        .order("id")
+        .range(from, to),
+  );
 
   const periodMeetingIds: string[] = [];
   const meetingMeta = new Map<
     string,
     { classId: string; scheduledDate: string; topic: string; meetingNumber: number; skills: string[] }
   >();
-  for (const row of attendanceRows ?? []) {
+  for (const row of attendanceRows) {
     const meetingId = row.meetingId as string;
     const lessonPlanId = lessonPlanIdByMeeting.get(meetingId);
     if (!lessonPlanId) continue;
@@ -108,14 +119,14 @@ export async function getStudentPeriodData(
   }
 
   const classIds = Array.from(new Set(Array.from(meetingMeta.values()).map((m) => m.classId)));
-  const { data: classRows, error: classError } = await supabase
-    .from("classes")
-    .select("id, name, curriculumId")
-    .in("id", classIds);
-  if (classError) throw classError;
+  const classRows = await fetchInChunks<{ id: string; name: string; curriculumId: string | null }>(
+    classIds,
+    (chunk, from, to) =>
+      supabase.from("classes").select("id, name, curriculumId").in("id", chunk).order("id").range(from, to),
+  );
 
   const curriculumIds = Array.from(
-    new Set((classRows ?? []).map((c) => c.curriculumId).filter(Boolean) as string[]),
+    new Set(classRows.map((c) => c.curriculumId).filter(Boolean) as string[]),
   );
   const curriculumById = new Map<string, { name: string; gradeLevel: string }>();
   if (curriculumIds.length > 0) {
@@ -130,8 +141,8 @@ export async function getStudentPeriodData(
   }
 
   const classInfoById = new Map<string, StudentPeriodClassInfo>();
-  for (const c of classRows ?? []) {
-    const curriculum = c.curriculumId ? curriculumById.get(c.curriculumId as string) : undefined;
+  for (const c of classRows) {
+    const curriculum = c.curriculumId ? curriculumById.get(c.curriculumId) : undefined;
     classInfoById.set(c.id as string, {
       classId: c.id as string,
       className: c.name as string,
@@ -140,13 +151,16 @@ export async function getStudentPeriodData(
     });
   }
 
-  const { data: reportRows, error: reportError } = await supabase
-    .from("teaching_reports")
-    .select("id, meetingId, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement")
-    .in("meetingId", periodMeetingIds);
-  if (reportError) throw reportError;
+  const reportRows = await fetchInChunks<Record<string, unknown>>(periodMeetingIds, (chunk, from, to) =>
+    supabase
+      .from("teaching_reports")
+      .select("id, meetingId, skills, objectivesAchieved, whatWentWell, whatNeedsImprovement")
+      .in("meetingId", chunk)
+      .order("id")
+      .range(from, to),
+  );
 
-  const teachingReports: StudentPeriodTeachingReport[] = (reportRows ?? []).map((r) => {
+  const teachingReports: StudentPeriodTeachingReport[] = reportRows.map((r) => {
     const meta = meetingMeta.get(r.meetingId as string)!;
     return {
       meetingId: r.meetingId as string,
@@ -162,16 +176,19 @@ export async function getStudentPeriodData(
   });
   teachingReports.sort((a, b) => a.date.localeCompare(b.date));
 
-  const reportIds = (reportRows ?? []).map((r) => r.id as string);
+  const reportIds = reportRows.map((r) => r.id as string);
   let progressNotes: StudentPeriodProgressNote[] = [];
   if (reportIds.length > 0) {
-    const { data: progressRows, error: progressError } = await supabase
-      .from("progress_records")
-      .select("skillArea, note, createdAt, teachingReportId")
-      .eq("studentId", studentId)
-      .in("teachingReportId", reportIds);
-    if (progressError) throw progressError;
-    progressNotes = (progressRows ?? [])
+    const progressRows = await fetchInChunks<Record<string, unknown>>(reportIds, (chunk, from, to) =>
+      supabase
+        .from("progress_records")
+        .select("skillArea, note, createdAt, teachingReportId")
+        .eq("studentId", studentId)
+        .in("teachingReportId", chunk)
+        .order("id")
+        .range(from, to),
+    );
+    progressNotes = progressRows
       .map((p) => ({
         date: p.createdAt as string,
         skillArea: p.skillArea as string | null,
@@ -182,7 +199,7 @@ export async function getStudentPeriodData(
 
   // No client-side filter needed here: attendanceRows was already scoped to
   // the period's meetings via the `.in("meetingId", ...)` clause above.
-  const periodAttendance = attendanceRows ?? [];
+  const periodAttendance = attendanceRows;
   const attendance: AttendanceSummary = {
     present: periodAttendance.filter((a) => a.status === "PRESENT").length,
     absent: periodAttendance.filter((a) => a.status === "ABSENT").length,
