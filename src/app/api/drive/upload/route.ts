@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { uploadFile } from "@/lib/google-drive/drive-client";
 import { createClient } from "@/lib/supabase/server";
 
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+// Kept in step with MAX_UPLOAD_BYTES in features/drive/prepare-upload-file.ts —
+// the hosting platform rejects request bodies over ~4.5MB before this handler
+// runs, so a higher limit here could never actually be reached.
+const MAX_SIZE = 4 * 1024 * 1024; // 4MB
 
 // `file.type` is just the client-supplied multipart Content-Type — trivially
 // spoofable (rename anything to .pdf, or forge the part header). Sniff the
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "File terlalu besar (max 10MB)" }, { status: 400 });
+      return NextResponse.json({ error: "File terlalu besar (max 4MB)" }, { status: 400 });
     }
 
     if (!file.type.startsWith("image/") && file.type !== "application/pdf") {

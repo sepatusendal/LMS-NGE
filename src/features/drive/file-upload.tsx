@@ -48,8 +48,12 @@ export function FileUpload({
   }, [preview?.url]);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
+    // Clear the input so picking the same file again (the natural retry after
+    // a failed upload) still fires onChange.
+    input.value = "";
 
     setPreview({ url: URL.createObjectURL(file), isImage: file.type.startsWith("image/"), name: file.name });
 

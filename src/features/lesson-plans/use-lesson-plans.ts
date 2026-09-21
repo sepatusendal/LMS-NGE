@@ -11,6 +11,7 @@ import {
 } from "./queries";
 import type { LessonPlanInput } from "./schema";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
+import { classifyError, errorMessage } from "@/lib/error-kind";
 
 const LESSON_PLANS_KEY = ["lesson-plans"];
 const TODAY_CLASSES_KEY = ["today-classes"];
@@ -40,6 +41,7 @@ export function useCreateLessonPlan(createdByTeacherId?: string) {
   const queryClient = useQueryClient();
   const { data: teacher } = useCurrentTeacher();
   const t = useTranslations("lessonPlanForm.toasts");
+  const tErr = useTranslations("errors");
   return useMutation({
     mutationFn: (input: LessonPlanInput) => {
       const teacherId = createdByTeacherId ?? teacher?.teacherId;
@@ -51,16 +53,23 @@ export function useCreateLessonPlan(createdByTeacherId?: string) {
       queryClient.invalidateQueries({ queryKey: TODAY_CLASSES_KEY });
       toast.success(t("createSuccess"));
     },
-    onError: (error) =>
+    onError: (error) => {
+      const kind = classifyError(error);
       toast.error(t("createError"), {
-        description: KNOWN_ERROR_CODES.has(error.message) ? t(error.message) : error.message,
-      }),
+        description: KNOWN_ERROR_CODES.has(error.message)
+          ? t(error.message)
+          : kind === "other"
+            ? errorMessage(error)
+            : tErr(kind),
+      });
+    },
   });
 }
 
 export function useUpdateLessonPlan() {
   const queryClient = useQueryClient();
   const t = useTranslations("lessonPlanForm.toasts");
+  const tErr = useTranslations("errors");
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: LessonPlanInput }) =>
       updateLessonPlan(id, input),
@@ -69,10 +78,16 @@ export function useUpdateLessonPlan() {
       queryClient.invalidateQueries({ queryKey: TODAY_CLASSES_KEY });
       toast.success(t("updateSuccess"));
     },
-    onError: (error) =>
+    onError: (error) => {
+      const kind = classifyError(error);
       toast.error(t("updateError"), {
-        description: KNOWN_ERROR_CODES.has(error.message) ? t(error.message) : error.message,
-      }),
+        description: KNOWN_ERROR_CODES.has(error.message)
+          ? t(error.message)
+          : kind === "other"
+            ? errorMessage(error)
+            : tErr(kind),
+      });
+    },
   });
 }
 

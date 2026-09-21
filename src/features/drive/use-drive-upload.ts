@@ -1,29 +1,34 @@
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { prepareUploadFile, UploadError } from "./prepare-upload-file";
 
 interface UploadResult {
   driveFileId: string;
   webViewLink: string;
 }
 
-async function uploadToDrive(
-  file: File,
-  folder: string | undefined,
-  fallbackErrorMessage: string,
-): Promise<UploadResult> {
+async function uploadToDrive(file: File, folder: string | undefined): Promise<UploadResult> {
+  const prepared = await prepareUploadFile(file);
+
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("file", prepared);
   if (folder) formData.append("folder", folder);
 
-  const res = await fetch("/api/drive/upload", {
-    method: "POST",
-    body: formData,
-  });
+  let res: Response;
+  try {
+    res = await fetch("/api/drive/upload", { method: "POST", body: formData });
+  } catch {
+    throw new UploadError("NETWORK");
+  }
 
   if (!res.ok) {
+    // 413 comes from the hosting platform as plain text, not our JSON body.
+    if (res.status === 413) throw new UploadError("TOO_LARGE");
+    if (res.status === 401) throw new UploadError("SESSION");
+    if (res.status === 403) throw new UploadError("FORBIDDEN");
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || fallbackErrorMessage);
+    throw new UploadError("SERVER", err.error);
   }
 
   return res.json();
@@ -32,12 +37,33 @@ async function uploadToDrive(
 export function useDriveUpload() {
   const t = useTranslations("fileUpload.toasts");
   return useMutation({
-    mutationFn: ({ file, folder }: { file: File; folder?: string }) =>
-      uploadToDrive(file, folder, t("uploadFailed")),
+    mutationFn: ({ file, folder }: { file: File; folder?: string }) => uploadToDrive(file, folder),
     onSuccess: () => {
       toast.success(t("uploadSuccess"));
     },
-    onError: (error) =>
-      toast.error(t("uploadError"), { description: error.message }),
+    onError: (error) => {
+      let description: string;
+      if (error instanceof UploadError) {
+        switch (error.code) {
+          case "TOO_LARGE":
+            description = t("tooLarge");
+            break;
+          case "NETWORK":
+            description = t("network");
+            break;
+          case "SESSION":
+            description = t("session");
+            break;
+          case "FORBIDDEN":
+            description = t("forbidden");
+            break;
+          default:
+            description = error.message !== "SERVER" ? error.message : t("uploadFailed");
+        }
+      } else {
+        description = error.message || t("uploadFailed");
+      }
+      toast.error(t("uploadError"), { description });
+    },
   });
 }
