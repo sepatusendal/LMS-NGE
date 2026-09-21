@@ -14,6 +14,11 @@ export interface ClassStatusRow {
   topic: string;
   hasLessonPlan: boolean;
   meetingId: string | null;
+  /** The tutor tied to the meeting itself — its actual teacher when one is
+   * recorded, else its assigned teacher. Differs from `teacherId` (the
+   * class's nominal owner for the slot) whenever a one-off substitute
+   * covers this meeting. Null when there's no meeting yet. */
+  meetingTeacherId: string | null;
   meetingStatus: "not_started" | "checked_in" | "attendance_done" | "checked_out" | "report_submitted";
   checkInTime: string | null;
   checkOutTime: string | null;
