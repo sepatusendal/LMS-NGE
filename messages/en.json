@@ -787,6 +787,7 @@
         "reason": "Reason",
         "selectReason": "Select reason",
         "hint": "This change applies only to the {date} meeting — the next meeting automatically reverts to {teacher}.",
+        "startedHint": "This meeting has already taken place. Changing the tutor corrects its check-in, check-out, and report to the selected tutor.",
         "cancelling": "Cancelling...",
         "cancelSubstitution": "Cancel Substitution"
       }

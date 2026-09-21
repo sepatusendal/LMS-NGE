@@ -203,6 +203,28 @@ export async function deleteTeachingReportAdmin(id: string) {
   if (error) throw error;
 }
 
+/** Corrects which tutor taught a meeting that's already checked in/completed
+ * — the case assignSubstituteForLessonPlan()/cancelSubstitute() refuse (a
+ * tutor taught under someone else's account and admin only found out later).
+ * Runs atomically inside reassign_meeting_tutor_admin() (20260921000000),
+ * which moves meetings.actualTeacherId together with check_ins/check_outs.
+ * teacherId and the report's substitute columns so every view attributes the
+ * meeting to the same tutor. Pass the meeting's assigned teacher (reason
+ * null) to clear the substitute. */
+export async function reassignMeetingTutorAdmin(
+  meetingId: string,
+  teacherId: string,
+  reason: string | null,
+) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("reassign_meeting_tutor_admin", {
+    p_meeting_id: meetingId,
+    p_teacher_id: teacherId,
+    p_reason: reason,
+  });
+  if (error) throw error;
+}
+
 /** Deletes the meeting's check-in, check-out, attendances, and report (if
  * any) and resets status back to SCHEDULED — lets the tutor redo the whole
  * meeting from scratch. Runs atomically inside reset_meeting_admin()

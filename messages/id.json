@@ -787,6 +787,7 @@
         "reason": "Alasan",
         "selectReason": "Pilih alasan",
         "hint": "Perubahan ini hanya berlaku untuk pertemuan tanggal {date} — pertemuan berikutnya otomatis kembali ke {teacher}.",
+        "startedHint": "Pertemuan ini sudah berjalan. Mengganti tutor akan mengoreksi data check-in, check-out, dan laporan menjadi atas nama tutor yang dipilih.",
         "cancelling": "Membatalkan...",
         "cancelSubstitution": "Batalkan Substitusi"
       }

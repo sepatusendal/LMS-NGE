@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { reassignMeetingTutorAdmin } from "@/features/meetings/admin-queries";
 import {
   assignSubstitute,
   assignSubstituteForLessonPlan,
@@ -73,6 +74,25 @@ export function useAssignSubstituteForLessonPlan(classId: string) {
     },
     onError: (error) =>
       toast.error("Gagal menugaskan tutor pengganti", { description: error.message }),
+  });
+}
+
+/** Admin correction for a meeting that's already checked in/completed —
+ * see reassignMeetingTutorAdmin(). Also refreshes the report/analytics
+ * views since the check-in/report attribution changes with the tutor. */
+export function useReassignStartedMeetingTutor(classId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { meetingId: string; teacherId: string; reason: string | null }) =>
+      reassignMeetingTutorAdmin(input.meetingId, input.teacherId, input.reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: meetingInfoKey(classId) });
+      queryClient.invalidateQueries({ queryKey: timelineKey(classId) });
+      queryClient.invalidateQueries({ queryKey: ["admin-reports"] });
+      invalidateStatusBoards(queryClient);
+      toast.success("Tutor pada meeting ini berhasil diubah");
+    },
+    onError: (error) => toast.error("Gagal mengubah tutor", { description: error.message }),
   });
 }
 
