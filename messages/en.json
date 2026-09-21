@@ -1284,6 +1284,8 @@
       "classesOnDay": "{count} classes on {day}",
       "tapAgainToClose": "tap again to close",
       "noClassesScheduledOnDay": "No classes scheduled on {day}.",
+      "temporaryBadge": "Temporary",
+      "includesTemporarySchedules": "This week includes temporary schedules.",
       "teacherAttendanceTitle": "Teacher/Tutor Attendance (last {days} days)",
       "summary": "Summary",
       "checkInDetail": "Check-in Detail",

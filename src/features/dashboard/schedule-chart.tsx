@@ -18,8 +18,20 @@ import { useClasses } from "@/features/classes/use-classes";
 import { useAllScheduleOverrides } from "@/features/classes/use-schedule-overrides";
 import type { ScheduleOverride } from "@/features/classes/schedule-override-queries";
 import { buildDayLabelsSundayFirst, getSlotForDay, type Class, type ScheduleSlot } from "@/features/classes/schema";
+import { useTemporarySchedulesInRange } from "@/features/temporary-schedules/use-temporary-schedules";
+import type { TemporaryScheduleEntry } from "@/features/temporary-schedules/queries";
+import { formatLocalDateStr } from "@/lib/date";
 
-type ClassWithSlot = Class & { slot: ScheduleSlot | null };
+type ClassWithSlot = Class & { slot: ScheduleSlot | null; isTemporary: boolean };
+
+function TemporaryBadge() {
+  const t = useTranslations("admin.dashboard");
+  return (
+    <span className="bg-primary/10 text-primary ml-1.5 rounded px-1 py-0.5 align-middle text-[9px] font-semibold">
+      {t("temporaryBadge")}
+    </span>
+  );
+}
 
 function ScheduleTooltip({
   active,
@@ -48,7 +60,10 @@ function ScheduleTooltip({
         <div className="max-h-52 space-y-1.5 overflow-y-auto pr-1">
           {list.map((c) => (
             <div key={c.id} className="rounded-md bg-muted/40 px-2 py-1.5">
-              <p className="truncate text-xs font-medium">{c.name}</p>
+              <p className="truncate text-xs font-medium">
+                {c.name}
+                {c.isTemporary && <TemporaryBadge />}
+              </p>
               <p className="text-muted-foreground truncate text-[11px]">
                 {c.schoolName} · {c.teacherName}
               </p>
@@ -85,14 +100,36 @@ export function ScheduleChart() {
   // disagreed with the teacher-facing Jadwal page and admin Status Board,
   // which already account for overrides.
   const { data: overrides, isLoading: overridesLoading, isError: overridesError } = useAllScheduleOverrides();
-  const isLoading = classesLoading || overridesLoading;
-  const isError = classesError || overridesError;
   // Deferred to client-only: `new Date().getDay()` reads the viewer's local
   // clock, which can differ from the server's at render time (e.g. near the
   // UTC-midnight/WIB-7am boundary) — computing it during the initial render
   // would make the "today" highlight/dot mismatch between SSR and hydration.
   const [today, setToday] = useState<number | null>(null);
-  useEffect(() => setToday(new Date().getDay()), []);
+  // This week's real calendar dates, Sunday..Saturday (index = weekday) — a
+  // Jadwal Sementara row is tied to an exact date, so the chart has to know
+  // which date each weekday bar stands for this week.
+  const [weekDates, setWeekDates] = useState<string[] | null>(null);
+  useEffect(() => {
+    const now = new Date();
+    setToday(now.getDay());
+    setWeekDates(
+      Array.from({ length: 7 }, (_, i) =>
+        formatLocalDateStr(new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + i)),
+      ),
+    );
+  }, []);
+  // A temporary schedule replaces a class's time/teacher on its exact date
+  // and can add a meeting on a weekday the class doesn't normally meet — same
+  // temp > override > default precedence as the Status Board
+  // (monitoring/queries.ts) and teacher Jadwal. Only this week's dates are
+  // folded in; the chart is otherwise the default weekly pattern.
+  const {
+    data: temporaryEntries,
+    isLoading: temporaryLoading,
+    isError: temporaryError,
+  } = useTemporarySchedulesInRange(weekDates?.[0] ?? null, weekDates?.[6] ?? null);
+  const isLoading = classesLoading || overridesLoading || temporaryLoading;
+  const isError = classesError || overridesError || temporaryError;
 
   // Tapping a bar pins its day's class list below the chart — the hover
   // tooltip alone isn't reachable on touch devices, which have no hover.
@@ -105,16 +142,29 @@ export function ScheduleChart() {
     return map;
   }, [overrides]);
 
+  const temporaryByClassDay = useMemo(() => {
+    const map = new Map<string, TemporaryScheduleEntry>();
+    (temporaryEntries ?? []).forEach((e) => {
+      const dayIndex = weekDates?.indexOf(e.date) ?? -1;
+      if (dayIndex >= 0) map.set(`${e.classId}:${dayIndex}`, e);
+    });
+    return map;
+  }, [temporaryEntries, weekDates]);
+
   // The days a class actually meets, once overrides are folded in — its own
-  // default pattern, unioned with any day an override adds beyond it.
+  // default pattern, unioned with any day an override or this week's
+  // temporary schedule adds beyond it.
   const effectiveDaysByClass = useMemo(() => {
     const map = new Map<string, number[]>();
     (classes ?? []).forEach((c) => {
       const overrideDays = (overrides ?? []).filter((o) => o.classId === c.id).map((o) => o.dayOfWeek);
-      map.set(c.id, [...new Set([...c.scheduleDaysOfWeek, ...overrideDays])]);
+      const temporaryDays = [...temporaryByClassDay.keys()]
+        .filter((k) => k.startsWith(`${c.id}:`))
+        .map((k) => Number(k.split(":")[1]));
+      map.set(c.id, [...new Set([...c.scheduleDaysOfWeek, ...overrideDays, ...temporaryDays])]);
     });
     return map;
-  }, [classes, overrides]);
+  }, [classes, overrides, temporaryByClassDay]);
 
   const chartData = useMemo(() => {
     const counts = new Array(7).fill(0);
@@ -132,14 +182,17 @@ export function ScheduleChart() {
         .filter((c) => c.isActive && (effectiveDaysByClass.get(c.id) ?? []).includes(dayIndex))
         .map((c) => {
           const override = overrideByClassDay.get(`${c.id}:${dayIndex}`);
+          const temporary = temporaryByClassDay.get(`${c.id}:${dayIndex}`);
+          const timing = temporary ?? override;
           return {
             ...c,
-            teacherName: override?.teacherName ?? c.teacherName,
-            slot: override ? { dayOfWeek: dayIndex, startTime: override.startTime, endTime: override.endTime } : getSlotForDay(c.scheduleSlots, dayIndex),
+            teacherName: temporary?.teacherName ?? override?.teacherName ?? c.teacherName,
+            slot: timing ? { dayOfWeek: dayIndex, startTime: timing.startTime, endTime: timing.endTime } : getSlotForDay(c.scheduleSlots, dayIndex),
+            isTemporary: Boolean(temporary),
           };
         })
         .sort((a, b) => (a.slot?.startTime ?? "").localeCompare(b.slot?.startTime ?? ""));
-  }, [classes, effectiveDaysByClass, overrideByClassDay]);
+  }, [classes, effectiveDaysByClass, overrideByClassDay, temporaryByClassDay]);
 
   const selectedList = effectiveSelectedDay === null ? [] : getClassesForDay(effectiveSelectedDay);
 
@@ -196,6 +249,10 @@ export function ScheduleChart() {
           )}
         </div>
 
+        {!isLoading && !isError && temporaryByClassDay.size > 0 && (
+          <p className="text-muted-foreground mt-2 text-[11px]">{t("includesTemporarySchedules")}</p>
+        )}
+
         {!isLoading && !isError && effectiveSelectedDay !== null && (
           <div className="mt-3 border-t pt-3">
             <p className="text-muted-foreground mb-2 text-xs font-medium">
@@ -215,7 +272,10 @@ export function ScheduleChart() {
                     className="bg-muted/40 flex items-center justify-between gap-3 rounded-lg px-2.5 py-1.5"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium">{c.name}</p>
+                      <p className="truncate text-xs font-medium">
+                        {c.name}
+                        {c.isTemporary && <TemporaryBadge />}
+                      </p>
                       <p className="text-muted-foreground truncate text-[11px]">
                         {c.schoolName} · {c.teacherName}
                       </p>

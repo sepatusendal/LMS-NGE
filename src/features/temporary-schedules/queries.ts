@@ -270,6 +270,48 @@ export async function deleteTemporaryScheduleBatch(batchId: string): Promise<voi
   if (error) throw error;
 }
 
+export interface TemporaryScheduleEntry {
+  classId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  /** Substitute teacher's name, null when the usual teacher keeps the class. */
+  teacherName: string | null;
+}
+
+/** Every temporary-schedule row whose date falls in [dateFrom, dateTo]
+ * (inclusive, "YYYY-MM-DD") — for views like the dashboard's weekly schedule
+ * chart that need the real per-date picture across all classes at once,
+ * unlike fetchTemporaryScheduleTimesForDate which resolves a single date. */
+export async function fetchTemporarySchedulesInRange(
+  dateFrom: string,
+  dateTo: string,
+): Promise<TemporaryScheduleEntry[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("class_temporary_schedules")
+    .select("classId, date, startTime, endTime, teachers(users(fullName))")
+    .gte("date", dateFrom)
+    .lte("date", dateTo);
+  if (error) throw error;
+
+  return (
+    data as unknown as {
+      classId: string;
+      date: string;
+      startTime: string;
+      endTime: string;
+      teachers: TemporaryScheduleRow["teachers"];
+    }[]
+  ).map((row) => ({
+    classId: row.classId,
+    date: row.date,
+    startTime: row.startTime,
+    endTime: row.endTime,
+    teacherName: toOne(row.teachers)?.users?.fullName ?? null,
+  }));
+}
+
 /** classId -> {startTime, endTime, teacherId} for every class in `classIds`
  * that has a temporary schedule override covering `date` — the
  * meetings/check-in and monitoring time-resolution logic look this up and,

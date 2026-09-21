@@ -1284,6 +1284,8 @@
       "classesOnDay": "{count} kelas pada hari {day}",
       "tapAgainToClose": "tap lagi untuk tutup",
       "noClassesScheduledOnDay": "Tidak ada kelas terjadwal pada hari {day}.",
+      "temporaryBadge": "Sementara",
+      "includesTemporarySchedules": "Minggu ini sudah termasuk jadwal sementara.",
       "teacherAttendanceTitle": "Absensi Teacher/Tutor ({days} hari terakhir)",
       "summary": "Ringkasan",
       "checkInDetail": "Detail Check-in",
