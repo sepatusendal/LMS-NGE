@@ -7,8 +7,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * so the project never reaches that threshold. Hobby plan crons run at most
  * once a day, which is a wide enough margin under the 7-day window. */
 export async function GET(request: NextRequest) {
+  // Fail closed: with CRON_SECRET unset the template below would compare
+  // against the literal "Bearer undefined", which any caller could send.
+  const secret = process.env.CRON_SECRET;
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!secret || authHeader !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

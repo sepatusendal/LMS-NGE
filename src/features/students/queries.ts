@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import { enrollStudent } from "@/features/classes/roster-queries";
 import type { Student, StudentInput, StudentType } from "./schema";
 
@@ -71,23 +72,26 @@ export async function fetchStudents(
   options?: { excludeTeacherTraining?: boolean },
 ): Promise<Student[]> {
   const supabase = createClient();
-  let query = supabase
-    .from("students")
-    .select("id, fullName, schoolId, nis, studentType, isActive, createdAt, schools(name)")
-    .is("deletedAt", null)
-    .order("fullName");
+  // Paged — this also backs headcounts (dashboard "Siswa Aktif"), which a
+  // response silently truncated at 1000 rows would under-count.
+  const rows = await fetchAllPages<StudentRow>((from, to) => {
+    let query = supabase
+      .from("students")
+      .select("id, fullName, schoolId, nis, studentType, isActive, createdAt, schools(name)")
+      .is("deletedAt", null)
+      .order("fullName")
+      .order("id");
 
-  if (schoolId) {
-    query = query.eq("schoolId", schoolId);
-  }
-  if (options?.excludeTeacherTraining) {
-    query = query.eq("studentType", "REGULAR");
-  }
+    if (schoolId) {
+      query = query.eq("schoolId", schoolId);
+    }
+    if (options?.excludeTeacherTraining) {
+      query = query.eq("studentType", "REGULAR");
+    }
+    return query.range(from, to);
+  });
 
-  const { data, error } = await query;
-  if (error) throw error;
-
-  return (data as unknown as StudentRow[]).map(mapStudentRow);
+  return rows.map(mapStudentRow);
 }
 
 function toPayload(input: StudentInput) {

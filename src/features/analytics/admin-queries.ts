@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllPages, fetchInChunks } from "@/lib/supabase/paginate";
 import { parseLocalDate, formatLocalDateStr } from "@/lib/date";
 import { getClassComplianceStatus } from "@/features/lesson-plans/compliance";
 import type { LessonPlan } from "@/features/lesson-plans/schema";
@@ -37,20 +38,23 @@ async function fetchClassContext(classIds: string[]) {
   if (classIds.length === 0) {
     return { classById: new Map<string, ClassContextRow>(), schoolNameById: new Map<string, string>() };
   }
-  const { data, error } = await supabase
-    .from("classes")
-    .select("id, name, schoolId, teacherId, isActive, curriculums(name), class_schedule_slots(dayOfWeek, startTime, endTime)")
-    .in("id", classIds);
-  if (error) throw error;
-  const rows = data as unknown as ClassContextRow[];
+  const rows = await fetchInChunks<ClassContextRow>(classIds, (chunk, from, to) =>
+    supabase
+      .from("classes")
+      .select("id, name, schoolId, teacherId, isActive, curriculums(name), class_schedule_slots(dayOfWeek, startTime, endTime)")
+      .in("id", chunk)
+      .order("id")
+      .range(from, to),
+  );
   const classById = new Map(rows.map((c) => [c.id, c]));
 
   const schoolIds = [...new Set(rows.map((c) => c.schoolId))];
   const schoolNameById = new Map<string, string>();
   if (schoolIds.length > 0) {
-    const { data: schools, error: schErr } = await supabase.from("schools").select("id, name").in("id", schoolIds);
-    if (schErr) throw schErr;
-    (schools as unknown as { id: string; name: string }[]).forEach((s) => schoolNameById.set(s.id, s.name));
+    const schools = await fetchInChunks<{ id: string; name: string }>(schoolIds, (chunk, from, to) =>
+      supabase.from("schools").select("id, name").in("id", chunk).order("id").range(from, to),
+    );
+    schools.forEach((s) => schoolNameById.set(s.id, s.name));
   }
 
   return { classById, schoolNameById };
@@ -60,9 +64,12 @@ async function fetchTeacherNames(teacherIds: string[]): Promise<Map<string, stri
   const supabase = createClient();
   const nameById = new Map<string, string>();
   if (teacherIds.length === 0) return nameById;
-  const { data, error } = await supabase.from("teachers").select("id, users(fullName)").in("id", teacherIds);
-  if (error) throw error;
-  (data as unknown as { id: string; users: { fullName: string } | { fullName: string }[] | null }[]).forEach((t) => {
+  const data = await fetchInChunks<{ id: string; users: { fullName: string } | { fullName: string }[] | null }>(
+    teacherIds,
+    (chunk, from, to) =>
+      supabase.from("teachers").select("id, users(fullName)").in("id", chunk).order("id").range(from, to),
+  );
+  data.forEach((t) => {
     nameById.set(t.id, toOne(t.users)?.fullName ?? "-");
   });
   return nameById;
@@ -129,32 +136,33 @@ export async function fetchTutorAttendanceReport(filters: AnalyticsFilters): Pro
   const supabase = createClient();
   const { fromISO, toISO } = localDateBoundsISO(filters.dateFrom, filters.dateTo);
 
-  const { data, error } = await supabase
-    .from("check_ins")
-    .select(
-      "meetingId, teacherId, checkInTime, isLate, photoDriveFileId, notes, teachers(users(fullName)), meetings(id, lessonPlanId, assignedTeacherId, actualTeacherId)",
-    )
-    .gte("checkInTime", fromISO)
-    .lt("checkInTime", toISO)
-    .order("checkInTime", { ascending: false });
-  if (error) throw error;
-
-  const rows = data as unknown as CheckInReportRow[];
+  const rows = await fetchAllPages<CheckInReportRow>((from, to) =>
+    supabase
+      .from("check_ins")
+      .select(
+        "meetingId, teacherId, checkInTime, isLate, photoDriveFileId, notes, teachers(users(fullName)), meetings(id, lessonPlanId, assignedTeacherId, actualTeacherId)",
+      )
+      .gte("checkInTime", fromISO)
+      .lt("checkInTime", toISO)
+      .order("checkInTime", { ascending: false })
+      .order("id")
+      .range(from, to),
+  );
   if (rows.length === 0) return [];
 
   const meetingIds = [...new Set(rows.map((r) => toOne(r.meetings)?.id).filter((id): id is string => Boolean(id)))];
-  const { data: lessonPlans, error: lpErr } = await supabase
-    .from("lesson_plans")
-    .select("id, classId, meetingNumber, scheduledDate")
-    .in(
-      "id",
-      rows.map((r) => toOne(r.meetings)?.lessonPlanId).filter((id): id is string => Boolean(id)),
-    );
-  if (lpErr) throw lpErr;
-  const lpByMeeting = new Map<string, { classId: string; meetingNumber: number; scheduledDate: string }>();
-  const lpById = new Map(
-    (lessonPlans as unknown as { id: string; classId: string; meetingNumber: number; scheduledDate: string }[]).map((lp) => [lp.id, lp]),
+  const lessonPlans = await fetchInChunks<{ id: string; classId: string; meetingNumber: number; scheduledDate: string }>(
+    rows.map((r) => toOne(r.meetings)?.lessonPlanId).filter((id): id is string => Boolean(id)),
+    (chunk, from, to) =>
+      supabase
+        .from("lesson_plans")
+        .select("id, classId, meetingNumber, scheduledDate")
+        .in("id", chunk)
+        .order("id")
+        .range(from, to),
   );
+  const lpByMeeting = new Map<string, { classId: string; meetingNumber: number; scheduledDate: string }>();
+  const lpById = new Map(lessonPlans.map((lp) => [lp.id, lp]));
   rows.forEach((r) => {
     const meeting = toOne(r.meetings);
     if (!meeting) return;
@@ -167,18 +175,22 @@ export async function fetchTutorAttendanceReport(filters: AnalyticsFilters): Pro
     .map((r) => toOne(r.meetings)?.assignedTeacherId)
     .filter((id): id is string => Boolean(id));
 
-  const [{ classById, schoolNameById }, checkOutsResult, assignedNameById] = await Promise.all([
+  const [{ classById, schoolNameById }, checkOuts, assignedNameById] = await Promise.all([
     fetchClassContext(classIds),
-    supabase
-      .from("check_outs")
-      .select("meetingId, checkOutTime, durationMinutes")
-      .in("meetingId", meetingIds.length > 0 ? meetingIds : ["00000000-0000-0000-0000-000000000000"]),
+    fetchInChunks<{ meetingId: string; checkOutTime: string; durationMinutes: number }>(
+      meetingIds,
+      (chunk, from, to) =>
+        supabase
+          .from("check_outs")
+          .select("meetingId, checkOutTime, durationMinutes")
+          .in("meetingId", chunk)
+          .order("id")
+          .range(from, to),
+    ),
     fetchTeacherNames([...new Set(assignedTeacherIds)]),
   ]);
-  if (checkOutsResult.error) throw checkOutsResult.error;
-  const checkOutByMeeting = new Map(
-    (checkOutsResult.data as unknown as { meetingId: string; checkOutTime: string; durationMinutes: number }[]).map((c) => [c.meetingId, c]),
-  );
+  const checkOutByMeeting = new Map(checkOuts.map((c) => [c.meetingId, c]));
+  const meetingByMeetingId = new Map(rows.map((r) => [r.meetingId, toOne(r.meetings)]));
 
   const result = rows.map((r) => {
     const meeting = toOne(r.meetings);
@@ -220,8 +232,7 @@ export async function fetchTutorAttendanceReport(filters: AnalyticsFilters): Pro
     if (filters.schoolId && r.schoolId !== filters.schoolId) return false;
     if (filters.classId && r.classId !== filters.classId) return false;
     if (filters.teacherId) {
-      const meeting = rows.find((x) => x.meetingId === r.meetingId);
-      const m = meeting ? toOne(meeting.meetings) : null;
+      const m = meetingByMeetingId.get(r.meetingId) ?? null;
       const matches = m && (m.assignedTeacherId === filters.teacherId || m.actualTeacherId === filters.teacherId);
       if (!matches) return false;
     }
@@ -273,43 +284,49 @@ export async function fetchStudentAttendanceReport(
 ): Promise<{ rows: StudentAttendanceReportRow[]; summary: StudentAttendanceSummaryRow[] }> {
   const supabase = createClient();
 
-  let lpQuery = supabase
-    .from("lesson_plans")
-    .select("id, classId, meetingNumber, scheduledDate")
-    .is("deletedAt", null)
-    .gte("scheduledDate", filters.dateFrom)
-    .lte("scheduledDate", filters.dateTo);
-  if (filters.classId) lpQuery = lpQuery.eq("classId", filters.classId);
-  const { data: lessonPlans, error: lpErr } = await lpQuery;
-  if (lpErr) throw lpErr;
-  const lpRows = lessonPlans as unknown as { id: string; classId: string; meetingNumber: number; scheduledDate: string }[];
+  const lpRows = await fetchAllPages<{ id: string; classId: string; meetingNumber: number; scheduledDate: string }>(
+    (from, to) => {
+      let lpQuery = supabase
+        .from("lesson_plans")
+        .select("id, classId, meetingNumber, scheduledDate")
+        .is("deletedAt", null)
+        .gte("scheduledDate", filters.dateFrom)
+        .lte("scheduledDate", filters.dateTo)
+        .order("id");
+      if (filters.classId) lpQuery = lpQuery.eq("classId", filters.classId);
+      return lpQuery.range(from, to);
+    },
+  );
   if (lpRows.length === 0) return { rows: [], summary: [] };
   const lpById = new Map(lpRows.map((lp) => [lp.id, lp]));
 
-  const { data: meetings, error: meetErr } = await supabase
-    .from("meetings")
-    .select("id, lessonPlanId")
-    .in("lessonPlanId", [...lpById.keys()]);
-  if (meetErr) throw meetErr;
-  const lpByMeeting = new Map(
-    (meetings as unknown as { id: string; lessonPlanId: string }[]).map((m) => [m.id, lpById.get(m.lessonPlanId)!]),
+  const meetings = await fetchInChunks<{ id: string; lessonPlanId: string }>(
+    [...lpById.keys()],
+    (chunk, from, to) =>
+      supabase.from("meetings").select("id, lessonPlanId").in("lessonPlanId", chunk).order("id").range(from, to),
   );
+  const lpByMeeting = new Map(meetings.map((m) => [m.id, lpById.get(m.lessonPlanId)!]));
   const meetingIds = [...lpByMeeting.keys()];
   if (meetingIds.length === 0) return { rows: [], summary: [] };
 
   const classIds = [...new Set(Array.from(lpByMeeting.values()).map((lp) => lp.classId))];
-  const [{ classById, schoolNameById }, attendancesResult] = await Promise.all([
+  const [{ classById, schoolNameById }, attendances] = await Promise.all([
     fetchClassContext(classIds),
-    supabase.from("attendances").select("meetingId, studentId, status, notes, students(fullName, nis)").in("meetingId", meetingIds),
+    fetchInChunks<AttendanceReportRow>(meetingIds, (chunk, from, to) =>
+      supabase
+        .from("attendances")
+        .select("meetingId, studentId, status, notes, students(fullName, nis)")
+        .in("meetingId", chunk)
+        .order("id")
+        .range(from, to),
+    ),
   ]);
-  if (attendancesResult.error) throw attendancesResult.error;
-  const attendances = attendancesResult.data;
 
   const filteredClassIds = filters.schoolId
     ? classIds.filter((id) => classById.get(id)?.schoolId === filters.schoolId)
     : classIds;
 
-  const rows: StudentAttendanceReportRow[] = (attendances as unknown as AttendanceReportRow[])
+  const rows: StudentAttendanceReportRow[] = attendances
     .map((a) => {
       const lp = lpByMeeting.get(a.meetingId);
       const cls = lp ? classById.get(lp.classId) : undefined;
@@ -423,20 +440,20 @@ interface LessonPlanReportRawRow {
 export async function fetchLessonPlanReport(filters: AnalyticsFilters): Promise<LessonPlanReportRow[]> {
   const supabase = createClient();
 
-  let query = supabase
-    .from("lesson_plans")
-    .select(
-      "id, classId, meetingNumber, scheduledDate, topic, materialsRequired, vocabularyFocus, differentiationSupport, differentiationExtension, differentiationHomework, moduleDriveFileId, isDraft, isAdminEntered",
-    )
-    .is("deletedAt", null)
-    .gte("scheduledDate", filters.dateFrom)
-    .lte("scheduledDate", filters.dateTo)
-    .order("scheduledDate", { ascending: false });
-  if (filters.classId) query = query.eq("classId", filters.classId);
-
-  const { data, error } = await query;
-  if (error) throw error;
-  const rows = data as unknown as LessonPlanReportRawRow[];
+  const rows = await fetchAllPages<LessonPlanReportRawRow>((from, to) => {
+    let query = supabase
+      .from("lesson_plans")
+      .select(
+        "id, classId, meetingNumber, scheduledDate, topic, materialsRequired, vocabularyFocus, differentiationSupport, differentiationExtension, differentiationHomework, moduleDriveFileId, isDraft, isAdminEntered",
+      )
+      .is("deletedAt", null)
+      .gte("scheduledDate", filters.dateFrom)
+      .lte("scheduledDate", filters.dateTo)
+      .order("scheduledDate", { ascending: false })
+      .order("id");
+    if (filters.classId) query = query.eq("classId", filters.classId);
+    return query.range(from, to);
+  });
   if (rows.length === 0) return [];
 
   const classIds = [...new Set(rows.map((r) => r.classId))];
@@ -445,12 +462,19 @@ export async function fetchLessonPlanReport(filters: AnalyticsFilters): Promise<
   // classes — getClassComplianceStatus looks at the class's furthest-out
   // plan, not just the ones inside this filtered date range. This only
   // depends on classIds, so it can run alongside fetchClassContext.
-  const [{ classById, schoolNameById }, allPlansResult] = await Promise.all([
+  const [{ classById, schoolNameById }, allPlans] = await Promise.all([
     fetchClassContext(classIds),
-    supabase.from("lesson_plans").select("id, classId, scheduledDate").in("classId", classIds).is("deletedAt", null),
+    fetchInChunks<{ id: string; classId: string; scheduledDate: string }>(classIds, (chunk, from, to) =>
+      supabase
+        .from("lesson_plans")
+        .select("id, classId, scheduledDate")
+        .in("classId", chunk)
+        .is("deletedAt", null)
+        .order("id")
+        .range(from, to),
+    ),
   ]);
-  if (allPlansResult.error) throw allPlansResult.error;
-  const allPlansMapped = (allPlansResult.data as unknown as { id: string; classId: string; scheduledDate: string }[]).map(
+  const allPlansMapped = allPlans.map(
     (p) => ({ id: p.id, classId: p.classId, scheduledDate: p.scheduledDate }) as unknown as LessonPlan,
   );
   const complianceById = complianceByClass(classIds, allPlansMapped);
@@ -508,39 +532,55 @@ export interface ClassesReportRow {
 export async function fetchClassesReport(filters: AnalyticsFilters): Promise<ClassesReportRow[]> {
   const supabase = createClient();
 
-  let classQuery = supabase
-    .from("classes")
-    .select(
-      "id, name, schoolId, teacherId, isActive, curriculums(name), class_schedule_slots(dayOfWeek, startTime, endTime)",
-    )
-    .is("deletedAt", null)
-    .order("name");
-  if (filters.schoolId) classQuery = classQuery.eq("schoolId", filters.schoolId);
-  if (filters.classId) classQuery = classQuery.eq("id", filters.classId);
-  const { data: classes, error: clsErr } = await classQuery;
-  if (clsErr) throw clsErr;
-  const classRows = classes as unknown as ClassContextRow[];
+  const classRows = await fetchAllPages<ClassContextRow>((from, to) => {
+    let classQuery = supabase
+      .from("classes")
+      .select(
+        "id, name, schoolId, teacherId, isActive, curriculums(name), class_schedule_slots(dayOfWeek, startTime, endTime)",
+      )
+      .is("deletedAt", null)
+      .order("name")
+      .order("id");
+    if (filters.schoolId) classQuery = classQuery.eq("schoolId", filters.schoolId);
+    if (filters.classId) classQuery = classQuery.eq("id", filters.classId);
+    return classQuery.range(from, to);
+  });
   if (classRows.length === 0) return [];
   const classIds = classRows.map((c) => c.id);
 
-  const [schoolsResult, teacherNameById, enrollmentsResult, lessonPlansResult] = await Promise.all([
-    supabase.from("schools").select("id, name").in("id", [...new Set(classRows.map((c) => c.schoolId))]),
+  const [schools, teacherNameById, enrollments, lpAllRows] = await Promise.all([
+    fetchInChunks<{ id: string; name: string }>(
+      classRows.map((c) => c.schoolId),
+      (chunk, from, to) => supabase.from("schools").select("id, name").in("id", chunk).order("id").range(from, to),
+    ),
     fetchTeacherNames([...new Set(classRows.map((c) => c.teacherId))]),
-    supabase.from("class_enrollments").select("classId").in("classId", classIds).is("unenrolledAt", null),
-    supabase.from("lesson_plans").select("id, classId, scheduledDate").in("classId", classIds).is("deletedAt", null),
+    fetchInChunks<{ id: string; classId: string }>(classIds, (chunk, from, to) =>
+      supabase
+        .from("class_enrollments")
+        .select("id, classId")
+        .in("classId", chunk)
+        .is("unenrolledAt", null)
+        .order("id")
+        .range(from, to),
+    ),
+    fetchInChunks<{ id: string; classId: string; scheduledDate: string }>(classIds, (chunk, from, to) =>
+      supabase
+        .from("lesson_plans")
+        .select("id, classId, scheduledDate")
+        .in("classId", chunk)
+        .is("deletedAt", null)
+        .order("id")
+        .range(from, to),
+    ),
   ]);
-  if (schoolsResult.error) throw schoolsResult.error;
-  if (enrollmentsResult.error) throw enrollmentsResult.error;
-  if (lessonPlansResult.error) throw lessonPlansResult.error;
 
-  const schoolNameById = new Map((schoolsResult.data as unknown as { id: string; name: string }[]).map((s) => [s.id, s.name]));
+  const schoolNameById = new Map(schools.map((s) => [s.id, s.name]));
 
   const enrollmentCountByClass = new Map<string, number>();
-  (enrollmentsResult.data as unknown as { classId: string }[]).forEach((e) => {
+  enrollments.forEach((e) => {
     enrollmentCountByClass.set(e.classId, (enrollmentCountByClass.get(e.classId) ?? 0) + 1);
   });
 
-  const lpAllRows = lessonPlansResult.data as unknown as { id: string; classId: string; scheduledDate: string }[];
   const lpAllMapped = lpAllRows.map((p) => p as unknown as LessonPlan);
   const complianceById = complianceByClass(classIds, lpAllMapped);
   const planCountByClass = new Map<string, number>();
@@ -549,26 +589,26 @@ export async function fetchClassesReport(filters: AnalyticsFilters): Promise<Cla
   const lpInRange = lpAllRows.filter((p) => p.scheduledDate >= filters.dateFrom && p.scheduledDate <= filters.dateTo);
   const lpInRangeIds = lpInRange.map((p) => p.id);
 
-  const { data: meetings, error: meetErr } = await supabase
-    .from("meetings")
-    .select("id, lessonPlanId")
-    .in("lessonPlanId", lpInRangeIds.length > 0 ? lpInRangeIds : ["00000000-0000-0000-0000-000000000000"]);
-  if (meetErr) throw meetErr;
-  const meetingRows = meetings as unknown as { id: string; lessonPlanId: string }[];
+  const meetingRows = await fetchInChunks<{ id: string; lessonPlanId: string }>(
+    lpInRangeIds,
+    (chunk, from, to) =>
+      supabase.from("meetings").select("id, lessonPlanId").in("lessonPlanId", chunk).order("id").range(from, to),
+  );
   const classByLessonPlan = new Map(lpInRange.map((p) => [p.id, p.classId]));
   const classByMeeting = new Map(meetingRows.map((m) => [m.id, classByLessonPlan.get(m.lessonPlanId) ?? ""]));
   const meetingIds = meetingRows.map((m) => m.id);
 
-  const meetingIdsOrPlaceholder = meetingIds.length > 0 ? meetingIds : ["00000000-0000-0000-0000-000000000000"];
-  const [attendancesResult, reportsResult] = await Promise.all([
-    supabase.from("attendances").select("meetingId, status").in("meetingId", meetingIdsOrPlaceholder),
-    supabase.from("teaching_reports").select("meetingId").in("meetingId", meetingIdsOrPlaceholder),
+  const [attendanceRows, reportRows] = await Promise.all([
+    fetchInChunks<{ meetingId: string; status: string }>(meetingIds, (chunk, from, to) =>
+      supabase.from("attendances").select("meetingId, status").in("meetingId", chunk).order("id").range(from, to),
+    ),
+    fetchInChunks<{ meetingId: string }>(meetingIds, (chunk, from, to) =>
+      supabase.from("teaching_reports").select("meetingId").in("meetingId", chunk).order("id").range(from, to),
+    ),
   ]);
-  if (attendancesResult.error) throw attendancesResult.error;
-  if (reportsResult.error) throw reportsResult.error;
 
   const attendanceByClass = new Map<string, { present: number; total: number }>();
-  (attendancesResult.data as unknown as { meetingId: string; status: string }[]).forEach((a) => {
+  attendanceRows.forEach((a) => {
     const classId = classByMeeting.get(a.meetingId);
     if (!classId) return;
     const cur = attendanceByClass.get(classId) ?? { present: 0, total: 0 };
@@ -578,7 +618,7 @@ export async function fetchClassesReport(filters: AnalyticsFilters): Promise<Cla
   });
 
   const reportsFiledByClass = new Map<string, number>();
-  (reportsResult.data as unknown as { meetingId: string }[]).forEach((r) => {
+  reportRows.forEach((r) => {
     const classId = classByMeeting.get(r.meetingId);
     if (!classId) return;
     reportsFiledByClass.set(classId, (reportsFiledByClass.get(classId) ?? 0) + 1);

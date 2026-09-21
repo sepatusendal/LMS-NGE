@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import { isHoliday } from "@/features/holidays/queries";
 import type { LessonPlan, LessonPlanInput, StageEntry } from "./schema";
 
@@ -137,13 +138,19 @@ export async function createDraftLessonPlan(
 
 export async function fetchLessonPlans(): Promise<LessonPlan[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("lesson_plans")
-    .select(SELECT)
-    .is("deletedAt", null)
-    .order("scheduledDate");
-  if (error) throw error;
-  return (data as unknown as LessonPlanRow[]).map(mapRow);
+  // Paged: compliance and the plan list are computed from the *latest* plan
+  // per class, so a response truncated at 1000 rows (oldest-first) would
+  // silently drop exactly the plans that matter.
+  const rows = await fetchAllPages<LessonPlanRow>((from, to) =>
+    supabase
+      .from("lesson_plans")
+      .select(SELECT)
+      .is("deletedAt", null)
+      .order("scheduledDate")
+      .order("id")
+      .range(from, to),
+  );
+  return rows.map(mapRow);
 }
 
 export async function fetchLessonPlan(id: string): Promise<LessonPlan> {
