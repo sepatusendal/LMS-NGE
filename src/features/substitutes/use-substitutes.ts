@@ -89,6 +89,13 @@ export function useReassignStartedMeetingTutor(classId: string) {
       queryClient.invalidateQueries({ queryKey: meetingInfoKey(classId) });
       queryClient.invalidateQueries({ queryKey: timelineKey(classId) });
       queryClient.invalidateQueries({ queryKey: ["admin-reports"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-report-detail"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      // dashboard-teacher-attendance, dashboard-tutor-payroll, etc. all
+      // attribute the meeting to a tutor.
+      queryClient.invalidateQueries({
+        predicate: (q) => String(q.queryKey[0]).startsWith("dashboard-"),
+      });
       invalidateStatusBoards(queryClient);
       toast.success("Tutor pada meeting ini berhasil diubah");
     },
