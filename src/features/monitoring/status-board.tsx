@@ -448,7 +448,7 @@ export function StatusBoard() {
         onOpenChange={setManageDialogOpen}
         meetingId={manageRow?.meetingId ?? null}
         classId={manageRow?.classId ?? ""}
-        teacherId={manageRow?.teacherId ?? ""}
+        teacherId={manageRow?.meetingTeacherId ?? manageRow?.teacherId ?? ""}
         meetingLabel={manageRow ? `${manageRow.className} — ${manageRow.topic}` : ""}
       />
     </div>

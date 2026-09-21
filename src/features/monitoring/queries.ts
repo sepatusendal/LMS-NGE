@@ -241,6 +241,7 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
         topic: lp?.topic ?? "",
         hasLessonPlan: isHoliday ? true : Boolean(lp),
         meetingId: meeting?.id ?? null,
+        meetingTeacherId: meeting ? (meeting.actualTeacherId ?? meeting.assignedTeacherId) : null,
         meetingStatus,
         checkInTime: checkIn?.checkInTime ?? null,
         checkOutTime: checkOut?.checkOutTime ?? null,

@@ -9,6 +9,9 @@ export interface TimelineEntry {
   meetingStatus: string;
   assignedTeacherId: string | null;
   assignedTeacherName: string;
+  /** The tutor who actually taught, when the meeting has one recorded (a
+   * substitute, or the assigned tutor again after a cancelled substitution). */
+  actualTeacherId: string | null;
   actualTeacherName: string | null;
   isSubstitute: boolean;
   substituteReason: string | null;
@@ -191,6 +194,7 @@ export async function fetchClassTimeline(classId: string): Promise<{
       meetingStatus: meeting?.status ?? "SCHEDULED",
       assignedTeacherId: meeting?.assignedTeacherId ?? scheduled.id,
       assignedTeacherName: assignedTeacher?.users?.fullName ?? scheduled.name,
+      actualTeacherId: meeting?.actualTeacherId ?? null,
       actualTeacherName: actualTeacher?.users?.fullName ?? null,
       isSubstitute: Boolean(
         meeting?.actualTeacherId && meeting.actualTeacherId !== meeting.assignedTeacherId,
