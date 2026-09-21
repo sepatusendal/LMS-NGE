@@ -1,4 +1,4 @@
-// One-off: set Teacher.feePerMeeting per the org's fee schedule.
+// One-off: set each tutor's pay rate (teacher_fees table) per the org's fee schedule.
 // Default 100,000 for every teacher; Bu Eni and Brother Edi get 125,000;
 // Brother Ahmed Siam is left null (not set).
 //
@@ -52,10 +52,12 @@ async function main() {
     if (HIGH_FEE_NAMES.includes(name)) fee = HIGH_FEE;
     if (NO_FEE_NAMES.includes(name)) fee = null;
 
-    const { error: updateError } = await supabase
-      .from("teachers")
-      .update({ feePerMeeting: fee })
-      .eq("id", t.id);
+    const { error: updateError } =
+      fee === null
+        ? await supabase.from("teacher_fees").delete().eq("teacherId", t.id)
+        : await supabase
+            .from("teacher_fees")
+            .upsert({ teacherId: t.id, feePerMeeting: fee, updatedAt: new Date().toISOString() });
     if (updateError) throw updateError;
     console.log(`${name.padEnd(20)} -> ${fee === null ? "(kosong)" : `Rp${fee.toLocaleString("id-ID")}`}`);
   }

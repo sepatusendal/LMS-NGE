@@ -27,20 +27,34 @@ export async function createTeacherAccount(rawInput: TeacherCreateInput) {
     throw new Error(authError?.message ?? "Gagal membuat akun");
   }
 
-  const { error: teacherError } = await admin
+  const { data: teacherRow, error: teacherError } = await admin
     .from("teachers")
     .insert({
       userId: authData.user.id,
       tutorId: input.tutorId || null,
-      feePerMeeting: input.feePerMeeting ? Number(input.feePerMeeting) : null,
       phone: input.phone || null,
-    });
+    })
+    .select("id")
+    .single();
   if (teacherError) {
     await admin.auth.admin.deleteUser(authData.user.id);
     if (teacherError.code === "23505") {
       throw new Error("Tutor ID sudah dipakai teacher lain");
     }
     throw new Error(teacherError.message);
+  }
+
+  // Pay rate lives in its own admin-only table (teachers is readable by every
+  // tutor); no row = not set.
+  if (input.feePerMeeting) {
+    const { error: feeError } = await admin
+      .from("teacher_fees")
+      .insert({ teacherId: teacherRow.id, feePerMeeting: Number(input.feePerMeeting) });
+    if (feeError) {
+      await admin.from("teachers").delete().eq("id", teacherRow.id);
+      await admin.auth.admin.deleteUser(authData.user.id);
+      throw new Error(feeError.message);
+    }
   }
 
   return { email: input.email };
