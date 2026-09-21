@@ -396,8 +396,18 @@
     "toasts": {
       "uploadSuccess": "File berhasil diupload",
       "uploadError": "Gagal upload file",
-      "uploadFailed": "Upload gagal"
+      "uploadFailed": "Upload gagal",
+      "tooLarge": "Ukuran file terlalu besar (maks 4 MB). Foto sudah dikecilkan otomatis tapi masih terlalu besar — coba foto lain atau kecilkan dulu. Untuk PDF, kecilkan ukurannya lalu coba lagi.",
+      "network": "Koneksi internet terputus saat upload. Periksa sinyal lalu coba lagi.",
+      "session": "Sesi login sudah habis. Login ulang, lalu coba upload lagi.",
+      "forbidden": "Akun Anda tidak punya akses untuk upload file. Hubungi admin."
     }
+  },
+  "errors": {
+    "network": "Koneksi internet terputus, data belum tersimpan. Periksa sinyal lalu coba simpan lagi.",
+    "session": "Sesi login sudah habis, data belum tersimpan. Login ulang, lalu coba simpan lagi.",
+    "permission": "Akun Anda tidak punya akses untuk menyimpan ini. Hubungi admin dan sebutkan nama kelas serta tanggalnya.",
+    "duplicate": "Data ini sudah pernah tersimpan sebelumnya. Muat ulang halaman untuk melihat versi terbaru."
   },
   "moduleCover": {
     "moduleName": "Modul {name}",

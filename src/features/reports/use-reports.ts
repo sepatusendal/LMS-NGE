@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { fetchReport, createReport, fetchReportPageContext, updateReport } from "./queries";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
+import { classifyError, errorMessage } from "@/lib/error-kind";
 import type { ReportObjectiveInput } from "./schema";
 
 const REPORT_KEY = ["teaching-report"];
@@ -34,6 +35,7 @@ export function useCreateReport(
   const queryClient = useQueryClient();
   const { data: teacher } = useCurrentTeacher(!adminOverride);
   const t = useTranslations("reportForm.toasts");
+  const tErr = useTranslations("errors");
 
   return useMutation({
     mutationFn: (input: {
@@ -65,8 +67,12 @@ export function useCreateReport(
       queryClient.invalidateQueries({ queryKey: ["today-classes"] });
       toast.success(t("saveSuccess"));
     },
-    onError: (error) =>
-      toast.error(t("saveError"), { description: error.message }),
+    onError: (error) => {
+      const kind = classifyError(error);
+      toast.error(t("saveError"), {
+        description: kind === "other" ? errorMessage(error) : tErr(kind),
+      });
+    },
   });
 }
 
@@ -75,6 +81,7 @@ const KNOWN_UPDATE_ERRORS = new Set(["REPORT_EDIT_NOT_ALLOWED"]);
 export function useUpdateReport(meetingId: string, adminOverride?: { adminNote?: string }) {
   const queryClient = useQueryClient();
   const t = useTranslations("reportForm.toasts");
+  const tErr = useTranslations("errors");
 
   return useMutation({
     mutationFn: (input: { reportId: string } & Parameters<typeof updateReport>[1]) =>
@@ -84,9 +91,15 @@ export function useUpdateReport(meetingId: string, adminOverride?: { adminNote?:
       queryClient.invalidateQueries({ queryKey: ["today-classes"] });
       toast.success(t("updateSuccess"));
     },
-    onError: (error) =>
+    onError: (error) => {
+      const kind = classifyError(error);
       toast.error(t("updateError"), {
-        description: KNOWN_UPDATE_ERRORS.has(error.message) ? t(error.message) : error.message,
-      }),
+        description: KNOWN_UPDATE_ERRORS.has(error.message)
+          ? t(error.message)
+          : kind === "other"
+            ? errorMessage(error)
+            : tErr(kind),
+      });
+    },
   });
 }

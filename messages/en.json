@@ -396,8 +396,18 @@
     "toasts": {
       "uploadSuccess": "File uploaded successfully",
       "uploadError": "Couldn't upload file",
-      "uploadFailed": "Upload failed"
+      "uploadFailed": "Upload failed",
+      "tooLarge": "File is too large (max 4 MB). The photo was already shrunk automatically but is still too big — try another photo or reduce it first. For PDFs, reduce the file size and try again.",
+      "network": "Internet connection dropped during upload. Check your signal and try again.",
+      "session": "Your login session has expired. Log in again, then retry the upload.",
+      "forbidden": "Your account isn't allowed to upload files. Contact an admin."
     }
+  },
+  "errors": {
+    "network": "Internet connection dropped, nothing was saved. Check your signal and try saving again.",
+    "session": "Your login session has expired, nothing was saved. Log in again, then try saving again.",
+    "permission": "Your account isn't allowed to save this. Contact an admin and mention the class name and date.",
+    "duplicate": "This was already saved earlier. Reload the page to see the latest version."
   },
   "moduleCover": {
     "moduleName": "{name} Module",
