@@ -26,6 +26,7 @@ import { useTeachers } from "@/features/teachers/use-teachers";
 import {
   useAssignSubstituteForLessonPlan,
   useCancelSubstitute,
+  useReassignStartedMeetingTutor,
 } from "./use-substitutes";
 import { ABSENCE_REASONS, ABSENCE_REASON_KEY } from "./schema";
 
@@ -34,6 +35,11 @@ export interface ReassignTutorTarget {
   lessonPlanId: string;
   scheduledDate: string;
   meetingId: string | null;
+  /** True once the meeting is checked in/completed — the change is then an
+   * admin correction of what already happened, routed through
+   * reassign_meeting_tutor_admin() instead of the pre-meeting substitute
+   * flow (which refuses started meetings). */
+  hasStarted?: boolean;
   className: string;
   contextLabel?: string; // e.g. school name, meeting topic — shown under the class name
   currentTeacherId: string | null;
@@ -59,6 +65,7 @@ export function ReassignTutorDialog({
   const { data: teachers } = useTeachers();
   const assign = useAssignSubstituteForLessonPlan(target?.classId ?? "");
   const cancel = useCancelSubstitute(target?.classId ?? "");
+  const correct = useReassignStartedMeetingTutor(target?.classId ?? "");
 
   const [substituteTeacherId, setSubstituteTeacherId] = useState("");
   const [reason, setReason] = useState("");
@@ -78,12 +85,20 @@ export function ReassignTutorDialog({
   async function handleSave() {
     if (!target || !substituteTeacherId || !reason) return;
     try {
-      await assign.mutateAsync({
-        lessonPlanId: target.lessonPlanId,
-        scheduledDate: target.scheduledDate,
-        substituteTeacherId,
-        reason,
-      });
+      if (target.hasStarted && target.meetingId) {
+        await correct.mutateAsync({
+          meetingId: target.meetingId,
+          teacherId: substituteTeacherId,
+          reason,
+        });
+      } else {
+        await assign.mutateAsync({
+          lessonPlanId: target.lessonPlanId,
+          scheduledDate: target.scheduledDate,
+          substituteTeacherId,
+          reason,
+        });
+      }
       onOpenChange(false);
     } catch {
       // Error toast already shown by the mutation's onError (e.g. a
@@ -95,7 +110,16 @@ export function ReassignTutorDialog({
   async function handleCancelSubstitute() {
     if (!target?.meetingId) return;
     try {
-      await cancel.mutateAsync(target.meetingId);
+      if (target.hasStarted) {
+        if (!target.currentTeacherId) return;
+        await correct.mutateAsync({
+          meetingId: target.meetingId,
+          teacherId: target.currentTeacherId,
+          reason: null,
+        });
+      } else {
+        await cancel.mutateAsync(target.meetingId);
+      }
       onOpenChange(false);
     } catch {
       // Error toast already shown by the mutation's onError.
@@ -186,7 +210,9 @@ export function ReassignTutorDialog({
           </div>
 
           <p className="text-muted-foreground text-xs">
-            {t("hint", { date: dateLabel, teacher: target.currentTeacherName })}
+            {target.hasStarted
+              ? t("startedHint")
+              : t("hint", { date: dateLabel, teacher: target.currentTeacherName })}
           </p>
         </div>
 
@@ -195,10 +221,10 @@ export function ReassignTutorDialog({
             <Button
               variant="ghost"
               className="text-destructive hover:text-destructive"
-              disabled={cancel.isPending || !target.meetingId}
+              disabled={cancel.isPending || correct.isPending || !target.meetingId}
               onClick={handleCancelSubstitute}
             >
-              {cancel.isPending ? t("cancelling") : t("cancelSubstitution")}
+              {cancel.isPending || correct.isPending ? t("cancelling") : t("cancelSubstitution")}
             </Button>
           ) : (
             <span />
@@ -208,10 +234,10 @@ export function ReassignTutorDialog({
               {tCommon("close")}
             </Button>
             <Button
-              disabled={!substituteTeacherId || !reason || assign.isPending}
+              disabled={!substituteTeacherId || !reason || assign.isPending || correct.isPending}
               onClick={handleSave}
             >
-              {assign.isPending ? tCommon("saving") : tCommon("save")}
+              {assign.isPending || correct.isPending ? tCommon("saving") : tCommon("save")}
             </Button>
           </div>
         </DialogFooter>

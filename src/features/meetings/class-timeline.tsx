@@ -31,7 +31,6 @@ function TimelineItem({
   entry,
   isLast,
   totalEnrolled,
-  canReassign,
   canManage,
   onReassign,
   onManageMeeting,
@@ -41,7 +40,6 @@ function TimelineItem({
   entry: TimelineEntry;
   isLast: boolean;
   totalEnrolled: number;
-  canReassign: boolean;
   canManage: boolean;
   onReassign: (entry: TimelineEntry) => void;
   onManageMeeting: (entry: TimelineEntry) => void;
@@ -113,7 +111,7 @@ function TimelineItem({
                 {t("substitute")}
               </Badge>
             )}
-            {canManage && canReassign && (
+            {canManage && (
               <Button
                 size="sm"
                 variant="ghost"
@@ -255,6 +253,7 @@ export function ClassTimeline({
       lessonPlanId: entry.lessonPlanId,
       scheduledDate: entry.scheduledDate,
       meetingId: entry.meetingId,
+      hasStarted: Boolean(entry.checkInTime) || entry.meetingStatus === "COMPLETED",
       className: classDisplayName ?? t("thisClass"),
       contextLabel: entry.topic,
       currentTeacherId: entry.assignedTeacherId,
@@ -292,18 +291,12 @@ export function ClassTimeline({
         {t("summary", { enrolled: data.totalEnrolled, lessonPlans: data.timeline.length })}
       </p>
       {data.timeline.map((entry, i) => {
-        // Reassignment is only sensible before the meeting has actually
-        // started — matches the "already checked in, can't change tutor"
-        // guard enforced server-side in
-        // assignSubstituteForLessonPlan/cancelSubstitute.
-        const canReassign = !entry.checkInTime && entry.meetingStatus !== "COMPLETED";
         return (
           <TimelineItem
             key={entry.lessonPlanId}
             entry={entry}
             isLast={i === data.timeline.length - 1}
             totalEnrolled={data.totalEnrolled}
-            canReassign={canReassign}
             canManage={canManage}
             onReassign={openReassignDialog}
             onManageMeeting={openManageDialog}
