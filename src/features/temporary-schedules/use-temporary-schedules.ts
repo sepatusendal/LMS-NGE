@@ -4,6 +4,7 @@ import {
   createTemporarySchedules,
   deleteTemporaryScheduleBatch,
   fetchTemporaryScheduleBatches,
+  fetchTemporarySchedulesInRange,
   findTemporaryScheduleConflicts,
   updateTemporarySchedule,
 } from "./queries";
@@ -13,6 +14,16 @@ const TEMPORARY_SCHEDULES_KEY = ["temporary-schedules"];
 
 export function useTemporarySchedules() {
   return useQuery({ queryKey: TEMPORARY_SCHEDULES_KEY, queryFn: fetchTemporaryScheduleBatches });
+}
+
+/** Prefixed with TEMPORARY_SCHEDULES_KEY so every mutation's
+ * invalidateQueries(TEMPORARY_SCHEDULES_KEY) below refreshes this too. */
+export function useTemporarySchedulesInRange(dateFrom: string | null, dateTo: string | null) {
+  return useQuery({
+    queryKey: [...TEMPORARY_SCHEDULES_KEY, "range", dateFrom, dateTo],
+    queryFn: () => fetchTemporarySchedulesInRange(dateFrom as string, dateTo as string),
+    enabled: dateFrom !== null && dateTo !== null,
+  });
 }
 
 /** A temp-schedule write changes who teaches a class and/or when — that
