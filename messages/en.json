@@ -1001,6 +1001,7 @@
       "allSchools": "All schools",
       "allClasses": "All classes",
       "allTypes": "All types",
+      "classTypeHeader": "Class Type",
       "classTypeRegular": "Regular Class",
       "classTypeTraining": "Teacher & Staff Class",
       "empty": "No reports yet.",
