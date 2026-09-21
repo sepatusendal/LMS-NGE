@@ -1001,6 +1001,7 @@
       "allSchools": "Semua sekolah",
       "allClasses": "Semua kelas",
       "allTypes": "Semua tipe",
+      "classTypeHeader": "Tipe Kelas",
       "classTypeRegular": "Kelas Reguler",
       "classTypeTraining": "Kelas Guru & Staff",
       "empty": "Belum ada report.",
