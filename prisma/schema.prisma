@@ -88,7 +88,7 @@ model Teacher {
   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId    String    @unique @db.Uuid
   tutorId   String?   @unique // external tutor ID, disambiguates teachers/tutors with the same or similar name — not a foreign key
-  feePerMeeting Int? // Rupiah paid per meeting actually attended (CheckIn), admin-editable; null = not set
+  feePerMeeting Int? // DEPRECATED: superseded by TeacherFee (admin-only table). Dropped in a follow-up migration.
   phone     String?
   isActive  Boolean   @default(true)
   createdAt DateTime  @default(now()) @db.Timestamptz(3)
@@ -96,6 +96,7 @@ model Teacher {
   deletedAt DateTime? @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id])
+  fee  TeacherFee?
 
   classesAsPrimary    Class[]          @relation("ClassPrimaryTeacher")
   meetingsAssigned    Meeting[]        @relation("MeetingAssignedTeacher")
@@ -109,6 +110,18 @@ model Teacher {
   temporaryScheduleAssignments ClassTemporarySchedule[]
 
   @@map("teachers")
+}
+
+// Rupiah paid per meeting actually attended (CheckIn), admin-editable. Its own
+// table (admin-only RLS) because "teachers" is readable by every tutor; no row = not set.
+model TeacherFee {
+  teacherId     String   @id @db.Uuid
+  feePerMeeting Int
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamptz(3)
+
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@map("teacher_fees")
 }
 
 // ─────────────────────────────────────────────────────────────
