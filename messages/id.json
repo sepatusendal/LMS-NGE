@@ -669,6 +669,21 @@
       "assignClassOptional": "Assign ke Kelas (opsional)",
       "selectClassOptional": "Pilih kelas (opsional)",
       "autoEnrollHint": "Siswa akan otomatis terdaftar ke kelas ini setelah disimpan.",
+      "classesHeader": "Kelas",
+      "manageClasses": "Atur Kelas",
+      "classesDialog": {
+        "title": "Kelas: {name}",
+        "description": "Tambah ke kelas, pindahkan, atau keluarkan. Satu siswa boleh ikut lebih dari satu kelas.",
+        "currentClasses": "Kelas saat ini",
+        "noClasses": "Siswa belum terdaftar di kelas manapun.",
+        "moveTo": "Pindah ke...",
+        "remove": "Keluarkan",
+        "removeConfirm": "Keluarkan dari {class}?",
+        "addToClass": "Tambah ke kelas",
+        "selectClass": "Pilih kelas",
+        "noMoreClasses": "Tidak ada kelas lain tersedia",
+        "add": "Tambah"
+      },
       "validation": {
         "fullNameRequired": "Nama siswa wajib diisi",
         "schoolRequired": "Sekolah wajib dipilih"

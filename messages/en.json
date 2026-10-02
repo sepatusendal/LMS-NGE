@@ -669,6 +669,21 @@
       "assignClassOptional": "Assign to Class (optional)",
       "selectClassOptional": "Select class (optional)",
       "autoEnrollHint": "The student will be automatically enrolled in this class after saving.",
+      "classesHeader": "Classes",
+      "manageClasses": "Manage Classes",
+      "classesDialog": {
+        "title": "Classes: {name}",
+        "description": "Add to a class, move, or remove. A student can join more than one class.",
+        "currentClasses": "Current classes",
+        "noClasses": "Not enrolled in any class yet.",
+        "moveTo": "Move to...",
+        "remove": "Remove",
+        "removeConfirm": "Remove from {class}?",
+        "addToClass": "Add to class",
+        "selectClass": "Select class",
+        "noMoreClasses": "No other classes available",
+        "add": "Add"
+      },
       "validation": {
         "fullNameRequired": "Student name is required",
         "schoolRequired": "School is required"
