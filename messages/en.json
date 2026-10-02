@@ -672,7 +672,7 @@
       "classesHeader": "Classes",
       "manageClasses": "Manage Classes",
       "classesDialog": {
-        "title": "Classes: {name}",
+        "title": "Manage Classes: {name}",
         "description": "Add to a class, move, or remove. A student can join more than one class.",
         "currentClasses": "Current classes",
         "noClasses": "Not enrolled in any class yet.",
