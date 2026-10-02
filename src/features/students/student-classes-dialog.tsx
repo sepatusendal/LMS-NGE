@@ -40,7 +40,9 @@ export function StudentClassesDialog({
 }) {
   const t = useTranslations("admin.students.classesDialog");
   const { data: classes } = useClasses(undefined, open);
-  const { data: enrollments } = useSchoolEnrollments(open ? student?.schoolId : undefined);
+  const { data: enrollments } = useSchoolEnrollments(
+    open ? student?.schoolId : undefined,
+  );
   const assign = useAssignStudentToClass();
   const remove = useRemoveStudentFromClass();
   const move = useMoveStudentToClass();
@@ -66,68 +68,81 @@ export function StudentClassesDialog({
   }, [classes, student, current]);
 
   const busy = assign.isPending || remove.isPending || move.isPending;
-  const classItems = availableClasses.map((c) => ({ value: c.id, label: c.name }));
+  const classItems = availableClasses.map((c) => ({
+    value: c.id,
+    label: c.name,
+  }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t("title", { name: student?.fullName ?? "" })}</DialogTitle>
+          <DialogTitle>
+            {t("title", { name: student?.fullName ?? "" })}
+          </DialogTitle>
           <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <p className="text-sm font-medium">{t("currentClasses")}</p>
           {current.length === 0 ? (
             <p className="text-muted-foreground text-sm">{t("noClasses")}</p>
           ) : (
             <ul className="divide-y rounded-lg border">
               {current.map((e) => (
-                <li key={e.enrollmentId} className="flex items-center gap-2 p-2">
-                  <span className="min-w-0 flex-1 truncate text-sm">{e.className}</span>
-                  <Select
-                    items={classItems}
-                    value=""
-                    onValueChange={(toClassId) => {
-                      if (!toClassId || !student) return;
-                      move.mutate({
-                        studentId: student.id,
-                        fromEnrollmentId: e.enrollmentId,
-                        toClassId,
-                      });
-                    }}
-                    disabled={busy || classItems.length === 0}
-                  >
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder={t("moveTo")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableClasses.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={busy}
-                    onClick={() => {
-                      if (window.confirm(t("removeConfirm", { class: e.className }))) {
-                        remove.mutate(e.enrollmentId);
-                      }
-                    }}
-                  >
-                    {t("remove")}
-                  </Button>
+                <li key={e.enrollmentId} className="space-y-2 p-3">
+                  <p className="text-sm font-medium break-words">
+                    {e.className}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      items={classItems}
+                      value=""
+                      onValueChange={(toClassId) => {
+                        if (!toClassId || !student) return;
+                        move.mutate({
+                          studentId: student.id,
+                          fromEnrollmentId: e.enrollmentId,
+                          toClassId,
+                        });
+                      }}
+                      disabled={busy || classItems.length === 0}
+                    >
+                      <SelectTrigger className="min-w-0 flex-1">
+                        <SelectValue placeholder={t("moveTo")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableClasses.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            t("removeConfirm", { class: e.className }),
+                          )
+                        ) {
+                          remove.mutate(e.enrollmentId);
+                        }
+                      }}
+                    >
+                      {t("remove")}
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
 
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <p className="text-sm font-medium">{t("addToClass")}</p>
           <div className="flex items-center gap-2">
             <Select
@@ -136,9 +151,13 @@ export function StudentClassesDialog({
               onValueChange={(v) => setAddValue(v ?? "")}
               disabled={classItems.length === 0}
             >
-              <SelectTrigger className="flex-1">
+              <SelectTrigger className="min-w-0 flex-1">
                 <SelectValue
-                  placeholder={classItems.length === 0 ? t("noMoreClasses") : t("selectClass")}
+                  placeholder={
+                    classItems.length === 0
+                      ? t("noMoreClasses")
+                      : t("selectClass")
+                  }
                 />
               </SelectTrigger>
               <SelectContent>
