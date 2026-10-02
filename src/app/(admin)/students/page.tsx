@@ -15,7 +15,10 @@ import { DataTable } from "@/components/shared/data-table";
 import { useSchools } from "@/features/schools/use-schools";
 import { useStudents } from "@/features/students/use-students";
 import { createStudentColumns } from "@/features/students/columns";
+import { StudentClassesDialog } from "@/features/students/student-classes-dialog";
+import { useSchoolEnrollments } from "@/features/students/use-student-enrollments";
 import { StudentFormDialog } from "@/features/students/student-form-dialog";
+import type { StudentEnrollment } from "@/features/classes/roster-queries";
 import type { Student } from "@/features/students/schema";
 
 export default function StudentsPage() {
@@ -28,14 +31,32 @@ export default function StudentsPage() {
   );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Student | undefined>();
+  const [classesStudent, setClassesStudent] = useState<Student | undefined>();
+  const { data: enrollments } = useSchoolEnrollments(selectedSchoolId || undefined);
+
+  const enrollmentsByStudent = useMemo(() => {
+    const map = new Map<string, StudentEnrollment[]>();
+    for (const e of enrollments ?? []) {
+      const list = map.get(e.studentId) ?? [];
+      list.push(e);
+      map.set(e.studentId, list);
+    }
+    return map;
+  }, [enrollments]);
 
   const columns = useMemo(
     () =>
-      createStudentColumns(t, tCommon, (student) => {
-        setEditing(student);
-        setDialogOpen(true);
-      }),
-    [t, tCommon],
+      createStudentColumns(
+        t,
+        tCommon,
+        (student) => {
+          setEditing(student);
+          setDialogOpen(true);
+        },
+        setClassesStudent,
+        enrollmentsByStudent,
+      ),
+    [t, tCommon, enrollmentsByStudent],
   );
 
   const selectedSchool = schools?.find((s) => s.id === selectedSchoolId);
@@ -113,6 +134,12 @@ export default function StudentsPage() {
         onOpenChange={setDialogOpen}
         student={editing}
         defaultSchoolId={selectedSchoolId}
+      />
+
+      <StudentClassesDialog
+        open={Boolean(classesStudent)}
+        onOpenChange={(open) => !open && setClassesStudent(undefined)}
+        student={classesStudent}
       />
     </div>
   );

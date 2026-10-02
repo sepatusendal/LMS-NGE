@@ -12,10 +12,13 @@ import { DataTable } from "@/components/shared/data-table";
 import { useSchools } from "@/features/schools/use-schools";
 import { useStudents } from "@/features/students/use-students";
 import { createStudentColumns } from "@/features/students/columns";
+import { StudentClassesDialog } from "@/features/students/student-classes-dialog";
+import { useSchoolEnrollments } from "@/features/students/use-student-enrollments";
 import { StudentFormDialog } from "@/features/students/student-form-dialog";
 import { useClasses } from "@/features/classes/use-classes";
 import { ClassFormDialog } from "@/features/classes/class-form-dialog";
 import { formatScheduleSlots } from "@/features/classes/schema";
+import type { StudentEnrollment } from "@/features/classes/roster-queries";
 import type { Student } from "@/features/students/schema";
 import type { Class } from "@/features/classes/schema";
 
@@ -34,16 +37,33 @@ export default function SchoolDetailPage() {
   const [tab, setTab] = useState<"siswa" | "kelas">("siswa");
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | undefined>();
+  const [classesStudent, setClassesStudent] = useState<Student | undefined>();
+  const { data: enrollments } = useSchoolEnrollments(schoolId);
+  const enrollmentsByStudent = useMemo(() => {
+    const map = new Map<string, StudentEnrollment[]>();
+    for (const e of enrollments ?? []) {
+      const list = map.get(e.studentId) ?? [];
+      list.push(e);
+      map.set(e.studentId, list);
+    }
+    return map;
+  }, [enrollments]);
   const [classDialogOpen, setClassDialogOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<Class | undefined>();
 
   const studentColumns = useMemo(
     () =>
-      createStudentColumns(tStudents, tCommon, (student) => {
-        setEditingStudent(student);
-        setStudentDialogOpen(true);
-      }),
-    [tStudents, tCommon],
+      createStudentColumns(
+        tStudents,
+        tCommon,
+        (student) => {
+          setEditingStudent(student);
+          setStudentDialogOpen(true);
+        },
+        setClassesStudent,
+        enrollmentsByStudent,
+      ),
+    [tStudents, tCommon, enrollmentsByStudent],
   );
 
   if (!school) {
@@ -139,6 +159,11 @@ export default function SchoolDetailPage() {
             onOpenChange={setStudentDialogOpen}
             student={editingStudent}
             defaultSchoolId={schoolId}
+          />
+          <StudentClassesDialog
+            open={Boolean(classesStudent)}
+            onOpenChange={(open) => !open && setClassesStudent(undefined)}
+            student={classesStudent}
           />
         </div>
       )}
