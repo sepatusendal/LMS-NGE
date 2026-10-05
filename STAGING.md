@@ -75,7 +75,7 @@ supported path for every role except the very first admin on a brand-new project
 npm run dev:staging
 ```
 
-This loads `.env.staging` instead of `.env`. The `.claude/launch.json` config for
+This loads `.env.staging` instead of `.env`. The local dev-server launch config for
 this (`ecms-staging`) pins it to **`localhost:3100`** specifically — deliberately
 different from the plain `dev` config's `localhost:3000` — so you can run staging
 and production side by side locally (e.g. verifying a fix on staging while prod is
