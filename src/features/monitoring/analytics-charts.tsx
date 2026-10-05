@@ -25,7 +25,7 @@ function latestValue(points: (number | null)[]): number | null {
 export function AnalyticsCharts() {
   const t = useTranslations("admin.analyticsCharts");
   const locale = useLocale();
-  const { data, isLoading, isError, error } = useMonitoringAnalytics(14);
+  const { data, isLoading, isError } = useMonitoringAnalytics(14);
 
   const formatDateLabel = (dateStr: string) =>
     parseLocalDate(dateStr).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short" });
@@ -35,7 +35,7 @@ export function AnalyticsCharts() {
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-8 text-center">
           <AlertCircle className="text-destructive mb-2 size-6" />
-          <p className="text-muted-foreground text-sm">{error?.message || t("loadError")}</p>
+          <p className="text-muted-foreground text-sm">{t("loadError")}</p>
         </CardContent>
       </Card>
     );

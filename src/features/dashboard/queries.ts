@@ -129,63 +129,56 @@ export async function fetchTeacherAttendance(days: number): Promise<TeacherAtten
     .sort((a, b) => a.onTimeRate - b.onTimeRate || b.totalSessions - a.totalSessions);
 }
 
-interface MeetingReportRow {
-  status: string;
-  lesson_plans: { scheduledDate: string } | { scheduledDate: string }[] | null;
-  checkOut: { id: string } | { id: string }[] | null;
-  teaching_reports: { objectivesAchieved: string | null } | { objectivesAchieved: string | null }[] | null;
+interface ReportStatsDayRow {
+  day: string;
+  finished_count: number;
+  pending_count: number;
+  report_count: number;
+  objectives_yes: number;
+  objectives_partial: number;
+  objectives_no: number;
 }
 
+/** The per-day counts come from dashboard_report_stats_by_day() (migration
+ * 20261005000000), not from reading meetings × check-outs × reports through
+ * PostgREST: RLS re-runs its helper functions for every row there, which
+ * pushed this card past the 8s statement_timeout once a 28-day window held
+ * ~100 sessions. The current/previous period split stays here so it follows
+ * the viewer's local calendar.
+ *
+ * "Finished" (see the function) is a check-out, a report, or COMPLETED status.
+ * meetings.status alone can't be the "class finished" signal — it only becomes
+ * COMPLETED when the teaching report is filed (create_teaching_report), so
+ * counting just it made "Kelas selesai" always equal "Laporan masuk" and the
+ * "Belum ada laporan" tile permanently 0. A report is still owed while a
+ * finished class has none. */
 export async function fetchReportStats(days: number): Promise<ReportStats> {
   const supabase = createClient();
   const since = daysAgoStr(days * 2);
   const currentSince = daysAgoStr(days);
 
-  const rows = await fetchAllPages<MeetingReportRow>((from, to) =>
-    supabase
-      .from("meetings")
-      .select(
-        "status, lesson_plans!inner(scheduledDate), checkOut:check_outs(id), teaching_reports(objectivesAchieved)",
-      )
-      .gte("lesson_plans.scheduledDate", since)
-      .order("id")
-      .range(from, to),
-  );
+  const { data, error } = await supabase.rpc("dashboard_report_stats_by_day", { p_since: since });
+  if (error) throw error;
+  const rows = (data ?? []) as unknown as ReportStatsDayRow[];
 
   let totalCompletedMeetings = 0;
   let totalPendingReports = 0;
   let totalReportsSubmitted = 0;
   let previousReportsSubmitted = 0;
-  const objectivesCount: Record<string, number> = { YES: 0, PARTIALLY: 0, NO: 0 };
+  const objectivesCount = { yes: 0, partial: 0, no: 0 };
   const byDate = new Map<string, number>();
 
   rows.forEach((row) => {
-    const lp = toOne(row.lesson_plans);
-    const report = toOne(row.teaching_reports);
-    const inCurrentPeriod = Boolean(lp && lp.scheduledDate >= currentSince);
-
-    // meetings.status only becomes COMPLETED when the teaching report is filed
-    // (create_teaching_report), so it can't be the "class finished" signal —
-    // counting it made "Kelas selesai" always equal "Laporan masuk" and the
-    // "Belum ada laporan" tile permanently 0. A class is finished once it has
-    // a check-out (or, for admin-entered sessions, a report); a report is
-    // still owed while that finished class has none.
-    const isFinished = Boolean(toOne(row.checkOut)) || Boolean(report) || row.status === "COMPLETED";
-    if (inCurrentPeriod && isFinished) {
-      totalCompletedMeetings += 1;
-      if (!report) totalPendingReports += 1;
-    }
-
-    if (report) {
-      if (inCurrentPeriod) {
-        totalReportsSubmitted += 1;
-        if (report.objectivesAchieved) {
-          objectivesCount[report.objectivesAchieved] = (objectivesCount[report.objectivesAchieved] ?? 0) + 1;
-        }
-        if (lp) byDate.set(lp.scheduledDate, (byDate.get(lp.scheduledDate) ?? 0) + 1);
-      } else {
-        previousReportsSubmitted += 1;
-      }
+    if (row.day >= currentSince) {
+      totalCompletedMeetings += row.finished_count;
+      totalPendingReports += row.pending_count;
+      totalReportsSubmitted += row.report_count;
+      objectivesCount.yes += row.objectives_yes;
+      objectivesCount.partial += row.objectives_partial;
+      objectivesCount.no += row.objectives_no;
+      byDate.set(row.day, row.report_count);
+    } else {
+      previousReportsSubmitted += row.report_count;
     }
   });
 
@@ -202,9 +195,9 @@ export async function fetchReportStats(days: number): Promise<ReportStats> {
     previousReportsSubmitted,
     totalPendingReports,
     objectives: [
-      { label: "Tercapai", value: objectivesCount.YES ?? 0 },
-      { label: "Sebagian", value: objectivesCount.PARTIALLY ?? 0 },
-      { label: "Belum", value: objectivesCount.NO ?? 0 },
+      { label: "Tercapai", value: objectivesCount.yes },
+      { label: "Sebagian", value: objectivesCount.partial },
+      { label: "Belum", value: objectivesCount.no },
     ],
     trend: dates.map((date) => ({ date, submitted: byDate.get(date) ?? 0 })),
   };

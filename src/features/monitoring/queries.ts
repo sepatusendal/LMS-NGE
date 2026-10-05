@@ -285,6 +285,22 @@ export async function fetchStatusBoard(date: string): Promise<ClassStatusRow[]> 
     .sort((a, b) => a.scheduleStartTime.localeCompare(b.scheduleStartTime));
 }
 
+interface AnalyticsDayRow {
+  day: string;
+  scheduled_count: number;
+  completed_count: number;
+  attendance_total: number;
+  attendance_present: number;
+}
+
+/** One aggregate row per day from dashboard_analytics_by_day() (migration
+ * 20261005000000). This used to read lesson_plans, then meetings with nested
+ * attendances through PostgREST (.in("lessonPlanId", ids)): RLS re-runs its
+ * helper functions for every attendance row, so a 14-day window of ~100
+ * sessions took >2s in the database and, with the dashboard's other requests
+ * in flight, hit the 8s statement_timeout ("canceling statement due to
+ * statement timeout"). That id list would also have hit the ~14KB URL limit on
+ * a busier window. Days with no lesson plan have no row and are zero-filled. */
 export async function fetchAnalytics(days: number): Promise<AnalyticsPoint[]> {
   const supabase = createClient();
 
@@ -295,54 +311,25 @@ export async function fetchAnalytics(days: number): Promise<AnalyticsPoint[]> {
     dates.push(formatLocalDateStr(d));
   }
 
-  const { data: lessonPlans, error: lpErr } = await supabase
-    .from("lesson_plans")
-    .select("id, scheduledDate")
-    .gte("scheduledDate", dates[0])
-    .lte("scheduledDate", dates[dates.length - 1])
-    .is("deletedAt", null);
-  if (lpErr) throw lpErr;
-
-  const lps = lessonPlans as unknown as { id: string; scheduledDate: string }[];
-  const lpIds = lps.map((lp) => lp.id);
-
-  const { data: meetings, error: meetErr } =
-    lpIds.length > 0
-      ? await supabase
-          .from("meetings")
-          .select("lessonPlanId, status, attendances(status)")
-          .in("lessonPlanId", lpIds)
-      : { data: [], error: null };
-  if (meetErr) throw meetErr;
-
-  const meetingByLp = new Map<
-    string,
-    { status: string; attendances: { status: string }[] | null }
-  >();
-  (meetings as unknown as { lessonPlanId: string; status: string; attendances: { status: string }[] | null }[]).forEach(
-    (m) => meetingByLp.set(m.lessonPlanId, m),
-  );
+  const { data, error } = await supabase.rpc("dashboard_analytics_by_day", {
+    p_from: dates[0],
+    p_to: dates[dates.length - 1],
+  });
+  if (error) throw error;
+  const byDay = new Map(((data ?? []) as unknown as AnalyticsDayRow[]).map((row) => [row.day, row]));
 
   return dates.map((date) => {
-    const dayLps = lps.filter((lp) => lp.scheduledDate === date);
-    let completedCount = 0;
-    let attendanceTotal = 0;
-    let attendancePresent = 0;
-
-    dayLps.forEach((lp) => {
-      const meeting = meetingByLp.get(lp.id);
-      if (!meeting) return;
-      if (meeting.status === "COMPLETED") completedCount++;
-      const attendances = meeting.attendances ?? [];
-      attendanceTotal += attendances.length;
-      attendancePresent += attendances.filter((a) => a.status === "PRESENT" || a.status === "LATE").length;
-    });
+    const row = byDay.get(date);
+    const scheduledCount = row?.scheduled_count ?? 0;
+    const completedCount = row?.completed_count ?? 0;
+    const attendanceTotal = row?.attendance_total ?? 0;
+    const attendancePresent = row?.attendance_present ?? 0;
 
     return {
       date,
-      scheduledCount: dayLps.length,
+      scheduledCount,
       completedCount,
-      completionRate: dayLps.length > 0 ? Math.round((completedCount / dayLps.length) * 100) : 0,
+      completionRate: scheduledCount > 0 ? Math.round((completedCount / scheduledCount) * 100) : 0,
       attendanceTotal,
       attendancePresent,
       attendanceRate: attendanceTotal > 0 ? Math.round((attendancePresent / attendanceTotal) * 100) : 0,
