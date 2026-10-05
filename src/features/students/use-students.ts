@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   createStudent,
+  fetchStudentCounts,
   fetchStudents,
   searchStudents,
   setStudentActive,
@@ -16,6 +17,13 @@ export function useStudents(schoolId?: string, options?: { excludeTeacherTrainin
     queryKey: [...STUDENTS_KEY, schoolId || "all", options?.excludeTeacherTraining ? "regular-only" : "all-types"],
     queryFn: () => fetchStudents(schoolId, options),
   });
+}
+
+/** Dashboard headcount (total / active REGULAR students). Keyed under
+ * STUDENTS_KEY so every student mutation below, which invalidates that prefix,
+ * refreshes it too. */
+export function useStudentCounts() {
+  return useQuery({ queryKey: [...STUDENTS_KEY, "counts"], queryFn: fetchStudentCounts });
 }
 
 /** Search-as-you-type student lookup for pickers — pass the caller's own

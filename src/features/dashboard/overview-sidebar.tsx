@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { ProgressBar, getThresholdColor } from "@/components/shared/progress-bar";
 import { useClasses } from "@/features/classes/use-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
-import { useStudents } from "@/features/students/use-students";
+import { useStudentCounts } from "@/features/students/use-students";
 import { useStatusBoard } from "@/features/monitoring/use-monitoring";
 import { computeComplianceRate } from "@/features/lesson-plans/compliance";
 import { buildDayLabelsSundayFirst } from "@/features/classes/schema";
@@ -45,11 +45,12 @@ function SidebarCard({
 export function RevenueCard() {
   const t = useTranslations("admin.dashboard");
   // Excludes teacher-training trainees (scripts/seed-teacher-training.ts) so
-  // the revenue estimate isn't based on non-fee-paying trainee headcount.
-  const { data: students, isError } = useStudents(undefined, { excludeTeacherTraining: true });
+  // the revenue estimate isn't based on non-fee-paying trainee headcount
+  // (done inside dashboard_student_counts()).
+  const { data: studentCounts, isError } = useStudentCounts();
   const [pricePerStudent, setPricePerStudent] = useState(300000);
 
-  const activeStudents = students?.filter((s) => s.isActive).length ?? 0;
+  const activeStudents = studentCounts?.active ?? 0;
   const estimatedRevenue = activeStudents * pricePerStudent;
 
   if (isError) {

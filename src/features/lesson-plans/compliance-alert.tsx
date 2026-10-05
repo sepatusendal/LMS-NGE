@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { useClasses } from "@/features/classes/use-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
-import { useAdminReports } from "@/features/reports/use-admin-reports";
+import { useReportSummaryByClass } from "@/features/reports/use-admin-reports";
 import { ExportExcelButton } from "@/components/shared/export-excel-button";
 import type { ExcelColumn } from "@/lib/export-excel";
 import { parseLocalDate } from "@/lib/date";
@@ -118,7 +118,13 @@ export function ComplianceAlert() {
   const locale = useLocale();
   const { data: classes, isLoading: classesLoading } = useClasses();
   const { data: lessonPlans, isLoading: plansLoading } = useLessonPlans();
-  const { data: reports } = useAdminReports();
+  // Only the per-class report count + latest class date for the export's
+  // third sheet — not the full report list (see fetchReportSummaryByClass).
+  const {
+    data: reportSummary,
+    isLoading: reportSummaryLoading,
+    isError: reportSummaryError,
+  } = useReportSummaryByClass();
   const [view, setView] = useState<"class" | "teacher">("class");
 
   const { nonCompliant, allCompliance } = useMemo(() => {
@@ -168,27 +174,22 @@ export function ComplianceAlert() {
   const reportCompliance = useMemo((): ReportComplianceRow[] => {
     if (!classes) return [];
     const now = Date.now();
-    const byClass = new Map<string, { count: number; latest: string | null }>();
-    (reports ?? []).forEach((r) => {
-      const cur = byClass.get(r.classId) ?? { count: 0, latest: null };
-      cur.count += 1;
-      if (!cur.latest || r.actualTeachingDate > cur.latest) cur.latest = r.actualTeachingDate;
-      byClass.set(r.classId, cur);
-    });
+    const summaryByClass = new Map((reportSummary ?? []).map((r) => [r.classId, r]));
 
     return classes.map((c) => {
-      const info = byClass.get(c.id) ?? { count: 0, latest: null };
-      const daysSince = info.latest ? Math.floor((now - parseLocalDate(info.latest).getTime()) / (24 * 60 * 60 * 1000)) : null;
+      const info = summaryByClass.get(c.id);
+      const latest = info?.latestClassDate ?? null;
+      const daysSince = latest ? Math.floor((now - parseLocalDate(latest).getTime()) / (24 * 60 * 60 * 1000)) : null;
       return {
         className: c.name,
         schoolName: c.schoolName,
         teacherName: c.teacherName,
-        totalReports: info.count,
-        latestReportDate: info.latest,
+        totalReports: info?.reportCount ?? 0,
+        latestReportDate: latest,
         daysSinceLastReport: daysSince,
       };
     });
-  }, [classes, reports]);
+  }, [classes, reportSummary]);
 
   const isLoading = classesLoading || plansLoading;
   const daysLeftLabel = (days: number) =>
@@ -207,11 +208,17 @@ export function ComplianceAlert() {
           )}
           <ExportExcelButton
             filename="kepatuhan-lesson-plan-report"
-            disabled={isLoading}
+            // Wait for the report summary too: exporting before it arrived
+            // filled the third sheet with 0 reports / "never" for every class.
+            disabled={isLoading || reportSummaryLoading}
             sheets={[
               { name: t("title"), columns: buildLpComplianceColumns(t, tCommon, locale), rows: allCompliance },
               { name: t("recapPerTeacher"), columns: buildTeacherComplianceColumns(t), rows: byTeacher },
-              { name: t("dailyReportComplianceTitle"), columns: buildReportComplianceColumns(t, tCommon, locale), rows: reportCompliance },
+              // If the summary failed to load, leave this sheet out rather than
+              // export zeros that look like real data.
+              ...(reportSummaryError
+                ? []
+                : [{ name: t("dailyReportComplianceTitle"), columns: buildReportComplianceColumns(t, tCommon, locale), rows: reportCompliance }]),
             ]}
           />
         </CardTitle>
