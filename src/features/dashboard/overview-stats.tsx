@@ -4,7 +4,7 @@ import { Building2, Users, GraduationCap, BookOpen, AlertCircle } from "lucide-r
 import { useTranslations } from "next-intl";
 import { ProgressBar } from "@/components/shared/progress-bar";
 import { useSchools } from "@/features/schools/use-schools";
-import { useStudents } from "@/features/students/use-students";
+import { useStudentCounts } from "@/features/students/use-students";
 import { useTeachers } from "@/features/teachers/use-teachers";
 import { useClasses } from "@/features/classes/use-classes";
 
@@ -70,13 +70,14 @@ export function OverviewStats() {
   const { data: schools, isError: schoolsError } = useSchools();
   // Excludes teacher-training trainees (scripts/seed-teacher-training.ts) —
   // they live in the `students` table too, but aren't real K-12 students and
-  // would otherwise inflate this headcount.
-  const { data: students, isError: studentsError } = useStudents(undefined, { excludeTeacherTraining: true });
+  // would otherwise inflate this headcount (done inside dashboard_student_counts()).
+  const { data: studentCounts, isError: studentsError } = useStudentCounts();
   const { data: teachers, isError: teachersError } = useTeachers();
   const { data: classes, isError: classesError } = useClasses();
 
   const activeSchools = schools?.filter((s) => s.isActive).length ?? 0;
-  const activeStudents = students?.filter((s) => s.isActive).length ?? 0;
+  const activeStudents = studentCounts?.active ?? 0;
+  const totalStudents = studentCounts?.total ?? 0;
   const activeTeachers = teachers?.filter((t) => t.isActive).length ?? 0;
   // Kartu ini fokus ke kelas siswa (REGULAR); kelas guru & staff dihitung terpisah
   // biar angka "Kelas Aktif" gak nyampur dua populasi yang beda.
@@ -100,8 +101,8 @@ export function OverviewStats() {
         icon={Users}
         label={t("activeStudents")}
         value={String(activeStudents)}
-        sub={t("ofTotalStudents", { active: activeStudents, total: students?.length ?? 0 })}
-        progress={students?.length ? (activeStudents / students.length) * 100 : 0}
+        sub={t("ofTotalStudents", { active: activeStudents, total: totalStudents })}
+        progress={totalStudents ? (activeStudents / totalStudents) * 100 : 0}
         color="var(--chart-3)"
         isError={studentsError}
       />

@@ -312,6 +312,37 @@ export async function fetchAdminReports(filters?: {
     .sort((a, b) => b.actualTeachingDate.localeCompare(a.actualTeachingDate) || a.id.localeCompare(b.id));
 }
 
+export interface ReportSummaryByClass {
+  classId: string;
+  reportCount: number;
+  /** Class date (the lesson plan's scheduledDate) of the most recent report. */
+  latestClassDate: string | null;
+}
+
+interface ReportSummaryRow {
+  class_id: string;
+  report_count: number;
+  latest_class_date: string | null;
+}
+
+/** Per class: how many teaching reports exist and the class date of the latest
+ * one — all the dashboard's compliance export needs. Comes from
+ * dashboard_report_summary_by_class() (migration 20261005010000) rather than
+ * fetchAdminReports(), which loads every report plus every attendance row
+ * behind them: about a dozen requests whose attendance chunks alone took 2-6s
+ * each while the rest of the dashboard was loading. Classes with no report
+ * have no row. */
+export async function fetchReportSummaryByClass(): Promise<ReportSummaryByClass[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("dashboard_report_summary_by_class");
+  if (error) throw error;
+  return ((data ?? []) as unknown as ReportSummaryRow[]).map((row) => ({
+    classId: row.class_id,
+    reportCount: row.report_count,
+    latestClassDate: row.latest_class_date,
+  }));
+}
+
 export async function fetchAdminReportDetail(id: string): Promise<AdminReportDetail | null> {
   const supabase = createClient();
 

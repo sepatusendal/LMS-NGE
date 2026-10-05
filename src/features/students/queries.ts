@@ -94,6 +94,25 @@ export async function fetchStudents(
   return rows.map(mapStudentRow);
 }
 
+export interface StudentCounts {
+  total: number;
+  active: number;
+}
+
+/** Headcount of real students (REGULAR, not soft-deleted) — total and active —
+ * for the dashboard's "Siswa Aktif" card and revenue estimate. Same population
+ * as fetchStudents(undefined, { excludeTeacherTraining: true }), but counted
+ * in the database by dashboard_student_counts() (migration 20261005010000)
+ * instead of downloading every student row (~80KB, several seconds while the
+ * rest of the dashboard was loading) just to count them. */
+export async function fetchStudentCounts(): Promise<StudentCounts> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("dashboard_student_counts");
+  if (error) throw error;
+  const row = (data as unknown as { total_count: number; active_count: number }[] | null)?.[0];
+  return { total: row?.total_count ?? 0, active: row?.active_count ?? 0 };
+}
+
 function toPayload(input: StudentInput) {
   return {
     fullName: input.fullName,
