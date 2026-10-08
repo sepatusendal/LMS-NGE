@@ -129,6 +129,9 @@
     "noClassesAssigned": "Belum ada kelas yang ditugaskan ke Anda.",
     "today": "Hari ini",
     "noneScheduled": "Belum ada jadwal terjadwal.",
+    "substituteTitle": "Jadwal Pengganti",
+    "substituteHint": "Kamu ditugaskan menggantikan guru lain di pertemuan ini. Hanya berlaku di tanggal yang tertera.",
+    "substituteFor": "Menggantikan {teacher}",
     "day": {
       "monday": "Senin",
       "tuesday": "Selasa",
@@ -142,6 +145,7 @@
   "kelas": {
     "title": "Kelas Saya",
     "subtitle": "Jadwal dan modul acuan untuk setiap kelasmu",
+    "substituteBadge": "Pengganti",
     "noClassesAssigned": "Belum ada kelas yang ditugaskan ke Anda.",
     "classCount": "{count} kelas"
   },
@@ -222,6 +226,8 @@
     "classCount": "{count} kelas",
     "classesNeedPlan": "{count} perlu lesson plan",
     "allClassesSafe": "Semua kelas aman",
+    "substituteBadge": "Pengganti",
+    "substituteEditHint": "Kamu menggantikan di pertemuan ini. Lengkapi atau sesuaikan lesson plan-nya; nomor pertemuan dan tanggalnya tidak bisa diubah.",
     "add": "Tambah",
     "safe": "Aman",
     "needsLessonPlan": "Perlu Lesson Plan",
@@ -248,6 +254,7 @@
       "topicRequired": "Topic wajib diisi"
     },
     "readOnlyNotice": "Kamu hanya bisa melihat lesson plan ini. Hanya teacher yang ditugaskan di kelas ini yang dapat mengedit.",
+    "coveringScheduleLocked": "Kamu menggantikan di pertemuan ini, jadi nomor pertemuan, minggu, dan tanggal tidak bisa diubah. Isi lesson plan-nya bebas kamu sesuaikan.",
     "editWindowExpiredNotice": "Sudah lewat 7 hari sejak tanggal pertemuan ini — lesson plan tidak bisa diedit lagi.",
     "sections": {
       "basicInfo": {

@@ -120,12 +120,17 @@ function Section({
 export function LessonPlanForm({
   lessonPlan,
   readOnly = false,
+  lockSchedule = false,
   adminMode = false,
   defaultClassId,
   expiredNotice = false,
 }: {
   lessonPlan?: LessonPlan;
   readOnly?: boolean;
+  /** A covering (substitute) teacher edits the plan's content only — the DB
+   * rejects a change to its number, week or date — so those three are shown
+   * but locked. */
+  lockSchedule?: boolean;
   /** Admin authoring/editing on behalf of any teacher — picks from every
    * class instead of the logged-in teacher's own, and the module-cover
    * banner (which needs teacher-scoped data) is skipped. */
@@ -353,12 +358,21 @@ export function LessonPlanForm({
               id="meetingNumber"
               type="number"
               min={1}
+              readOnly={lockSchedule}
+              className={lockSchedule ? "bg-muted/40" : undefined}
               {...register("meetingNumber")}
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="week">{t("fields.week")}</Label>
-            <Input id="week" type="number" min={1} {...register("week")} />
+            <Input
+              id="week"
+              type="number"
+              min={1}
+              readOnly={lockSchedule}
+              className={lockSchedule ? "bg-muted/40" : undefined}
+              {...register("week")}
+            />
           </div>
         </div>
 
@@ -367,12 +381,17 @@ export function LessonPlanForm({
           <Input
             id="scheduledDate"
             type="date"
+            readOnly={lockSchedule}
+            className={lockSchedule ? "bg-muted/40" : undefined}
             {...register("scheduledDate")}
           />
           {errors.scheduledDate && (
             <p className="text-destructive text-sm">
               {errors.scheduledDate.message}
             </p>
+          )}
+          {lockSchedule && (
+            <p className="text-muted-foreground text-xs">{t("coveringScheduleLocked")}</p>
           )}
         </div>
 

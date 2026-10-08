@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight, Clock, MapPin, School, Users } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { ClassAvatar } from "@/components/shared/class-avatar";
 import { LoadingState } from "@/components/shared/loading-state";
 import { useMyClasses, type MyClass } from "@/features/classes/use-my-classes";
 import { formatScheduleSlots } from "@/features/classes/schema";
+import { formatSubstitutionLabel } from "@/features/classes/substitution-label";
 
 interface SchoolGroup {
   schoolName: string;
@@ -101,6 +102,9 @@ function SchoolSection({
   dayLabels: Record<string, string>;
   classCountLabel: string;
 }) {
+  const t = useTranslations("kelas");
+  const locale = useLocale();
+
   return (
     <div className="space-y-2.5">
       <button
@@ -121,7 +125,11 @@ function SchoolSection({
 
       {open && (
         <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
-          {group.classes.map((c, i) => (
+          {group.classes.map((c, i) => {
+            // Reached only through a one-off substitute meeting: there is no
+            // weekly pattern to show, so show the date(s) they cover instead.
+            const substituteOnly = !c.canAuthorLessonPlans && c.substitutions.length > 0;
+            return (
             <Link
               key={c.id}
               href={`/kelas/${c.id}`}
@@ -132,11 +140,22 @@ function SchoolSection({
             >
               <ClassAvatar name={c.name} themeKey={c.module?.curriculumName ?? c.name} size="sm" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{c.name}</p>
+                {substituteOnly ? (
+                  <p className="flex items-center gap-1.5 text-sm font-semibold">
+                    <span className="truncate">{c.name}</span>
+                    <span className="bg-chart-4/15 text-chart-4 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
+                      {t("substituteBadge")}
+                    </span>
+                  </p>
+                ) : (
+                  <p className="truncate text-sm font-semibold">{c.name}</p>
+                )}
                 <div className="text-muted-foreground flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs">
                   <span className="flex items-center gap-1">
                     <Clock className="size-3" />
-                    {formatScheduleSlots(c.scheduleSlots, dayLabels)}
+                    {substituteOnly
+                      ? formatSubstitutionLabel(c.substitutions[0], locale)
+                      : formatScheduleSlots(c.scheduleSlots, dayLabels)}
                   </span>
                   {c.room && (
                     <span className="flex items-center gap-1">
@@ -148,7 +167,8 @@ function SchoolSection({
               </div>
               <ChevronRight className="text-muted-foreground/50 size-4 shrink-0" />
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

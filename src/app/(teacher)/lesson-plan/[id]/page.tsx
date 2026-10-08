@@ -29,14 +29,17 @@ export default function EditLessonPlanPage() {
   }
 
   const isAdmin = currentUser?.role === "ADMIN";
-  const isOwner = useMemo(
-    () =>
-      isAdmin ||
-      (lessonPlan && myClasses
-        ? myClasses.some((c) => c.canAuthorLessonPlans && c.id === lessonPlan.classId)
-        : false),
-    [isAdmin, lessonPlan, myClasses],
-  );
+  // A one-off substitute ("Substitute Teachers") may edit the plan of the
+  // meeting they cover — its content only; the DB rejects a change to its
+  // number, week or date (guard_covered_lesson_plan_update), so those fields
+  // are locked in the form.
+  const { isOwner, lockSchedule } = useMemo(() => {
+    if (isAdmin) return { isOwner: true, lockSchedule: false };
+    if (!lessonPlan || !myClasses) return { isOwner: false, lockSchedule: false };
+    const ownsClass = myClasses.some((c) => c.canAuthorLessonPlans && c.id === lessonPlan.classId);
+    const isCovering = myClasses.some((c) => c.substitutions.some((s) => s.lessonPlanId === lessonPlan.id));
+    return { isOwner: ownsClass || isCovering, lockSchedule: !ownsClass && isCovering };
+  }, [isAdmin, lessonPlan, myClasses]);
   // Admin isn't bound by the 7-day teacher edit window (matching the RLS,
   // which only gates the teacher_update_own_lesson_plans policy).
   const isExpired = Boolean(lessonPlan && !isAdmin && !isWithinEditWindow(lessonPlan.scheduledDate));
@@ -89,6 +92,7 @@ export default function EditLessonPlanPage() {
         <LessonPlanForm
           lessonPlan={lessonPlan}
           readOnly={!isOwner || isExpired}
+          lockSchedule={lockSchedule}
           adminMode={isAdmin}
           expiredNotice={isOwner && isExpired}
         />

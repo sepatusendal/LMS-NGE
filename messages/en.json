@@ -129,6 +129,9 @@
     "noClassesAssigned": "No classes have been assigned to you yet.",
     "today": "Today",
     "noneScheduled": "No schedule yet.",
+    "substituteTitle": "Substitute Assignments",
+    "substituteHint": "You're covering another teacher for these meetings. Only applies on the date shown.",
+    "substituteFor": "Covering for {teacher}",
     "day": {
       "monday": "Monday",
       "tuesday": "Tuesday",
@@ -142,6 +145,7 @@
   "kelas": {
     "title": "My Classes",
     "subtitle": "Schedule and reference module for each of your classes",
+    "substituteBadge": "Substitute",
     "noClassesAssigned": "No classes have been assigned to you yet.",
     "classCount": "{count, plural, one {# class} other {# classes}}"
   },
@@ -222,6 +226,8 @@
     "classCount": "{count, plural, one {# class} other {# classes}}",
     "classesNeedPlan": "{count, plural, one {# needs a lesson plan} other {# need a lesson plan}}",
     "allClassesSafe": "All classes are up to date",
+    "substituteBadge": "Substitute",
+    "substituteEditHint": "You're covering this meeting. Fill in or adjust its lesson plan; its meeting number and date can't be changed.",
     "add": "Add",
     "safe": "Up to date",
     "needsLessonPlan": "Needs Lesson Plan",
@@ -248,6 +254,7 @@
       "topicRequired": "Topic is required"
     },
     "readOnlyNotice": "You can only view this lesson plan. Only the teacher assigned to this class can edit it.",
+    "coveringScheduleLocked": "You're covering this meeting, so its meeting number, week and date can't be changed. You can adjust everything else in the lesson plan.",
     "editWindowExpiredNotice": "It's been more than 7 days since this meeting's date — the lesson plan can no longer be edited.",
     "sections": {
       "basicInfo": {
