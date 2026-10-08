@@ -3,10 +3,11 @@ import { useMyClasses } from "./use-my-classes";
 import { fetchTeacherStudentCount } from "./roster-queries";
 
 export function useTeacherStats() {
-  const { data: allClasses, isLoading: classesLoading } = useMyClasses();
-  // A class reached only as a one-off substitute for a meeting is not one of
-  // this teacher's classes — keep it out of the class and student headcounts.
-  const classes = allClasses?.filter((c) => c.canAuthorLessonPlans);
+  // "Kelas diampu" / "Total siswa" on /today mean every class this teacher is
+  // actually teaching — including a one-off substitute meeting — not just the
+  // ones they own/author plans for (unlike useComplianceCount, which only
+  // cares about classes whose lesson-plan upkeep is their job).
+  const { data: classes, isLoading: classesLoading } = useMyClasses();
   const classIds = classes?.map((c) => c.id) ?? [];
 
   const studentQuery = useQuery({
