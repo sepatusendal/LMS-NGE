@@ -1,7 +1,7 @@
 "use client";
 
 import { Clock, MapPin, CalendarDays } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ClassAvatar } from "@/components/shared/class-avatar";
@@ -9,7 +9,9 @@ import { LoadingState } from "@/components/shared/loading-state";
 import { LessonPlanTabs } from "@/components/shared/lesson-plan-tabs";
 import { useMyClasses, type MyClass } from "@/features/classes/use-my-classes";
 import { DAY_OPTIONS, DAY_KEY } from "@/features/classes/schema";
+import { formatSubstitutionDate } from "@/features/classes/substitution-label";
 import { getCurriculumTheme } from "@/lib/curriculum-theme";
+import { todayLocalDateStr } from "@/lib/date";
 
 // DAY_OPTIONS is Senin-first with Minggu last (value "0") — today's actual
 // JS getDay() index (0=Sunday) is remapped so "today" highlights correctly
@@ -19,6 +21,15 @@ const TODAY_VALUE = String(new Date().getDay());
 export default function JadwalPage() {
   const { data: classes, isLoading } = useMyClasses();
   const t = useTranslations("jadwal");
+  const locale = useLocale();
+
+  // One-off substitute meetings (admin "Substitute Teachers"), soonest first.
+  // They belong to a single date, so they get their own section above the
+  // weekly grid instead of repeating every week inside it.
+  const substituteEntries = (classes ?? [])
+    .flatMap((cls) => cls.substitutions.map((sub) => ({ cls, sub })))
+    .sort((a, b) => a.sub.date.localeCompare(b.sub.date) || (a.sub.startTime ?? "").localeCompare(b.sub.startTime ?? ""));
+  const todayDate = todayLocalDateStr();
 
   const byDay = new Map<string, Array<{ cls: MyClass; startTime: string; endTime: string }>>();
   for (const day of DAY_OPTIONS) byDay.set(day.value, []);
@@ -43,6 +54,55 @@ export default function JadwalPage() {
 
       {!isLoading && (!classes || classes.length === 0) && (
         <p className="text-muted-foreground text-sm">{t("noClassesAssigned")}</p>
+      )}
+
+      {substituteEntries.length > 0 && (
+        <div className="space-y-2.5">
+          <div>
+            <h2 className="text-sm font-bold">{t("substituteTitle")}</h2>
+            <p className="text-muted-foreground text-xs">{t("substituteHint")}</p>
+          </div>
+          <div className="space-y-2">
+            {substituteEntries.map(({ cls, sub }) => {
+              const theme = getCurriculumTheme(cls.module?.curriculumName ?? cls.name);
+              const isToday = sub.date === todayDate;
+              return (
+                <Card key={sub.meetingId} className="overflow-hidden rounded-xl py-0 shadow-sm">
+                  <div className="flex">
+                    <div className={cn("w-1.5 shrink-0", theme.bar)} />
+                    <CardContent className="flex flex-1 items-center gap-3 py-3">
+                      <ClassAvatar name={cls.name} themeKey={cls.module?.curriculumName ?? cls.name} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">{cls.name}</p>
+                        <p className="text-muted-foreground truncate text-xs">
+                          {cls.schoolName}
+                          {sub.coveringForName ? ` · ${t("substituteFor", { teacher: sub.coveringForName })}` : ""}
+                        </p>
+                      </div>
+                      <div className="text-muted-foreground flex shrink-0 flex-col items-end gap-0.5 text-xs">
+                        <span className={cn("font-medium", isToday ? "text-primary" : "text-foreground")}>
+                          {isToday ? t("today") : formatSubstitutionDate(sub.date, locale)}
+                        </span>
+                        {sub.startTime && sub.endTime && (
+                          <span className="flex items-center gap-1 font-medium text-foreground">
+                            <Clock className="size-3" />
+                            {sub.startTime}-{sub.endTime}
+                          </span>
+                        )}
+                        {cls.room && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="size-3" />
+                            {cls.room}
+                          </span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {DAY_OPTIONS.map((day) => {
@@ -102,7 +162,11 @@ export default function JadwalPage() {
         );
       })}
 
-      {!isLoading && classes && classes.length > 0 && [...byDay.values()].every((v) => v.length === 0) && (
+      {!isLoading &&
+        classes &&
+        classes.length > 0 &&
+        substituteEntries.length === 0 &&
+        [...byDay.values()].every((v) => v.length === 0) && (
         <div className="flex flex-col items-center justify-center rounded-3xl bg-white px-6 py-14 text-center shadow-sm">
           <CalendarDays className="text-muted-foreground mb-3 size-10" />
           <p className="text-muted-foreground text-sm">{t("noneScheduled")}</p>

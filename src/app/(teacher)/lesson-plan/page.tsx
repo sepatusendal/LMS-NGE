@@ -12,6 +12,7 @@ import { LessonPlanTabs } from "@/components/shared/lesson-plan-tabs";
 import { useMyClasses } from "@/features/classes/use-my-classes";
 import { useLessonPlans } from "@/features/lesson-plans/use-lesson-plans";
 import { formatScheduleSlots } from "@/features/classes/schema";
+import { formatSubstitutionLabel } from "@/features/classes/substitution-label";
 import { parseLocalDate } from "@/lib/date";
 import { getCurriculumTheme } from "@/lib/curriculum-theme";
 
@@ -27,8 +28,15 @@ export default function LessonPlanPage() {
   const locale = useLocale();
   const dtLocale = locale === "en" ? "en-US" : "id-ID";
 
+  // A class reached only as a one-off substitute for a meeting lists just the
+  // plan(s) of the meeting(s) they cover (which they can edit, content only),
+  // not the whole class, and gets no "needs a lesson plan" nag — keeping the
+  // plans of the other meetings up to date isn't their job.
+  const ownClasses = (classes ?? []).filter((c) => c.canAuthorLessonPlans);
+  const substituteClasses = (classes ?? []).filter((c) => !c.canAuthorLessonPlans);
+
   const now = Date.now();
-  const classesNeedingPlan = (classes ?? []).filter((c) => {
+  const classesNeedingPlan = ownClasses.filter((c) => {
     const plans = (lessonPlans ?? []).filter((p) => p.classId === c.id);
     const latest = plans[plans.length - 1];
     return !latest || parseLocalDate(latest.scheduledDate).getTime() - now < TWO_WEEKS_MS;
@@ -41,10 +49,10 @@ export default function LessonPlanPage() {
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">{tCommon("nav.lessonPlan")}</h1>
           <p className="text-muted-foreground mt-0.5 text-sm">{t("subtitle")}</p>
-          {!isLoading && classes && classes.length > 0 && (
+          {!isLoading && ownClasses.length > 0 && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <span className="bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold">
-                {t("classCount", { count: classes.length })}
+                {t("classCount", { count: ownClasses.length })}
               </span>
               {classesNeedingPlan > 0 ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-chart-4/12 px-3 py-1 text-xs font-semibold text-chart-4">
@@ -72,9 +80,11 @@ export default function LessonPlanPage() {
       {isLoading && <LoadingState />}
 
       {!isLoading &&
-        classes?.map((classItem) => {
+        [...ownClasses, ...substituteClasses].map((classItem) => {
+          const isSubstituteOnly = !classItem.canAuthorLessonPlans;
+          const coveredPlanIds = new Set(classItem.substitutions.map((s) => s.lessonPlanId));
           const classPlans = (lessonPlans ?? [])
-            .filter((p) => p.classId === classItem.id)
+            .filter((p) => p.classId === classItem.id && (!isSubstituteOnly || coveredPlanIds.has(p.id)))
             .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
           const latest = classPlans[classPlans.length - 1];
           const isCompliant =
@@ -89,7 +99,11 @@ export default function LessonPlanPage() {
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-lg leading-tight font-bold">{classItem.name}</p>
-                    {isCompliant ? (
+                    {isSubstituteOnly ? (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-chart-4/15 px-2.5 py-1 text-[11px] font-bold text-chart-4">
+                        {t("substituteBadge")}
+                      </span>
+                    ) : isCompliant ? (
                       <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-chart-3/12 px-2.5 py-1 text-[11px] font-bold text-chart-3">
                         <CheckCircle2 className="size-3" />
                         {t("safe")}
@@ -105,7 +119,9 @@ export default function LessonPlanPage() {
                     <span>{classItem.schoolName}</span>
                     <span className="flex items-center gap-1">
                       <Clock className="size-3" />
-                      {formatScheduleSlots(classItem.scheduleSlots, dayLabels)}
+                      {isSubstituteOnly && classItem.substitutions.length > 0
+                        ? formatSubstitutionLabel(classItem.substitutions[0], locale)
+                        : formatScheduleSlots(classItem.scheduleSlots, dayLabels)}
                     </span>
                     {classItem.room && (
                       <span className="flex items-center gap-1">
@@ -115,6 +131,9 @@ export default function LessonPlanPage() {
                     )}
                   </div>
                   {classItem.module && <ModuleBadge module={classItem.module} />}
+                  {isSubstituteOnly && (
+                    <p className="text-muted-foreground text-xs">{t("substituteEditHint")}</p>
+                  )}
                 </div>
               </div>
 
