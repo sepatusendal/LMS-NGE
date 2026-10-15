@@ -469,7 +469,29 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
     // plan as if it were upcoming — surface it as a distinct "course
     // finished" / "no plan today" state.
     const courseCompleted = (!nextPlan || nextPlanIsPast || nextPlanIsFuture) && sorted.length > 0;
-    const plan = (nextPlanIsPast ? null : nextPlan) || sorted[sorted.length - 1] || null;
+    const walkedPlan = (nextPlanIsPast ? null : nextPlan) || sorted[sorted.length - 1] || null;
+
+    // A plan dated exactly today is authoritative for "today's meeting", no
+    // matter its meetingNumber relative to the class's other plans. The walk
+    // above assumes numbers track date order (new plans get max + 1), but that
+    // breaks when a plan is written for a far-off date before the dates in
+    // between have one — most often admin's "Atur Guru Pengganti" for a future
+    // date, which auto-creates a draft numbered max + 1 — and the plan made
+    // afterwards for today then gets a HIGHER number than that future one. The
+    // walk lands on the future plan first, sees it isn't dated today, and
+    // reports "no lesson plan" for the day although today's own plan exists.
+    // Confirmed in production (Mariatul Qibtiah, 2026-10-15): #26 dated 10/26
+    // (draft from a substitute assigned on 10/14) sat before #27 dated 10/15.
+    // Only the plan that gets shown is switched — everything derived from the
+    // walk above (the stale-meeting pending-report reminder, courseCompleted)
+    // stays exactly as before.
+    const todaysOwnPlan = sorted.find((lp) => lp.scheduledDate === todayDateStr);
+    const switchedToTodaysOwnPlan = Boolean(todaysOwnPlan) && walkedPlan?.scheduledDate !== todayDateStr;
+    const plan = switchedToTodaysOwnPlan ? todaysOwnPlan! : walkedPlan;
+    // The plan the walk landed on instead is typically an already-written
+    // future one; then the next meeting's plan does exist, so no reminder to
+    // create one.
+    const hasUpcomingPlan = sorted.some((lp) => lp.scheduledDate > todayDateStr && !completedLpIds.has(lp.id));
 
     if (!plan || (nextPlanIsPast && plan === nextPlan)) {
       return {
@@ -536,7 +558,7 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
     // reminder, not a sign today wasn't done. Only surface it once today's
     // own meeting is otherwise handled; noPlanForToday already carries its
     // own "create a plan" call-to-action so this would just be a duplicate.
-    const needsNextLessonPlan = courseCompleted && !noPlanForToday;
+    const needsNextLessonPlan = courseCompleted && !noPlanForToday && !(switchedToTodaysOwnPlan && hasUpcomingPlan);
     // Guard against auto-creating a draft plan numbered *after* one that's
     // already scheduled further out — e.g. a stale past meeting
     // (nextPlanIsPast above) coexisting with a plan someone wrote ahead
