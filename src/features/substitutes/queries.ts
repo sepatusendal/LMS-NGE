@@ -91,6 +91,20 @@ async function resolveCurrentLessonPlan(classId: string): Promise<LessonPlanRow 
     ? (nextPlan ?? sorted[sorted.length - 1] ?? null)
     : (sorted[sorted.length - 1] !== nextPlan ? sorted[sorted.length - 1] : null);
 
+  // A plan dated exactly today is authoritative for "today's" meeting whatever
+  // its number: the walk above assumes numbers track date order, which breaks
+  // when a plan was written for a far-off date first (this very flow's own
+  // auto-draft for a future substitute date takes max + 1) and today's plan
+  // was made afterwards, so it has the HIGHER number. Without this, the walk
+  // lands on the future plan, the guard below returns null, and admin sees "no
+  // lesson plan" for a class that has one — and assigning a substitute then
+  // auto-creates a duplicate draft for today. Same case as fetchTodayClasses
+  // (Mariatul Qibtiah, 2026-10-15).
+  if (resolved?.scheduledDate !== todayDateStr) {
+    const todaysOwn = sorted.find((p) => p.scheduledDate === todayDateStr);
+    if (todaysOwn) return todaysOwn;
+  }
+
   // A plan dated after today — whether it's `nextPlan` itself, or the
   // `sorted[last]` fallback used when nextPlan was stale-past — must never
   // be handed back as "today's" plan: fetchCurrentMeetingInfo()/
