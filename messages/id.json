@@ -324,6 +324,7 @@
       "deleteError": "Gagal menghapus lesson plan",
       "HOLIDAY_NO_LESSON_PLAN": "Tanggal ini adalah hari libur, tidak bisa membuat lesson plan",
       "DUPLICATE_MEETING_NUMBER": "Nomor pertemuan ini sudah dipakai lesson plan lain di kelas ini. Tutup halaman ini lalu buka lagi dari menu Lesson Plan — nomornya akan otomatis benar.",
+      "DUPLICATE_LESSON_PLAN_DATE": "Kelas ini sudah punya lesson plan di tanggal tersebut. Buka lesson plan yang sudah ada dari menu Lesson Plan lalu edit di sana, atau pilih tanggal lain.",
       "EDIT_WINDOW_EXPIRED": "Lesson plan ini sudah lewat batas edit 7 hari, tidak bisa diubah lagi.",
       "NOT_AUTHORIZED_FOR_CLASS": "Anda tidak punya akses untuk membuat lesson plan di kelas ini pada tanggal tersebut. Jika Anda guru pengganti, pastikan tanggal yang dipilih sesuai jadwal sementara Anda, atau hubungi guru utama kelas ini."
     }
@@ -493,7 +494,8 @@
       "HOLIDAY_NO_CLASS": "Hari ini hari libur, tidak bisa mulai kelas",
       "ALREADY_CHECKED_IN": "Kelas ini sudah di-check-in",
       "PLAN_NOT_TODAY": "Lesson plan ini bukan untuk hari ini. Muat ulang halaman dan coba lagi.",
-      "NOT_PRIMARY_TEACHER": "Hanya guru utama kelas ini yang bisa membuat lesson plan. Hubungi guru utama untuk kelas ini."
+      "NOT_PRIMARY_TEACHER": "Hanya guru utama kelas ini yang bisa membuat lesson plan. Hubungi guru utama untuk kelas ini.",
+      "DUPLICATE_LESSON_PLAN_DATE": "Kelas ini sudah punya lesson plan di tanggal tersebut. Muat ulang halaman dan coba lagi."
     }
   },
   "workflowWizard": {

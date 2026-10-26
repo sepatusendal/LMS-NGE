@@ -109,6 +109,20 @@ export async function createDraftLessonPlan(
   scheduledDate: string,
 ): Promise<string> {
   const supabase = createClient();
+
+  // One live plan per class per date (enforced in the DB): if the date is
+  // already covered, that plan is the one to use rather than a second draft.
+  const { data: sameDate, error: sameDateErr } = await supabase
+    .from("lesson_plans")
+    .select("id")
+    .eq("classId", classId)
+    .eq("scheduledDate", scheduledDate)
+    .is("deletedAt", null)
+    .limit(1);
+  if (sameDateErr) throw sameDateErr;
+  const sameDateId = (sameDate?.[0] as { id: string } | undefined)?.id;
+  if (sameDateId) return sameDateId;
+
   const { data: existing, error: existingErr } = await supabase
     .from("lesson_plans")
     .select("meetingNumber")
@@ -211,7 +225,8 @@ async function assertNotHoliday(classId: string, scheduledDate: string) {
 }
 
 /** Remap raw DB errors from a lesson-plan write into something a teacher can
- * act on: (classId, meetingNumber) uniqueness violations, and RLS rejecting
+ * act on: a second plan for a date the class already has one for, (classId,
+ * meetingNumber) uniqueness violations, and RLS rejecting
  * the insert outright (e.g. a teacher who isn't the class's primary teacher
  * and has no class_temporary_schedules row for the chosen date — a real
  * support case we hit with a Jadwal Sementara substitute picking the wrong
@@ -219,6 +234,9 @@ async function assertNotHoliday(classId: string, scheduledDate: string) {
  * 'new row violates row-level security policy' message. */
 function mapLessonPlanWriteError(error: { code?: string; message: string }): Error {
   if (error.code === "23505") {
+    // Raised by the enforce_one_lesson_plan_per_date trigger; the other 23505
+    // here is the (classId, meetingNumber) unique index.
+    if (error.message === "DUPLICATE_LESSON_PLAN_DATE") return new Error("DUPLICATE_LESSON_PLAN_DATE");
     return new Error("DUPLICATE_MEETING_NUMBER");
   }
   if (error.code === "42501") {

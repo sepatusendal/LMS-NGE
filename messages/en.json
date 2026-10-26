@@ -324,6 +324,7 @@
       "deleteError": "Couldn't delete lesson plan",
       "HOLIDAY_NO_LESSON_PLAN": "This date is a holiday, a lesson plan can't be created for it",
       "DUPLICATE_MEETING_NUMBER": "This meeting number is already used by another lesson plan in this class. Close this page and open it again from the Lesson Plan menu — the number will be filled in correctly.",
+      "DUPLICATE_LESSON_PLAN_DATE": "This class already has a lesson plan on that date. Open the existing one from the Lesson Plan menu and edit it there, or pick another date.",
       "EDIT_WINDOW_EXPIRED": "This lesson plan is past its 7-day edit window and can no longer be changed.",
       "NOT_AUTHORIZED_FOR_CLASS": "You don't have access to create a lesson plan for this class on that date. If you're a substitute teacher, make sure the date matches your temporary schedule, or contact this class's primary teacher."
     }
@@ -493,7 +494,8 @@
       "HOLIDAY_NO_CLASS": "Today is a holiday, class can't be started",
       "ALREADY_CHECKED_IN": "This class has already been checked in",
       "PLAN_NOT_TODAY": "This lesson plan isn't for today. Reload the page and try again.",
-      "NOT_PRIMARY_TEACHER": "Only this class's primary teacher can create a lesson plan. Contact them for this class."
+      "NOT_PRIMARY_TEACHER": "Only this class's primary teacher can create a lesson plan. Contact them for this class.",
+      "DUPLICATE_LESSON_PLAN_DATE": "This class already has a lesson plan on that date. Reload the page and try again."
     }
   },
   "workflowWizard": {
