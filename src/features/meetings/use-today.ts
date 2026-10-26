@@ -57,7 +57,12 @@ export function useStartClass() {
   });
 }
 
-const DRAFT_CHECK_IN_ERROR_MESSAGES = new Set(["HOLIDAY_NO_CLASS", "NOT_PRIMARY_TEACHER"]);
+const DRAFT_CHECK_IN_ERROR_MESSAGES = new Set([
+  "HOLIDAY_NO_CLASS",
+  "NOT_PRIMARY_TEACHER",
+  "ALREADY_CHECKED_IN",
+  "DUPLICATE_LESSON_PLAN_DATE",
+]);
 
 /** Check-in for a class whose next meeting has no lesson plan yet
  * ("no_plan_today") — creates a placeholder plan, the meeting, and the

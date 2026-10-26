@@ -665,6 +665,11 @@ export async function checkInWithDraftPlan(
   });
   if (error) {
     if (error.message === "NOT_PRIMARY_TEACHER") throw new Error("NOT_PRIMARY_TEACHER");
+    // The class already has a meeting for this date's plan (double tap, or
+    // someone checked in from another device), or a plan this teacher cannot
+    // see already covers the date — either way the dashboard is out of date.
+    if (error.message === "ALREADY_CHECKED_IN") throw new Error("ALREADY_CHECKED_IN");
+    if (error.message === "DUPLICATE_LESSON_PLAN_DATE") throw new Error("DUPLICATE_LESSON_PLAN_DATE");
     throw error;
   }
   return data as string;
