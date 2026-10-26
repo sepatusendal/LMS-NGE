@@ -329,8 +329,9 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
   // A temporary schedule for today's exact date is authoritative for BOTH
   // time and teacher when it names one — more specific than the per-weekday
   // override, which is in turn more specific than the class's normal
-  // recurring pattern. A temp schedule with no teacher set only changes the
-  // time, same as before this field existed.
+  // recurring pattern. A temp schedule with no teacher set keeps the usual
+  // teacher but still decides WHEN the class meets that date — see the
+  // `if (temp)` fallback below.
   const temporarySchedulesByClass = await fetchTemporaryScheduleTimesForDate(
     candidates.map((c) => c.id),
     todayDateStr,
@@ -345,6 +346,13 @@ export async function fetchTodayClasses(teacherId: string): Promise<TodayClass[]
       // An override for today is authoritative (may hand the class to someone
       // else, or take it away). No override: fall back to the weekly pattern.
       if (ov) return ov.teacherId === teacherId;
+      // A temporary schedule for today's exact date means the class meets
+      // today, even on a weekday outside its weekly pattern (e.g. a Saturday
+      // make-up class for a Mon/Thu class) — the same rule the admin Status
+      // Board already applies (temporaryTimes.has(c.id) in monitoring/
+      // queries.ts). Without this the usual teacher never saw that class
+      // and couldn't check in (Boston, Mariatul Qibtiah, 2026-10-24).
+      if (temp) return true;
       return c.scheduleDaysOfWeek.includes(today);
     })
     .map((c) => {
