@@ -8,6 +8,7 @@ import {
   createPacketVersion,
   deleteDraftPacket,
   deletePolicyDocument,
+  fetchAudiencePeople,
   fetchMyPolicies,
   fetchPacketAdmin,
   fetchPacketMonitor,
@@ -21,7 +22,7 @@ import type { AcknowledgeRequest, PacketFormInput, PolicyPacket } from "./schema
 export const MY_POLICIES_KEY = ["policies", "mine"];
 const ADMIN_KEY = ["policies", "admin"];
 
-/** @param enabled only tutors have documents to confirm. */
+/** @param enabled false while the signed-in role is not known yet. */
 export function useMyPolicies(enabled = true) {
   return useQuery({
     queryKey: MY_POLICIES_KEY,
@@ -42,6 +43,10 @@ export function useConfirmPolicy(packetId: string) {
 
 export function usePacketsAdmin() {
   return useQuery({ queryKey: [...ADMIN_KEY, "list"], queryFn: fetchPacketsAdmin });
+}
+
+export function useAudiencePeople() {
+  return useQuery({ queryKey: [...ADMIN_KEY, "people"], queryFn: fetchAudiencePeople });
 }
 
 export function usePacketAdmin(id: string) {
@@ -67,6 +72,8 @@ function useAdminMutation<TInput, TResult>(
     mutationFn,
     onSuccess: () => {
       toast.success(t(successKey));
+      // The admin may be a recipient too, so their own notices refresh as well.
+      queryClient.invalidateQueries({ queryKey: MY_POLICIES_KEY });
       return queryClient.invalidateQueries({ queryKey: ADMIN_KEY });
     },
     onError: (error) => toast.error(t("failed"), { description: error.message }),

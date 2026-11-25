@@ -576,7 +576,8 @@
       "analyticsLessonPlan": "Lesson Plan",
       "analyticsClasses": "Kelas",
       "analyticsCustom": "Custom Report",
-      "policies": "Dokumen & Kebijakan"
+      "policies": "Dokumen & Kebijakan",
+      "myDocuments": "Dokumen Saya"
     },
     "holidays": {
       "title": "Hari Libur",
@@ -1492,7 +1493,7 @@
     },
     "policies": {
       "title": "Dokumen & Kebijakan",
-      "subtitle": "Dokumen yang wajib dibaca, ditandatangani, dan dikonfirmasi tutor.",
+      "subtitle": "Dokumen yang wajib dibaca, ditandatangani, dan dikonfirmasi penerimanya.",
       "create": "Buat paket dokumen",
       "createSubmit": "Simpan draft",
       "empty": "Belum ada paket dokumen.",
@@ -1502,8 +1503,8 @@
         "PUBLISHED": "Terbit",
         "ARCHIVED": "Tidak berlaku"
       },
-      "draftHint": "Belum terbit, tutor belum bisa melihat",
-      "confirmedCount": "{done} dari {total} tutor aktif sudah konfirmasi",
+      "draftHint": "Belum terbit, penerima belum bisa melihat",
+      "confirmedCount": "{done} dari {total} penerima sudah konfirmasi",
       "deadlineShort": "Batas {date}",
       "back": "Semua paket dokumen",
       "actions": {
@@ -1513,13 +1514,13 @@
         "newVersion": "Buat versi baru"
       },
       "draftNotice": "Draft: unggah semua dokumen, periksa checklist dan pernyataan, lalu terbitkan. Setelah terbit, isinya tidak bisa diubah.",
-      "settingsTitle": "Isi konfirmasi, batas waktu, dan kontak HR",
+      "settingsTitle": "Isi konfirmasi, penerima, pop-up, pengumuman, batas waktu, dan kontak HR",
       "save": "Simpan",
       "confirm": {
         "publishTitle": "Terbitkan paket ini?",
-        "publishBody": "Semua tutor aktif akan diminta membaca dan mengonfirmasi. Dokumen, checklist, dan pernyataan tidak bisa diubah lagi. Kalau paket ini versi baru, versi lama otomatis tidak berlaku.",
+        "publishBody": "{count} orang akan diminta membaca dan mengonfirmasi. Dokumen, checklist, dan pernyataan tidak bisa diubah lagi. Kalau paket ini versi baru, versi lama otomatis tidak berlaku.",
         "archiveTitle": "Tandai tidak berlaku?",
-        "archiveBody": "Tutor yang belum konfirmasi tidak akan diminta lagi. Bukti yang sudah ada tetap tersimpan. Tindakan ini tidak bisa dibatalkan.",
+        "archiveBody": "Penerima yang belum konfirmasi tidak akan diminta lagi. Bukti yang sudah ada tetap tersimpan. Tindakan ini tidak bisa dibatalkan.",
         "deleteTitle": "Hapus draft ini?",
         "deleteBody": "Draft beserta file dokumennya akan dihapus permanen."
       },
@@ -1538,14 +1539,14 @@
         "title": "Judul paket",
         "titlePlaceholder": "Peraturan Perusahaan & Kebijakan HR 2026–2028",
         "checklist": "Poin checklist",
-        "checklistHint": "Satu kolom untuk satu poin, tutor wajib mencentang semuanya. Tekan Enter untuk poin baru. Tempel daftar beberapa baris, otomatis dipecah jadi beberapa poin.",
+        "checklistHint": "Satu kolom untuk satu poin, penerima wajib mencentang semuanya. Tekan Enter untuk poin baru. Tempel daftar beberapa baris, otomatis dipecah jadi beberapa poin.",
         "statement": "Pernyataan",
         "deadline": "Batas konfirmasi (opsional)",
-        "deadlineHint": "Lewat tanggal ini portal tutor diarahkan ke halaman dokumen. Absensi tetap terbuka.",
+        "deadlineHint": "Lewat tanggal ini portal tutor diarahkan ke halaman dokumen, absensi tetap terbuka. Admin dan Koordinator tidak dikunci.",
         "hrContactName": "Nama kontak HR (opsional)",
         "hrWhatsapp": "WhatsApp HR (opsional)",
         "hrEmail": "Email HR (opsional)",
-        "lockedHint": "Sudah terbit: hanya batas waktu dan kontak HR yang bisa diubah.",
+        "lockedHint": "Sudah terbit: judul, checklist, dan pernyataan terkunci. Pengaturan lainnya masih bisa diubah.",
         "validation": {
           "titleRequired": "Judul wajib diisi",
           "titleMax": "Judul maksimal 150 karakter",
@@ -1555,14 +1556,103 @@
           "statementMax": "Pernyataan maksimal 2000 karakter",
           "whatsappInvalid": "Nomor WhatsApp tidak valid",
           "emailInvalid": "Email tidak valid",
-          "checklistItemMax": "Maksimal 500 karakter per poin"
+          "checklistItemMax": "Maksimal 500 karakter per poin",
+          "noticeTitleMax": "Judul pengumuman maksimal 80 karakter",
+          "noticeMessageMax": "Isi pengumuman maksimal 300 karakter",
+          "audienceRequired": "Pilih siapa yang harus menerima",
+          "popupInvalid": "Periksa angka di pengaturan pop-up"
         },
         "addItem": "Tambah poin",
         "itemLabel": "Poin {number}",
         "itemPlaceholder": "Tulis isi poin",
         "moveUp": "Naikkan poin {number}",
         "moveDown": "Turunkan poin {number}",
-        "removeItem": "Hapus poin {number}"
+        "removeItem": "Hapus poin {number}",
+        "noticeHeading": "Teks pengumuman (opsional)",
+        "noticeHint": "Dipakai di popup dan banner. Teks abu-abu adalah bawaan, yang dipakai kalau kolom dikosongkan. Bisa diubah setelah terbit.",
+        "noticeTitle": "Judul pengumuman",
+        "noticeMessage": "Isi pengumuman",
+        "audience": {
+          "heading": "Penerima",
+          "hint": "Siapa yang harus membaca dan mengonfirmasi. Setelah terbit masih bisa diubah, langsung berlaku, dan tercatat di riwayat. Bukti yang sudah ada tetap tersimpan.",
+          "mode": {
+            "ALL": "Semua role",
+            "ROLES": "Role tertentu",
+            "PEOPLE": "Orang tertentu"
+          },
+          "role": {
+            "TEACHER": "Tutor",
+            "COORDINATOR": "Koordinator",
+            "ADMIN": "Admin"
+          },
+          "included": "Orang yang menerima",
+          "excluded": "Pengecualian (opsional)",
+          "search": "Cari nama, email, atau Tutor ID",
+          "noMatch": "Tidak ada yang cocok",
+          "remove": "Hapus {name}",
+          "unknownPerson": "Akun tidak aktif",
+          "counting": "Menghitung penerima...",
+          "loadError": "Daftar orang gagal dimuat",
+          "preview": "Yang menerima: {total} orang ({tutors} tutor, {coordinators} koordinator, {admins} admin)"
+        },
+        "popup": {
+          "heading": "Intensitas pop-up",
+          "hint": "Seberapa sering pop-up muncul untuk yang belum konfirmasi. Banner tetap selalu tampil.",
+          "preset": {
+            "RELAXED": "Santai",
+            "NORMAL": "Normal",
+            "INTENSE": "Intens",
+            "URGENT": "Mendesak",
+            "CUSTOM": "Custom"
+          },
+          "frequencyLabel": "Muncul",
+          "frequency": {
+            "ONCE": "Sekali per orang",
+            "PER_SESSION": "Sekali per sesi",
+            "PER_DAY": "Sekali per hari",
+            "INTERVAL": "Setiap beberapa jam",
+            "APP_OPEN": "Setiap buka aplikasi",
+            "PAGE_VISIT": "Setiap pindah halaman"
+          },
+          "intervalHours": "Jarak (jam)",
+          "pagesLabel": "Di halaman",
+          "pages": {
+            "ALL": "Semua halaman",
+            "HOME": "Halaman utama saja"
+          },
+          "minGapMinutes": "Jeda minimal (menit)",
+          "maxPerDay": "Maksimal per hari",
+          "maxTotal": "Maksimal total",
+          "maxSnoozes": "Jatah tombol Nanti",
+          "noLimit": "Tanpa batas",
+          "afterSnoozesLabel": "Setelah jatah Nanti habis",
+          "afterSnoozes": {
+            "STOP": "Pop-up berhenti, banner tetap",
+            "FIRM": "Pop-up tegas tanpa tombol Nanti"
+          },
+          "rules": "Halaman dokumen, absensi, dan profil tidak pernah kena pop-up. Sesi berakhir setelah 30 menit tidak aktif. Buka aplikasi = memuat ulang, atau kembali setelah 5 menit ditinggal. Hari dihitung waktu WIB. Pop-up tegas hanya untuk tutor (Admin dan Koordinator tetap dapat tombol Nanti) dan absensi tetap bisa dibuka.",
+          "summary": {
+            "frequency": {
+              "ONCE": "Sekali saja per orang,",
+              "PER_SESSION": "Sekali per sesi,",
+              "PER_DAY": "Sekali per hari,",
+              "INTERVAL": "Paling cepat setiap {hours} jam,",
+              "APP_OPEN": "Setiap buka aplikasi,",
+              "PAGE_VISIT": "Setiap pindah halaman,"
+            },
+            "pages": {
+              "ALL": "di semua halaman",
+              "HOME": "di halaman utama saja"
+            },
+            "gap": "Jeda minimal {minutes} menit",
+            "perDay": "Maksimal {count} kali per hari",
+            "total": "Maksimal {count} kali total",
+            "snoozes": {
+              "STOP": "Tombol Nanti bisa dipakai {count} kali, setelah itu pop-up berhenti",
+              "FIRM": "Tombol Nanti bisa dipakai {count} kali, setelah itu pop-up tegas"
+            }
+          }
+        }
       },
       "documents": {
         "heading": "Dokumen",
@@ -1586,7 +1676,7 @@
       },
       "monitor": {
         "title": "Status konfirmasi",
-        "summary": "{done} dari {total} tutor aktif sudah konfirmasi",
+        "summary": "{done} dari {total} penerima sudah konfirmasi",
         "search": "Cari nama, Tutor ID, atau email",
         "filter": {
           "all": "Semua",
@@ -1601,18 +1691,28 @@
           "reading": "Dokumen dibaca",
           "status": "Status",
           "confirmedAt": "Waktu konfirmasi",
-          "receipt": "Bukti"
+          "receipt": "Bukti",
+          "role": "Peran",
+          "popup": "Pop-up"
         },
-        "empty": "Tidak ada tutor yang cocok.",
-        "inactive": "sudah tidak aktif",
+        "empty": "Tidak ada penerima yang cocok.",
         "done": "Sudah konfirmasi",
-        "pending": "Belum konfirmasi"
+        "pending": "Belum konfirmasi",
+        "notRecipient": "tidak lagi jadi penerima",
+        "popupCount": "{shown}× tampil · {snoozed}× ditunda"
+      },
+      "history": {
+        "title": "Riwayat perubahan penerima",
+        "by": "{name} · {date}",
+        "included": "{count} orang dipilih",
+        "excluded": "{count} dikecualikan"
       }
     }
   },
   "coordinator": {
     "nav": {
-      "monitoring": "Monitoring"
+      "monitoring": "Monitoring",
+      "myDocuments": "Dokumen Saya"
     },
     "monitoring": {
       "title": "Monitoring",
@@ -1683,7 +1783,8 @@
         "SIGNATURE": "Tanda tangan belum terbaca. Ulangi tanda tanganmu.",
         "DRIVE": "Bukti belum bisa disimpan, jadi konfirmasi belum tercatat. Coba lagi beberapa saat.",
         "SERVER": "Konfirmasi gagal. Periksa koneksi lalu coba lagi."
-      }
+      },
+      "roleLine": "Peran: {role}"
     },
     "reader": {
       "back": "Kembali",
@@ -1703,7 +1804,9 @@
       "readNow": "Baca sekarang",
       "popupBody": "{title}. Baca dokumennya, lalu konfirmasi penerimaan.",
       "popupDeadline": "Batas konfirmasi {date}",
-      "later": "Nanti"
+      "later": "Nanti",
+      "goToAttendance": "Ke Absensi",
+      "firmHint": "Batas tombol Nanti sudah habis."
     }
   }
 }

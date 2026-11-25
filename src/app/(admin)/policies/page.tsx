@@ -69,7 +69,7 @@ export default function PoliciesPage() {
               <p className="text-muted-foreground mt-1 text-xs">
                 {packet.status === "DRAFT"
                   ? t("draftHint")
-                  : t("confirmedCount", { done: packet.confirmed, total: packet.activeTutors })}
+                  : t("confirmedCount", { done: packet.confirmed, total: packet.recipients })}
                 {packet.deadline && ` · ${t("deadlineShort", { date: formatDay(packet.deadline, locale) })}`}
               </p>
             </div>

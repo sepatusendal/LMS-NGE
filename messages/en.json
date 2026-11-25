@@ -576,7 +576,8 @@
       "analyticsLessonPlan": "Lesson Plan",
       "analyticsClasses": "Classes",
       "analyticsCustom": "Custom Report",
-      "policies": "Documents & Policies"
+      "policies": "Documents & Policies",
+      "myDocuments": "My Documents"
     },
     "holidays": {
       "title": "Holidays",
@@ -1492,7 +1493,7 @@
     },
     "policies": {
       "title": "Documents & Policies",
-      "subtitle": "Documents tutors must read, sign, and confirm.",
+      "subtitle": "Documents their recipients must read, sign, and confirm.",
       "create": "New document packet",
       "createSubmit": "Save draft",
       "empty": "No document packets yet.",
@@ -1502,8 +1503,8 @@
         "PUBLISHED": "Published",
         "ARCHIVED": "No longer in force"
       },
-      "draftHint": "Not published, tutors cannot see it",
-      "confirmedCount": "{done} of {total} active tutors have confirmed",
+      "draftHint": "Not published, recipients cannot see it",
+      "confirmedCount": "{done} of {total} recipients have confirmed",
       "deadlineShort": "Due {date}",
       "back": "All document packets",
       "actions": {
@@ -1513,13 +1514,13 @@
         "newVersion": "Create new version"
       },
       "draftNotice": "Draft: upload every document, check the checklist and statement, then publish. After publishing, the content cannot be changed.",
-      "settingsTitle": "Confirmation wording, deadline, and HR contact",
+      "settingsTitle": "Confirmation wording, recipients, pop-up, notice, deadline, and HR contact",
       "save": "Save",
       "confirm": {
         "publishTitle": "Publish this packet?",
-        "publishBody": "All active tutors will be asked to read and confirm it. Documents, checklist, and statement can no longer be changed. If this is a new version, the old one is retired automatically.",
+        "publishBody": "{count} people will be asked to read and confirm it. Documents, checklist, and statement can no longer be changed. If this is a new version, the old one is retired automatically.",
         "archiveTitle": "Retire this packet?",
-        "archiveBody": "Tutors who have not confirmed will no longer be asked. Existing receipts are kept. This cannot be undone.",
+        "archiveBody": "Recipients who have not confirmed will no longer be asked. Existing receipts are kept. This cannot be undone.",
         "deleteTitle": "Delete this draft?",
         "deleteBody": "The draft and its document files will be permanently deleted."
       },
@@ -1538,14 +1539,14 @@
         "title": "Packet title",
         "titlePlaceholder": "Company Regulations & HR Policies 2026–2028",
         "checklist": "Checklist items",
-        "checklistHint": "One field per item; tutors must tick all of them. Press Enter for a new item. Pasting a list of several lines splits it into separate items.",
+        "checklistHint": "One field per item; recipients must tick all of them. Press Enter for a new item. Pasting a list of several lines splits it into separate items.",
         "statement": "Statement",
         "deadline": "Confirmation deadline (optional)",
-        "deadlineHint": "After this date the tutor portal redirects to the documents page. Attendance stays open.",
+        "deadlineHint": "After this date the tutor portal redirects to the documents page; attendance stays open. Admins and coordinators are never locked.",
         "hrContactName": "HR contact name (optional)",
         "hrWhatsapp": "HR WhatsApp (optional)",
         "hrEmail": "HR email (optional)",
-        "lockedHint": "Published: only the deadline and HR contact can be changed.",
+        "lockedHint": "Published: the title, checklist, and statement are locked. The other settings can still change.",
         "validation": {
           "titleRequired": "Title is required",
           "titleMax": "Title can be at most 150 characters",
@@ -1555,14 +1556,103 @@
           "statementMax": "Statement can be at most 2000 characters",
           "whatsappInvalid": "Invalid WhatsApp number",
           "emailInvalid": "Invalid email",
-          "checklistItemMax": "At most 500 characters per item"
+          "checklistItemMax": "At most 500 characters per item",
+          "noticeTitleMax": "Notice title can be at most 80 characters",
+          "noticeMessageMax": "Notice message can be at most 300 characters",
+          "audienceRequired": "Choose who has to receive this",
+          "popupInvalid": "Check the numbers in the pop-up settings"
         },
         "addItem": "Add item",
         "itemLabel": "Item {number}",
         "itemPlaceholder": "Write the item",
         "moveUp": "Move item {number} up",
         "moveDown": "Move item {number} down",
-        "removeItem": "Remove item {number}"
+        "removeItem": "Remove item {number}",
+        "noticeHeading": "Notice wording (optional)",
+        "noticeHint": "Used by the pop-up and banner. The grey text is the default, used when a field is left empty. Can be changed after publishing.",
+        "noticeTitle": "Notice title",
+        "noticeMessage": "Notice message",
+        "audience": {
+          "heading": "Recipients",
+          "hint": "Who has to read and confirm. It can still change after publishing, takes effect at once, and is kept in the history. Existing receipts are kept.",
+          "mode": {
+            "ALL": "All roles",
+            "ROLES": "Chosen roles",
+            "PEOPLE": "Chosen people"
+          },
+          "role": {
+            "TEACHER": "Tutor",
+            "COORDINATOR": "Coordinator",
+            "ADMIN": "Admin"
+          },
+          "included": "People who receive it",
+          "excluded": "Exceptions (optional)",
+          "search": "Search name, email, or Tutor ID",
+          "noMatch": "No match",
+          "remove": "Remove {name}",
+          "unknownPerson": "Inactive account",
+          "counting": "Counting recipients...",
+          "loadError": "The list of people failed to load",
+          "preview": "Recipients: {total} ({tutors} tutors, {coordinators} coordinators, {admins} admins)"
+        },
+        "popup": {
+          "heading": "Pop-up intensity",
+          "hint": "How often the pop-up comes back for anyone who has not confirmed. The banner always stays.",
+          "preset": {
+            "RELAXED": "Relaxed",
+            "NORMAL": "Normal",
+            "INTENSE": "Intense",
+            "URGENT": "Urgent",
+            "CUSTOM": "Custom"
+          },
+          "frequencyLabel": "Appears",
+          "frequency": {
+            "ONCE": "Once per person",
+            "PER_SESSION": "Once per session",
+            "PER_DAY": "Once per day",
+            "INTERVAL": "Every few hours",
+            "APP_OPEN": "Every time the app is opened",
+            "PAGE_VISIT": "Every page visit"
+          },
+          "intervalHours": "Interval (hours)",
+          "pagesLabel": "On pages",
+          "pages": {
+            "ALL": "All pages",
+            "HOME": "Home page only"
+          },
+          "minGapMinutes": "Minimum gap (minutes)",
+          "maxPerDay": "Maximum per day",
+          "maxTotal": "Maximum in total",
+          "maxSnoozes": "Uses of the Later button",
+          "noLimit": "No limit",
+          "afterSnoozesLabel": "When Later is used up",
+          "afterSnoozes": {
+            "STOP": "Pop-up stops, banner stays",
+            "FIRM": "Firm pop-up without Later"
+          },
+          "rules": "The document, attendance, and profile pages never get a pop-up. A session ends after 30 idle minutes. Opening the app means a reload, or coming back after 5 minutes away. Days follow Jakarta time. The firm pop-up is for tutors only (admins and coordinators keep Later) and attendance stays reachable.",
+          "summary": {
+            "frequency": {
+              "ONCE": "Only once per person,",
+              "PER_SESSION": "Once per session,",
+              "PER_DAY": "Once per day,",
+              "INTERVAL": "At most every {hours} hours,",
+              "APP_OPEN": "Every time the app is opened,",
+              "PAGE_VISIT": "Every page visit,"
+            },
+            "pages": {
+              "ALL": "on all pages",
+              "HOME": "on the home page only"
+            },
+            "gap": "At least {minutes} minutes apart",
+            "perDay": "At most {count} times a day",
+            "total": "At most {count} times in total",
+            "snoozes": {
+              "STOP": "Later works {count} times, then the pop-up stops",
+              "FIRM": "Later works {count} times, then the pop-up turns firm"
+            }
+          }
+        }
       },
       "documents": {
         "heading": "Documents",
@@ -1586,7 +1676,7 @@
       },
       "monitor": {
         "title": "Confirmation status",
-        "summary": "{done} of {total} active tutors have confirmed",
+        "summary": "{done} of {total} recipients have confirmed",
         "search": "Search name, Tutor ID, or email",
         "filter": {
           "all": "All",
@@ -1601,18 +1691,28 @@
           "reading": "Documents read",
           "status": "Status",
           "confirmedAt": "Confirmed at",
-          "receipt": "Receipt"
+          "receipt": "Receipt",
+          "role": "Role",
+          "popup": "Pop-up"
         },
-        "empty": "No matching tutors.",
-        "inactive": "no longer active",
+        "empty": "No matching recipient.",
         "done": "Confirmed",
-        "pending": "Not confirmed"
+        "pending": "Not confirmed",
+        "notRecipient": "no longer a recipient",
+        "popupCount": "shown {shown}× · postponed {snoozed}×"
+      },
+      "history": {
+        "title": "Recipient change history",
+        "by": "{name} · {date}",
+        "included": "{count} people chosen",
+        "excluded": "{count} excluded"
       }
     }
   },
   "coordinator": {
     "nav": {
-      "monitoring": "Monitoring"
+      "monitoring": "Monitoring",
+      "myDocuments": "My Documents"
     },
     "monitoring": {
       "title": "Monitoring",
@@ -1683,7 +1783,8 @@
         "SIGNATURE": "The signature could not be read. Please sign again.",
         "DRIVE": "The receipt could not be saved, so nothing was recorded. Try again shortly.",
         "SERVER": "Confirmation failed. Check your connection and try again."
-      }
+      },
+      "roleLine": "Role: {role}"
     },
     "reader": {
       "back": "Back",
@@ -1703,7 +1804,9 @@
       "readNow": "Read now",
       "popupBody": "{title}. Read the documents, then confirm receipt.",
       "popupDeadline": "Confirm by {date}",
-      "later": "Later"
+      "later": "Later",
+      "goToAttendance": "Go to attendance",
+      "firmHint": "The Later button is used up."
     }
   }
 }

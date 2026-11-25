@@ -1,14 +1,17 @@
 import { Document, Image, Page, Path, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
-import { strokePath, type Signature } from "./schema";
+import type { AppRole } from "@/features/auth/role-routes";
+import { ROLE_NAMES, strokePath, type Signature } from "./schema";
 
-// The signed receipt kept in Drive for each tutor. It records that the
-// documents were received; it deliberately never says the tutor "agrees".
+// The signed receipt kept in Drive for each recipient. It records that the
+// documents were received; it deliberately never says the person "agrees".
 
 export interface ReceiptData {
   receiptNumber: string;
   packetTitle: string;
   packetVersion: number;
   fullName: string;
+  role: AppRole;
+  /** Tutors only. */
   tutorId: string | null;
   email: string;
   documents: {
@@ -98,6 +101,8 @@ function Field({ label, value }: { label: string; value: string }) {
 
 export function PolicyReceiptPdf({ data }: { data: ReceiptData }) {
   const { signature } = data;
+  const isTutor = data.role === "TEACHER";
+  const identity = isTutor ? `Tutor ID: ${data.tutorId || "-"}` : `Peran: ${ROLE_NAMES[data.role]}`;
   const scale = Math.min(SIGNATURE_WIDTH / signature.width, SIGNATURE_MAX_HEIGHT / signature.height);
 
   return (
@@ -111,7 +116,8 @@ export function PolicyReceiptPdf({ data }: { data: ReceiptData }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Identitas</Text>
           <Field label="Nama" value={data.fullName} />
-          <Field label="Tutor ID" value={data.tutorId || "-"} />
+          <Field label="Peran" value={ROLE_NAMES[data.role]} />
+          {isTutor && <Field label="Tutor ID" value={data.tutorId || "-"} />}
           <Field label="Email" value={data.email} />
           <Field label="Paket dokumen" value={`${data.packetTitle} (versi ${data.packetVersion})`} />
         </View>
@@ -163,7 +169,7 @@ export function PolicyReceiptPdf({ data }: { data: ReceiptData }) {
           <Field label="Waktu" value={formatReceiptTimestamp(data.acknowledgedAt)} />
           <Field
             label="Verifikasi"
-            value="Login ke akun tutor dan tanda tangan yang digambar di layar (bukan tanda tangan elektronik tersertifikasi)."
+            value="Login ke akun sendiri dan tanda tangan yang digambar di layar (bukan tanda tangan elektronik tersertifikasi)."
           />
           <Field label="Perangkat" value={data.userAgent || "-"} />
           <View style={styles.signatureBox}>
@@ -184,7 +190,7 @@ export function PolicyReceiptPdf({ data }: { data: ReceiptData }) {
               ))}
             </Svg>
             <Text style={styles.signatureName}>{data.fullName}</Text>
-            <Text style={styles.meta}>Tutor ID: {data.tutorId || "-"}</Text>
+            <Text style={styles.meta}>{identity}</Text>
           </View>
         </View>
 

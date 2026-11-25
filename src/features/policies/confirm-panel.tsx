@@ -7,9 +7,11 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useCurrentUser } from "@/features/auth/use-current-user";
+import type { AppRole } from "@/features/auth/role-routes";
 import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
 import { ConfirmPolicyError, type MyPolicy } from "./queries";
-import { ACKNOWLEDGE_ERRORS, type Signature } from "./schema";
+import { ACKNOWLEDGE_ERRORS, ROLE_NAMES, type Signature } from "./schema";
 import { SignaturePad } from "./signature-pad";
 import { useConfirmPolicy } from "./use-policies";
 
@@ -22,14 +24,17 @@ async function signOutAndReload() {
 /** Checklist, identity, signature and the confirm button. */
 export function ConfirmPanel({ policy }: { policy: MyPolicy }) {
   const t = useTranslations("policies.confirm");
-  const { data: teacher } = useCurrentTeacher();
+  const { data: user } = useCurrentUser();
+  const isTutor = user?.role === "TEACHER";
+  const { data: teacher } = useCurrentTeacher(isTutor);
   const confirm = useConfirmPolicy(policy.packet.id);
   const items = policy.packet.checklistItems;
   const [checked, setChecked] = useState<boolean[]>(() => items.map(() => false));
   const [signature, setSignature] = useState<Signature | null>(null);
   const allRead = policy.documents.length > 0 && policy.documents.every((d) => d.completed);
   const allChecked = checked.length === items.length && checked.every(Boolean);
-  const ready = allRead && allChecked && signature !== null && Boolean(teacher);
+  const identified = Boolean(user) && (!isTutor || Boolean(teacher));
+  const ready = allRead && allChecked && signature !== null && identified;
 
   const errorCode =
     confirm.error instanceof ConfirmPolicyError && ACKNOWLEDGE_ERRORS.includes(confirm.error.code)
@@ -74,8 +79,14 @@ export function ConfirmPanel({ policy }: { policy: MyPolicy }) {
           <h2 className="text-base font-semibold">{t("signTitle")}</h2>
           <div className="rounded-lg border px-3 py-2.5">
             <p className="text-muted-foreground text-xs">{t("identityTitle")}</p>
-            <p className="text-sm font-semibold">{teacher?.fullName ?? "..."}</p>
-            <p className="text-muted-foreground text-xs">{t("tutorId", { id: teacher?.tutorId || "-" })}</p>
+            <p className="text-sm font-semibold">{user?.fullName ?? "..."}</p>
+            <p className="text-muted-foreground text-xs">
+              {!user
+                ? "..."
+                : isTutor
+                  ? t("tutorId", { id: teacher?.tutorId || "-" })
+                  : t("roleLine", { role: ROLE_NAMES[user.role as AppRole] })}
+            </p>
             <button type="button" className="text-primary mt-1 text-xs font-medium underline" onClick={signOutAndReload}>
               {t("notYou")}
             </button>

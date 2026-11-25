@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingState } from "@/components/shared/loading-state";
-import { useCurrentTeacher } from "@/features/teachers/use-current-teacher";
+import { useCurrentUser } from "@/features/auth/use-current-user";
 import { cn } from "@/lib/utils";
 import { ConfirmPanel } from "@/features/policies/confirm-panel";
 import { formatDateTime, formatDay } from "@/features/policies/format";
@@ -141,9 +141,9 @@ function DocumentCard({ packetId, doc, index }: { packetId: string; doc: MyPolic
 /** Asking HR is always possible and never counts as a confirmation. */
 function HrQuestion({ policy }: { policy: MyPolicy }) {
   const t = useTranslations("policies.question");
-  const { data: teacher } = useCurrentTeacher();
+  const { data: user } = useCurrentUser();
   const { hrWhatsapp, hrEmail, hrContactName, title } = policy.packet;
-  const message = t("message", { name: teacher?.fullName ?? "", title });
+  const message = t("message", { name: user?.fullName ?? "", title });
   const href = hrWhatsapp
     ? whatsappLink(hrWhatsapp, message)
     : hrEmail
