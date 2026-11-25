@@ -1,6 +1,7 @@
 "use client";
 
-import { House, CalendarDays, User, ClipboardCheck, NotebookPen, CalendarClock, Users } from "lucide-react";
+import { House, CalendarDays, User, ClipboardCheck, NotebookPen, CalendarClock, Users, FileCheck2 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { TeacherTopbar } from "@/components/shared/teacher-topbar";
 import { AppSidebar, type NavItem } from "@/components/shared/app-sidebar";
@@ -8,6 +9,7 @@ import { BottomNav, type BottomNavItem } from "@/components/shared/bottom-nav";
 import { LoadingState } from "@/components/shared/loading-state";
 import { useCurrentUser } from "@/features/auth/use-current-user";
 import { useComplianceCount } from "@/features/lesson-plans/use-compliance-count";
+import { PolicyBanner, PolicyBell, PolicyPopup, usePolicyNotices } from "@/features/policies/policy-notices";
 import AdminLayout from "@/app/(admin)/layout";
 
 // Desktop sidebar groups Jadwal/Kelas under Lesson Plan (more room to show
@@ -17,6 +19,7 @@ import AdminLayout from "@/app/(admin)/layout";
 function buildTeacherSidebarItems(
   t: ReturnType<typeof useTranslations>,
   lessonPlanBadge: number,
+  policyBadge: number,
 ): NavItem[] {
   return [
     { href: "/today", label: t("nav.today"), icon: House },
@@ -30,6 +33,7 @@ function buildTeacherSidebarItems(
         { href: "/kelas", label: t("nav.kelas"), icon: Users },
       ],
     },
+    { href: "/kebijakan", label: t("nav.documents"), icon: FileCheck2, badge: policyBadge },
     { href: "/profile", label: t("nav.profile"), icon: User },
   ];
 }
@@ -55,6 +59,8 @@ export default function TeacherLayout({
   const t = useTranslations("common");
   const { data: currentUser, isLoading } = useCurrentUser();
   const { count: lessonPlanBadge } = useComplianceCount();
+  const pathname = usePathname();
+  const policies = usePolicyNotices(currentUser?.role === "TEACHER", pathname);
 
   // /lesson-plan/* is the one route both ADMIN and TEACHER can reach, and it
   // physically lives in this (teacher) route group — without this check, an
@@ -78,19 +84,21 @@ export default function TeacherLayout({
   return (
     <div className="flex min-h-dvh w-full flex-col md:flex-row">
       <div className="md:hidden">
-        <TeacherTopbar navItems={bottomNavItems} />
+        <TeacherTopbar navItems={bottomNavItems} actions={<PolicyBell count={policies.pending.length} />} />
       </div>
       <AppSidebar
         roleLabel="Teacher"
-        navItems={buildTeacherSidebarItems(t, lessonPlanBadge)}
+        navItems={buildTeacherSidebarItems(t, lessonPlanBadge, policies.pending.length)}
         showLanguageSwitcher
       />
       <main className="flex-1 overflow-x-auto bg-muted">
         <div className="mx-auto w-full max-w-md px-4 pt-4 pb-24 md:max-w-none md:px-8 md:pb-8 md:pt-8">
-          {children}
+          <PolicyBanner pending={policies.pending} pathname={pathname} />
+          {policies.blocked ? <LoadingState /> : children}
         </div>
       </main>
       <BottomNav items={bottomNavItems} />
+      <PolicyPopup pending={policies.pending} sessionKey={policies.sessionKey} pathname={pathname} />
     </div>
   );
 }

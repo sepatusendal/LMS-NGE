@@ -205,18 +205,16 @@ export async function setPublicReadable(driveFileId: string) {
   );
 }
 
-export async function uploadFile(
+async function createDriveFile(
   fileBuffer: Buffer,
   fileName: string,
   mimeType: string,
-  folderId?: string,
-): Promise<{ driveFileId: string; webViewLink: string }> {
-  const targetFolder = folderId || getRootFolderId();
-
+  folderId: string,
+): Promise<{ id: string; webViewLink?: string }> {
   const metadata = {
     name: fileName,
     mimeType,
-    parents: [targetFolder],
+    parents: [folderId],
   };
 
   // Rebuilt fresh on every attempt — a FormData/Blob pair can only be read
@@ -233,7 +231,62 @@ export async function uploadFile(
     });
   }, `Upload file "${fileName}" ke Drive`);
 
-  const data = (await res.json()) as { id: string; webViewLink?: string };
+  return (await res.json()) as { id: string; webViewLink?: string };
+}
+
+/** For files that must never be reachable by link (policy documents and signed
+ * receipts): no sharing is added, so only the owning Drive account — and anyone
+ * it explicitly shares the folder with — can open them. A file still inherits
+ * its parent folder's sharing, so if that makes it public the upload is undone
+ * and fails loudly instead of leaving an exposed copy behind. Read it back
+ * through the app with downloadFile(). */
+export async function uploadPrivateFile(
+  fileBuffer: Buffer,
+  fileName: string,
+  mimeType: string,
+  folderId: string,
+): Promise<string> {
+  const { id } = await createDriveFile(fileBuffer, fileName, mimeType, folderId);
+  try {
+    const res = await driveRequest(
+      (token) =>
+        fetch(`https://www.googleapis.com/drive/v3/files/${id}/permissions?fields=permissions(type)`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      "Memeriksa izin file Drive",
+    );
+    const { permissions = [] } = (await res.json()) as { permissions?: { type: string }[] };
+    if (permissions.some((p) => p.type === "anyone")) {
+      throw new Error(
+        "Folder Drive tujuan dibagikan ke siapa saja yang punya link. Matikan dulu pembagian publik folder itu.",
+      );
+    }
+  } catch (privacyErr) {
+    await deleteFile(id).catch(() => {});
+    throw privacyErr;
+  }
+  return id;
+}
+
+/** Streams a file's bytes with the app's own credentials. The caller is
+ * responsible for checking that the signed-in user may see this file. */
+export async function downloadFile(driveFileId: string): Promise<Response> {
+  return driveRequest(
+    (token) =>
+      fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    "Mengunduh file Drive",
+  );
+}
+
+export async function uploadFile(
+  fileBuffer: Buffer,
+  fileName: string,
+  mimeType: string,
+  folderId?: string,
+): Promise<{ driveFileId: string; webViewLink: string }> {
+  const data = await createDriveFile(fileBuffer, fileName, mimeType, folderId || getRootFolderId());
 
   // If sharing fails after an otherwise-successful upload, don't leave an
   // orphaned private file behind with no trace — clean it up so a retry

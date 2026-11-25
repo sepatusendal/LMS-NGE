@@ -20,6 +20,7 @@ import {
   BarChart3,
   UserRoundCheck,
   Sparkles,
+  FileCheck2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { AppSidebar, type NavItem } from "@/components/shared/app-sidebar";
@@ -67,6 +68,7 @@ function buildAdminNavItems(
       ],
     },
     { href: "/announcements", label: t("announcements"), icon: Megaphone },
+    { href: "/policies", label: t("policies"), icon: FileCheck2 },
     { href: "/settings", label: t("settings"), icon: Settings },
   ];
 }

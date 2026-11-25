@@ -7,7 +7,8 @@
       "lessonPlanShort": "Plan",
       "jadwal": "Schedule",
       "kelas": "Classes",
-      "profile": "Profile"
+      "profile": "Profile",
+      "documents": "Documents"
     },
     "logout": "Log out",
     "openMenu": "Open menu",
@@ -574,7 +575,8 @@
       "analyticsDailyTeachingReport": "Daily Teaching Report",
       "analyticsLessonPlan": "Lesson Plan",
       "analyticsClasses": "Classes",
-      "analyticsCustom": "Custom Report"
+      "analyticsCustom": "Custom Report",
+      "policies": "Documents & Policies"
     },
     "holidays": {
       "title": "Holidays",
@@ -1487,6 +1489,125 @@
       "resetMeetingHint": "Deletes check-in, check-out, attendance, and report all at once — the tutor starts over from check-in. Cannot be undone.",
       "confirmResetMeeting": "Reset this meeting? Check-in, check-out, attendance, and report will all be deleted.",
       "resetting": "Resetting..."
+    },
+    "policies": {
+      "title": "Documents & Policies",
+      "subtitle": "Documents tutors must read, sign, and confirm.",
+      "create": "New document packet",
+      "createSubmit": "Save draft",
+      "empty": "No document packets yet.",
+      "version": "Version {version}",
+      "status": {
+        "DRAFT": "Draft",
+        "PUBLISHED": "Published",
+        "ARCHIVED": "No longer in force"
+      },
+      "draftHint": "Not published, tutors cannot see it",
+      "confirmedCount": "{done} of {total} active tutors have confirmed",
+      "deadlineShort": "Due {date}",
+      "back": "All document packets",
+      "actions": {
+        "publish": "Publish",
+        "archive": "Retire",
+        "delete": "Delete draft",
+        "newVersion": "Create new version"
+      },
+      "draftNotice": "Draft: upload every document, check the checklist and statement, then publish. After publishing, the content cannot be changed.",
+      "settingsTitle": "Confirmation wording, deadline, and HR contact",
+      "save": "Save",
+      "confirm": {
+        "publishTitle": "Publish this packet?",
+        "publishBody": "All active tutors will be asked to read and confirm it. Documents, checklist, and statement can no longer be changed. If this is a new version, the old one is retired automatically.",
+        "archiveTitle": "Retire this packet?",
+        "archiveBody": "Tutors who have not confirmed will no longer be asked. Existing receipts are kept. This cannot be undone.",
+        "deleteTitle": "Delete this draft?",
+        "deleteBody": "The draft and its document files will be permanently deleted."
+      },
+      "toasts": {
+        "created": "Draft created",
+        "saved": "Changes saved",
+        "published": "Packet published",
+        "versionCreated": "New version draft is ready",
+        "archived": "Packet retired",
+        "draftDeleted": "Draft deleted",
+        "documentAdded": "Document added",
+        "documentRemoved": "Document removed",
+        "failed": "Could not save"
+      },
+      "form": {
+        "title": "Packet title",
+        "titlePlaceholder": "Company Regulations & HR Policies 2026–2028",
+        "checklist": "Checklist items",
+        "checklistHint": "One field per item; tutors must tick all of them. Press Enter for a new item. Pasting a list of several lines splits it into separate items.",
+        "statement": "Statement",
+        "deadline": "Confirmation deadline (optional)",
+        "deadlineHint": "After this date the tutor portal redirects to the documents page. Attendance stays open.",
+        "hrContactName": "HR contact name (optional)",
+        "hrWhatsapp": "HR WhatsApp (optional)",
+        "hrEmail": "HR email (optional)",
+        "lockedHint": "Published: only the deadline and HR contact can be changed.",
+        "validation": {
+          "titleRequired": "Title is required",
+          "titleMax": "Title can be at most 150 characters",
+          "checklistRequired": "Add at least one item",
+          "checklistMax": "At most 20 items",
+          "statementRequired": "Statement is required",
+          "statementMax": "Statement can be at most 2000 characters",
+          "whatsappInvalid": "Invalid WhatsApp number",
+          "emailInvalid": "Invalid email",
+          "checklistItemMax": "At most 500 characters per item"
+        },
+        "addItem": "Add item",
+        "itemLabel": "Item {number}",
+        "itemPlaceholder": "Write the item",
+        "moveUp": "Move item {number} up",
+        "moveDown": "Move item {number} down",
+        "removeItem": "Remove item {number}"
+      },
+      "documents": {
+        "heading": "Documents",
+        "empty": "No documents yet.",
+        "add": "Add a document",
+        "file": "PDF file (max 4MB)",
+        "title": "Document title",
+        "documentNumber": "Document number (optional)",
+        "versionLabel": "Document version (optional)",
+        "effectiveDate": "Effective date (optional)",
+        "hint": "Files are stored privately in Google Drive.",
+        "upload": "Upload",
+        "uploading": "Uploading...",
+        "tooLarge": "File is too large (max 4MB)",
+        "unreadable": "The PDF could not be read",
+        "effectiveFrom": "Effective {date}",
+        "pages": "{count} pages",
+        "download": "Download document",
+        "remove": "Remove document",
+        "removeConfirm": "Remove \"{title}\" from the draft?"
+      },
+      "monitor": {
+        "title": "Confirmation status",
+        "summary": "{done} of {total} active tutors have confirmed",
+        "search": "Search name, Tutor ID, or email",
+        "filter": {
+          "all": "All",
+          "pending": "Pending",
+          "done": "Confirmed"
+        },
+        "export": "Export summary",
+        "sheetName": "Summary",
+        "columns": {
+          "name": "Name",
+          "tutorId": "Tutor ID",
+          "reading": "Documents read",
+          "status": "Status",
+          "confirmedAt": "Confirmed at",
+          "receipt": "Receipt"
+        },
+        "empty": "No matching tutors.",
+        "inactive": "no longer active",
+        "done": "Confirmed",
+        "pending": "Not confirmed"
+      }
     }
   },
   "coordinator": {
@@ -1496,6 +1617,93 @@
     "monitoring": {
       "title": "Monitoring",
       "subtitle": "Monitor lesson plan compliance and teaching quality."
+    }
+  },
+  "policies": {
+    "title": "Documents & Policies",
+    "subtitle": "Company documents you need to read and confirm.",
+    "empty": "No documents yet.",
+    "loadError": "Documents failed to load. Try again shortly.",
+    "notFound": "Document not found.",
+    "version": "Version {version}",
+    "status": {
+      "pending": "Needs confirmation",
+      "done": "Confirmed",
+      "retired": "No longer in force"
+    },
+    "deadline": "Confirm by {date}",
+    "overdue": "overdue",
+    "confirmedOn": "Confirmed {date}",
+    "readCount": "{done} of {total} documents fully read",
+    "success": {
+      "title": "Receipt confirmed",
+      "number": "Receipt no. {number}",
+      "download": "Download receipt (PDF)"
+    },
+    "documents": {
+      "title": "Read the documents",
+      "hint": "The checklist unlocks after every document is read to the last page.",
+      "done": "Fully read",
+      "reading": "Read up to page {page} of {total}",
+      "opened": "Opened · {total} pages",
+      "notOpened": "Not opened · {total} pages",
+      "read": "Read",
+      "continue": "Continue",
+      "readAgain": "Read again",
+      "download": "Download"
+    },
+    "question": {
+      "button": "I have a question",
+      "fallback": "Questions? Contact HR.",
+      "contact": "HR contact: {name}",
+      "hint": "Asking HR does not count as a confirmation.",
+      "message": "Hello HR, this is {name}. I have a question about {title}."
+    },
+    "confirm": {
+      "checklistTitle": "Tick each item",
+      "lockedHint": "Finish reading every document first.",
+      "statementTitle": "Statement",
+      "signTitle": "Signature",
+      "identityTitle": "You are confirming as",
+      "tutorId": "Tutor ID: {id}",
+      "notYou": "Not you? Sign out",
+      "signLocked": "The signature field unlocks after every item is ticked.",
+      "signHint": "Sign here with your finger or mouse",
+      "signClear": "Clear",
+      "signTooShort": "The signature is too short, try again.",
+      "submit": "Confirm Receipt",
+      "submitting": "Saving the receipt...",
+      "errors": {
+        "SESSION": "Your session ended. Please sign in again.",
+        "NOT_ELIGIBLE": "This account cannot confirm. Contact an admin.",
+        "NOT_AVAILABLE": "These documents are no longer available. Reload the page.",
+        "ALREADY": "You have already confirmed these documents.",
+        "NOT_READ": "Some documents have not been read to the end.",
+        "CHECKLIST": "Every item must be ticked.",
+        "SIGNATURE": "The signature could not be read. Please sign again.",
+        "DRIVE": "The receipt could not be saved, so nothing was recorded. Try again shortly.",
+        "SERVER": "Confirmation failed. Check your connection and try again."
+      }
+    },
+    "reader": {
+      "back": "Back",
+      "loading": "Loading document...",
+      "error": "The document failed to load.",
+      "retry": "Try again",
+      "page": "Page {page} of {total}",
+      "completed": "Document fully read",
+      "readUpTo": "Read up to page {page} of {total}",
+      "goToPage": "Page {page}",
+      "saveError": "Progress was not saved. Check your connection."
+    },
+    "notices": {
+      "bell": "Document notifications: {count} to confirm",
+      "title": "You have documents to confirm",
+      "bannerOverdue": "The document confirmation deadline has passed",
+      "readNow": "Read now",
+      "popupBody": "{title}. Read the documents, then confirm receipt.",
+      "popupDeadline": "Confirm by {date}",
+      "later": "Later"
     }
   }
 }

@@ -17,7 +17,7 @@ interface TeacherNavItem {
   icon: LucideIcon;
 }
 
-export function TeacherTopbar({ navItems }: { navItems: TeacherNavItem[] }) {
+export function TeacherTopbar({ navItems, actions }: { navItems: TeacherNavItem[]; actions?: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslations("common");
@@ -55,6 +55,7 @@ export function TeacherTopbar({ navItems }: { navItems: TeacherNavItem[] }) {
               );
             })}
           </div>
+          {actions}
           <LanguageSwitcher className="h-7 w-auto px-2" />
           <Button
             variant="ghost"

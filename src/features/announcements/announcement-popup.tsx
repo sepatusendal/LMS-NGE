@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { usePolicyPopupOpen } from "@/features/policies/policy-popup-state";
 import { useDismissAnnouncement, useMyAnnouncements } from "./use-announcements";
 import { ANNOUNCEMENT_THEME } from "./schema";
 
@@ -18,8 +19,10 @@ export function AnnouncementPopup() {
 
   const popups = (announcements ?? []).filter((a) => a.displayMode === "POPUP");
   const current = popups[popups.length - 1];
+  // The mandatory policy notice goes first; this one waits its turn.
+  const policyPopupOpen = usePolicyPopupOpen();
 
-  if (!current) return null;
+  if (!current || policyPopupOpen) return null;
 
   const theme = ANNOUNCEMENT_THEME[current.type];
   const Illustration = theme.Illustration;
