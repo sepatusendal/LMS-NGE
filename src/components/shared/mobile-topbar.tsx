@@ -25,10 +25,13 @@ export function MobileTopbar({
   roleLabel,
   navItems,
   showLanguageSwitcher = false,
+  actions,
 }: {
   roleLabel: string;
   navItems?: NavItem[];
   showLanguageSwitcher?: boolean;
+  /** Extra buttons next to sign out. */
+  actions?: React.ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -88,10 +91,13 @@ export function MobileTopbar({
           {roleLabel}
         </span>
       </div>
-      <Button variant="ghost" size="icon-sm" onClick={handleLogout}>
-        <LogOut className="size-4" aria-hidden="true" />
-        <span className="sr-only">{t("logout")}</span>
-      </Button>
+      <div className="flex items-center gap-1">
+        {actions}
+        <Button variant="ghost" size="icon-sm" onClick={handleLogout}>
+          <LogOut className="size-4" aria-hidden="true" />
+          <span className="sr-only">{t("logout")}</span>
+        </Button>
+      </div>
     </div>
   );
 }

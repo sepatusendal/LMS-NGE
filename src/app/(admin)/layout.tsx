@@ -21,13 +21,16 @@ import {
   UserRoundCheck,
   Sparkles,
   FileCheck2,
+  FileSignature,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AppSidebar, type NavItem } from "@/components/shared/app-sidebar";
 import { MobileTopbar } from "@/components/shared/mobile-topbar";
 import { BottomNav } from "@/components/shared/bottom-nav";
 import type { BottomNavItem } from "@/components/shared/bottom-nav";
 import { useComplianceCount } from "@/features/lesson-plans/use-compliance-count";
+import { PolicyBanner, PolicyBell, PolicyPopup, usePolicyNotices } from "@/features/policies/policy-notices";
 
 function buildAdminNavItems(
   t: (key: string) => string,
@@ -92,7 +95,19 @@ export default function AdminLayout({
   const tRole = useTranslations("common.roles");
   const { count: lessonPlanBadge } = useComplianceCount();
 
+  const pathname = usePathname();
+  // An admin can be a recipient too; their own documents appear only then.
+  const policies = usePolicyNotices("ADMIN", pathname);
+
   const navItems = buildAdminNavItems(t, lessonPlanBadge);
+  if (policies.hasDocuments) {
+    navItems.splice(navItems.length - 1, 0, {
+      href: "/kebijakan",
+      label: t("myDocuments"),
+      icon: FileSignature,
+      badge: policies.pending.length,
+    });
+  }
 
   return (
     <div className="flex min-h-dvh w-full flex-col md:flex-row">
@@ -100,6 +115,7 @@ export default function AdminLayout({
         roleLabel={tRole("admin")}
         navItems={navItems}
         showLanguageSwitcher
+        actions={policies.hasDocuments ? <PolicyBell count={policies.pending.length} /> : null}
       />
       <AppSidebar
         roleLabel={tRole("admin")}
@@ -107,9 +123,13 @@ export default function AdminLayout({
         showLanguageSwitcher
       />
       <main className="flex-1 overflow-x-auto bg-muted p-4 pb-20 md:p-8 md:pb-8">
-        {children}
+        <PolicyBanner pending={policies.pending} pathname={pathname} />
+        {/* Wrapped on purpose: as a direct sibling of the banner, the routed
+            page triggers React's missing "key" warning. */}
+        <>{children}</>
       </main>
       <BottomNav items={buildMobileNav(t, lessonPlanBadge)} />
+      <PolicyPopup popup={policies.popup} onLater={policies.later} onClose={policies.close} />
     </div>
   );
 }

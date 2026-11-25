@@ -18,9 +18,10 @@ import { usePacketMonitor } from "../use-policies";
 type Filter = "all" | "pending" | "done";
 const FILTERS: Filter[] = ["all", "pending", "done"];
 
-/** Who has confirmed, who has not, and each tutor's signed receipt. */
+/** Who has confirmed, who has not, and each signed receipt. */
 export function MonitorTable({ packet }: { packet: PolicyPacket }) {
   const t = useTranslations("admin.policies.monitor");
+  const tRole = useTranslations("admin.policies.form.audience.role");
   const locale = useLocale();
   const { data, isLoading, isError, error } = usePacketMonitor(packet.id, true);
   const [search, setSearch] = useState("");
@@ -38,7 +39,9 @@ export function MonitorTable({ packet }: { packet: PolicyPacket }) {
   if (isLoading) return <LoadingState />;
   if (isError || !data) return <p className="text-destructive text-sm">{error?.message}</p>;
 
-  const active = data.rows.filter((r) => r.isActiveTutor);
+  const active = data.rows.filter((r) => r.isRecipient);
+  const popup = (row: MonitorRow) => t("popupCount", { shown: row.popupShown, snoozed: row.popupSnoozed });
+  const role = (row: MonitorRow) => tRole(row.role);
   const done = active.filter((r) => r.acknowledgement).length;
   const status = (row: MonitorRow) => (row.acknowledgement ? t("done") : t("pending"));
 
@@ -84,6 +87,7 @@ export function MonitorTable({ packet }: { packet: PolicyPacket }) {
                 rows,
                 columns: [
                   { header: t("columns.name"), key: "name", width: 30, value: (r: MonitorRow) => r.fullName },
+                  { header: t("columns.role"), key: "role", width: 14, value: role },
                   { header: t("columns.tutorId"), key: "tutorId", width: 16, value: (r: MonitorRow) => r.tutorId ?? "" },
                   { header: "Email", key: "email", width: 30, value: (r: MonitorRow) => r.email },
                   {
@@ -93,6 +97,7 @@ export function MonitorTable({ packet }: { packet: PolicyPacket }) {
                     value: (r: MonitorRow) => `${r.documentsRead}/${data.documentCount}`,
                   },
                   { header: t("columns.status"), key: "status", width: 20, value: status },
+                  { header: t("columns.popup"), key: "popup", width: 24, value: popup },
                   {
                     header: t("columns.confirmedAt"),
                     key: "confirmedAt",
@@ -118,9 +123,11 @@ export function MonitorTable({ packet }: { packet: PolicyPacket }) {
           <TableHeader>
             <TableRow>
               <TableHead>{t("columns.name")}</TableHead>
+              <TableHead>{t("columns.role")}</TableHead>
               <TableHead>{t("columns.tutorId")}</TableHead>
               <TableHead className="text-center">{t("columns.reading")}</TableHead>
               <TableHead>{t("columns.status")}</TableHead>
+              <TableHead>{t("columns.popup")}</TableHead>
               <TableHead>{t("columns.confirmedAt")}</TableHead>
               <TableHead>{t("columns.receipt")}</TableHead>
             </TableRow>
@@ -128,7 +135,7 @@ export function MonitorTable({ packet }: { packet: PolicyPacket }) {
           <TableBody>
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-muted-foreground py-6 text-center text-sm">
+                <TableCell colSpan={8} className="text-muted-foreground py-6 text-center text-sm">
                   {t("empty")}
                 </TableCell>
               </TableRow>
@@ -139,9 +146,10 @@ export function MonitorTable({ packet }: { packet: PolicyPacket }) {
                   <p className="font-medium whitespace-nowrap">{row.fullName}</p>
                   <p className="text-muted-foreground text-xs">
                     {row.email}
-                    {!row.isActiveTutor && ` · ${t("inactive")}`}
+                    {!row.isRecipient && ` · ${t("notRecipient")}`}
                   </p>
                 </TableCell>
+                <TableCell className="whitespace-nowrap">{role(row)}</TableCell>
                 <TableCell className="whitespace-nowrap">{row.tutorId || "-"}</TableCell>
                 <TableCell className="text-center tabular-nums">
                   {row.documentsRead}/{data.documentCount}
@@ -149,6 +157,7 @@ export function MonitorTable({ packet }: { packet: PolicyPacket }) {
                 <TableCell>
                   <Badge variant={row.acknowledgement ? "default" : "secondary"}>{status(row)}</Badge>
                 </TableCell>
+                <TableCell className="text-muted-foreground text-xs whitespace-nowrap">{popup(row)}</TableCell>
                 <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
                   {row.acknowledgement ? formatDateTime(row.acknowledgement.acknowledgedAt, locale) : "-"}
                 </TableCell>

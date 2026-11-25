@@ -11,8 +11,10 @@ import { safeFileName, sha256Hex } from "@/features/policies/server";
 import {
   acknowledgeRequestSchema,
   isSignatureSufficient,
+  ROLE_NAMES,
   type AcknowledgeError,
 } from "@/features/policies/schema";
+import type { AppRole } from "@/features/auth/role-routes";
 
 function fail(code: AcknowledgeError, status: number) {
   return NextResponse.json({ code }, { status });
@@ -27,7 +29,7 @@ function letterheadDataUri(): string {
   }
 }
 
-/** A tutor confirms receipt of a published packet. The confirmation is only
+/** A recipient confirms receipt of a published packet. The confirmation is only
  * recorded after the signed receipt PDF is safely in Drive, so a recorded
  * acknowledgement always has its evidence. Everything is re-checked here: the
  * browser's checkboxes and buttons are not trusted. */
@@ -44,17 +46,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!parsed.success) return fail("SIGNATURE", 400);
     const { checked, signature } = parsed.data;
 
-    // All reads below run as the tutor, so row level security applies.
+    // All reads below run as the signed-in user, so row level security applies.
     const [{ data: profile }, { data: teacher }] = await Promise.all([
       supabase.from("users").select("fullName, email, role, isActive, deletedAt").eq("id", user.id).single(),
       supabase.from("teachers").select("tutorId, isActive, deletedAt").eq("userId", user.id).maybeSingle(),
     ]);
-    if (
-      !profile || profile.role !== "TEACHER" || !profile.isActive || profile.deletedAt ||
-      !teacher || !teacher.isActive || teacher.deletedAt
-    ) {
+    if (!profile || !profile.isActive || profile.deletedAt) return fail("NOT_ELIGIBLE", 403);
+    const role = profile.role as AppRole;
+    // A tutor also needs an active tutor profile.
+    if (role === "TEACHER" && (!teacher || !teacher.isActive || teacher.deletedAt)) {
       return fail("NOT_ELIGIBLE", 403);
     }
+    const tutorId = role === "TEACHER" ? (teacher?.tutorId ?? null) : null;
 
     const { data: packet, error: packetError } = await supabase
       .from("policy_packets")
@@ -65,6 +68,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!packet || packet.status !== "PUBLISHED" || !packet.driveReceiptsFolderId) {
       return fail("NOT_AVAILABLE", 404);
     }
+
+    // Seeing a packet is not enough: an admin can read every one of them.
+    const { data: targeted, error: targetError } = await supabase.rpc("policy_packet_targets_me", {
+      p_packet_id: packetId,
+    });
+    if (targetError) throw targetError;
+    if (targeted !== true) return fail("NOT_ELIGIBLE", 403);
 
     const { data: existing, error: existingError } = await supabase
       .from("policy_acknowledgements")
@@ -111,7 +121,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             packetTitle: packet.title,
             packetVersion: packet.version,
             fullName: profile.fullName,
-            tutorId: teacher.tutorId,
+            role,
+            tutorId,
             email: profile.email,
             documents,
             checklistItems: items,
@@ -125,7 +136,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ),
     );
 
-    const receiptFileName = `${safeFileName(`${receiptNumber} - ${teacher.tutorId || "tanpa ID"} - ${profile.fullName}`)}.pdf`;
+    const owner = role === "TEACHER" ? tutorId || "tanpa ID" : ROLE_NAMES[role];
+    const receiptFileName = `${safeFileName(`${receiptNumber} - ${owner} - ${profile.fullName}`)}.pdf`;
     let driveFileId: string;
     try {
       driveFileId = await uploadPrivateFile(pdf, receiptFileName, "application/pdf", packet.driveReceiptsFolderId);
@@ -142,7 +154,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       receiptNumber,
       fullName: profile.fullName,
       email: profile.email,
-      tutorId: teacher.tutorId,
+      role,
+      tutorId,
       userAgent,
       receiptDriveFileId: driveFileId,
       receiptFileName,

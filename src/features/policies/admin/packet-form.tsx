@@ -1,18 +1,32 @@
 "use client";
 
 import { useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { buildPacketFormSchema, DEFAULT_CHECKLIST, DEFAULT_STATEMENT, type PacketFormInput, type PolicyPacket } from "../schema";
+import {
+  buildPacketFormSchema,
+  DEFAULT_CHECKLIST,
+  DEFAULT_STATEMENT,
+  MAX_NOTICE_MESSAGE_LENGTH,
+  MAX_NOTICE_TITLE_LENGTH,
+  type PacketFormInput,
+  type PolicyPacket,
+} from "../schema";
+import { DEFAULT_AUDIENCE, toAudienceForm, type PolicyAudience } from "../audience";
+import { parsePopupSettings } from "../popup-rules";
+import { AudienceEditor } from "./audience-editor";
 import { ChecklistEditor, ChecklistPreview } from "./checklist-editor";
+import { PopupSettingsEditor } from "./popup-settings-editor";
 
-export function packetToFormValues(packet?: PolicyPacket): PacketFormInput {
+export function packetToFormValues(packet?: PolicyPacket, audience: PolicyAudience = DEFAULT_AUDIENCE): PacketFormInput {
   return {
+    audience: toAudienceForm(audience),
+    popup: parsePopupSettings(packet?.popupSettings),
     title: packet?.title ?? "",
     checklist: (packet?.checklistItems ?? DEFAULT_CHECKLIST).map((text) => ({ text })),
     statement: packet?.statement ?? DEFAULT_STATEMENT,
@@ -20,32 +34,39 @@ export function packetToFormValues(packet?: PolicyPacket): PacketFormInput {
     hrContactName: packet?.hrContactName ?? "",
     hrWhatsapp: packet?.hrWhatsapp ?? "",
     hrEmail: packet?.hrEmail ?? "",
+    noticeTitle: packet?.noticeTitle ?? "",
+    noticeMessage: packet?.noticeMessage ?? "",
   };
 }
 
-/** Create and edit form. Once published, only the deadline and HR contact can
- * change; the rest is shown read-only. */
+/** Create and edit form. Once published, the title, checklist and statement are
+ * read-only; the recipients and every reminder setting can still change. */
 export function PacketForm({
   packet,
+  audience,
   submitLabel,
   isPending,
   onSubmit,
 }: {
   packet?: PolicyPacket;
+  audience?: PolicyAudience;
   submitLabel: string;
   isPending: boolean;
   onSubmit: (values: PacketFormInput) => void;
 }) {
   const t = useTranslations("admin.policies.form");
+  // The placeholders show the exact default text tutors see.
+  const tNotice = useTranslations("policies.notices");
   const schema = useMemo(() => buildPacketFormSchema(t), [t]);
   const wordingLocked = Boolean(packet) && packet!.status !== "DRAFT";
   const readOnlyAll = packet?.status === "ARCHIVED";
-  const values = useMemo(() => packetToFormValues(packet), [packet]);
+  const values = useMemo(() => packetToFormValues(packet, audience), [packet, audience]);
   const {
     register,
     control,
     getValues,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<PacketFormInput>({ resolver: zodResolver(schema), values });
 
@@ -87,6 +108,65 @@ export function PacketForm({
         />
         {message(errors.statement?.message)}
       </div>
+
+      <fieldset className="space-y-3 rounded-lg border p-3">
+        <legend className="px-1 text-sm font-medium">{t("audience.heading")}</legend>
+        <p className="text-muted-foreground text-xs">{t("audience.hint")}</p>
+        <Controller
+          control={control}
+          name="audience"
+          render={({ field }) => (
+            <AudienceEditor value={field.value} onChange={field.onChange} disabled={readOnlyAll} />
+          )}
+        />
+        {message(errors.audience?.message)}
+      </fieldset>
+
+      <fieldset className="space-y-3 rounded-lg border p-3">
+        <legend className="px-1 text-sm font-medium">{t("popup.heading")}</legend>
+        <p className="text-muted-foreground text-xs">{t("popup.hint")}</p>
+        <Controller
+          control={control}
+          name="popup"
+          render={({ field }) => (
+            <PopupSettingsEditor value={field.value} onChange={field.onChange} disabled={readOnlyAll} />
+          )}
+        />
+        {message(errors.popup ? t("validation.popupInvalid") : undefined)}
+      </fieldset>
+
+      <fieldset className="space-y-3 rounded-lg border p-3">
+        <legend className="px-1 text-sm font-medium">{t("noticeHeading")}</legend>
+        <p className="text-muted-foreground text-xs">{t("noticeHint")}</p>
+        <div className="space-y-2">
+          <Label htmlFor="policy-notice-title">{t("noticeTitle")}</Label>
+          <Input
+            id="policy-notice-title"
+            maxLength={MAX_NOTICE_TITLE_LENGTH}
+            placeholder={tNotice("title")}
+            readOnly={readOnlyAll}
+            aria-invalid={!!errors.noticeTitle}
+            {...register("noticeTitle")}
+          />
+          {message(errors.noticeTitle?.message)}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="policy-notice-message">{t("noticeMessage")}</Label>
+          <Textarea
+            id="policy-notice-message"
+            rows={3}
+            maxLength={MAX_NOTICE_MESSAGE_LENGTH}
+            placeholder={tNotice("popupBody", { title: watch("title") || t("title") })}
+            readOnly={readOnlyAll}
+            aria-invalid={!!errors.noticeMessage}
+            {...register("noticeMessage")}
+          />
+          <p className="text-muted-foreground text-right text-xs tabular-nums">
+            {(watch("noticeMessage") ?? "").length}/{MAX_NOTICE_MESSAGE_LENGTH}
+          </p>
+          {message(errors.noticeMessage?.message)}
+        </div>
+      </fieldset>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">

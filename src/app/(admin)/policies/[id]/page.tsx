@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Archive, ArrowLeft, CopyPlus, Send, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,15 +20,18 @@ import { LoadingState } from "@/components/shared/loading-state";
 import { DocumentManager } from "@/features/policies/admin/document-manager";
 import { MonitorTable } from "@/features/policies/admin/monitor-table";
 import { PacketForm } from "@/features/policies/admin/packet-form";
+import { pickRecipients } from "@/features/policies/audience";
+import { formatDateTime } from "@/features/policies/format";
+import type { PacketDetail } from "@/features/policies/queries";
 import {
   useArchivePacket,
+  useAudiencePeople,
   useCreatePacketVersion,
   useDeleteDraftPacket,
   usePacketAdmin,
   usePublishPacket,
   useUpdatePacket,
 } from "@/features/policies/use-policies";
-import type { PolicyDocument, PolicyPacket } from "@/features/policies/schema";
 
 export default function PolicyDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -43,15 +46,57 @@ export default function PolicyDetailPage() {
       </Link>
       {isLoading && <LoadingState />}
       {isError && <p className="text-destructive text-sm">{error.message}</p>}
-      {data && <PolicyDetail packet={data.packet} documents={data.documents} />}
+      {data && <PolicyDetail {...data} />}
     </div>
+  );
+}
+
+/** Who changed the recipients after publishing, and to what. */
+function AudienceHistory({ changes }: { changes: PacketDetail["audienceChanges"] }) {
+  const t = useTranslations("admin.policies.history");
+  const tAudience = useTranslations("admin.policies.form.audience");
+  const locale = useLocale();
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("title")}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="divide-y text-sm">
+          {changes.map((change) => {
+            const { roles, includedUserIds, excludedUserIds } = change.after;
+            const summary = [
+              roles.map((role) => tAudience(`role.${role}`)).join(", ") || null,
+              includedUserIds.length > 0 ? t("included", { count: includedUserIds.length }) : null,
+              excludedUserIds.length > 0 ? t("excluded", { count: excludedUserIds.length }) : null,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            return (
+              <li key={change.id} className="py-2">
+                <p>{summary}</p>
+                <p className="text-muted-foreground text-xs">
+                  {t("by", {
+                    name: change.changedByName ?? "-",
+                    date: formatDateTime(change.changedAt, locale),
+                  })}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
 
 type PendingAction = "publish" | "archive" | "delete" | null;
 
-function PolicyDetail({ packet, documents }: { packet: PolicyPacket; documents: PolicyDocument[] }) {
+function PolicyDetail({ packet, documents, audience, audienceChanges }: PacketDetail) {
   const t = useTranslations("admin.policies");
+  const { data: people } = useAudiencePeople();
+  const recipientCount = people ? pickRecipients(audience, people).length : 0;
   const tCommon = useTranslations("common");
   const router = useRouter();
   const update = useUpdatePacket(packet);
@@ -140,6 +185,7 @@ function PolicyDetail({ packet, documents }: { packet: PolicyPacket; documents: 
         <CardContent>
           <PacketForm
             packet={packet}
+            audience={audience}
             submitLabel={t("save")}
             isPending={update.isPending}
             onSubmit={(values) => update.mutate(values)}
@@ -147,13 +193,15 @@ function PolicyDetail({ packet, documents }: { packet: PolicyPacket; documents: 
         </CardContent>
       </Card>
 
+      {audienceChanges.length > 0 && <AudienceHistory changes={audienceChanges} />}
+
       <Dialog open={action !== null} onOpenChange={(open) => !open && setAction(null)}>
         <DialogContent>
           {action && (
             <>
               <DialogHeader>
                 <DialogTitle>{t(`confirm.${action}Title`)}</DialogTitle>
-                <DialogDescription>{t(`confirm.${action}Body`)}</DialogDescription>
+                <DialogDescription>{t(`confirm.${action}Body`, { count: recipientCount })}</DialogDescription>
               </DialogHeader>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setAction(null)}>

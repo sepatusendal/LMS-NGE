@@ -37,7 +37,8 @@ const ROUTE_PREFIX_ROLES: Array<{ prefix: string; roles: AppRole[] }> = [
   { prefix: "/policies", roles: ["ADMIN"] },
   // Signed-in only; each route handler and RLS decide who may do what.
   { prefix: "/api/policies", roles: ALL_ROLES },
-  { prefix: "/kebijakan", roles: ["TEACHER"] },
+  // Documents to read and confirm; any role can be a recipient.
+  { prefix: "/kebijakan", roles: ALL_ROLES },
   { prefix: "/monitoring", roles: ["COORDINATOR"] },
   { prefix: "/today", roles: ["TEACHER"] },
   { prefix: "/absensi", roles: ["TEACHER"] },

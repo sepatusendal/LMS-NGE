@@ -77,6 +77,7 @@ model User {
   policyPacketsCreated    PolicyPacket[]
   policyReadProgress      PolicyReadProgress[]
   policyAcknowledgements  PolicyAcknowledgement[]
+  policyPopupStates       PolicyPopupState[]
 
   // Admin backfill/correction trail (see 20260915000000) — populated only
   // when an admin, not the owning teacher, created or fixed the record.
@@ -730,6 +731,9 @@ model PolicyPacket {
   hrContactName          String?
   hrWhatsapp             String?
   hrEmail                String?
+  noticeTitle            String?
+  noticeMessage          String?
+  popupSettings          Json?
   replacesPacketId       String?            @db.Uuid
   driveFolderId          String?
   driveDocumentsFolderId String?
@@ -745,6 +749,9 @@ model PolicyPacket {
   replacedBy       PolicyPacket[]          @relation("PolicyPacketVersions")
   documents        PolicyDocument[]
   acknowledgements PolicyAcknowledgement[]
+  audience         PolicyAudience?
+  audienceChanges  PolicyAudienceChange[]
+  popupStates      PolicyPopupState[]
 
   @@index([status])
   @@map("policy_packets")
@@ -795,6 +802,7 @@ model PolicyAcknowledgement {
   receiptNumber      String   @unique
   fullName           String
   email              String
+  role               Role     @default(TEACHER)
   tutorId            String?
   userAgent          String?
   receiptDriveFileId String
@@ -808,4 +816,52 @@ model PolicyAcknowledgement {
   @@unique([packetId, userId])
   @@index([userId])
   @@map("policy_acknowledgements")
+}
+
+model PolicyAudience {
+  packetId        String   @id @db.Uuid
+  roles           Role[]   @default([])
+  includedUserIds String[] @default([]) @db.Uuid
+  excludedUserIds String[] @default([]) @db.Uuid
+  updatedByUserId String?  @db.Uuid
+  updatedAt       DateTime @default(now()) @db.Timestamptz(3)
+
+  packet PolicyPacket @relation(fields: [packetId], references: [id], onDelete: Cascade)
+
+  @@map("policy_audiences")
+}
+
+model PolicyAudienceChange {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  packetId        String   @db.Uuid
+  changedByUserId String?  @db.Uuid
+  changedByName   String?
+  before          Json
+  after           Json
+  changedAt       DateTime @default(now()) @db.Timestamptz(3)
+
+  packet PolicyPacket @relation(fields: [packetId], references: [id], onDelete: Cascade)
+
+  @@index([packetId])
+  @@map("policy_audience_changes")
+}
+
+model PolicyPopupState {
+  userId        String    @db.Uuid
+  packetId      String    @db.Uuid
+  shownCount    Int       @default(0)
+  shownDay      DateTime? @db.Date
+  shownOnDay    Int       @default(0)
+  snoozeCount   Int       @default(0)
+  firstShownAt  DateTime? @db.Timestamptz(3)
+  lastShownAt   DateTime? @db.Timestamptz(3)
+  lastSnoozedAt DateTime? @db.Timestamptz(3)
+  lastSessionId String?
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packet PolicyPacket @relation(fields: [packetId], references: [id], onDelete: Cascade)
+
+  @@id([userId, packetId])
+  @@index([packetId])
+  @@map("policy_popup_states")
 }

@@ -11,6 +11,7 @@ import { useCurrentUser } from "@/features/auth/use-current-user";
 import { useComplianceCount } from "@/features/lesson-plans/use-compliance-count";
 import { PolicyBanner, PolicyBell, PolicyPopup, usePolicyNotices } from "@/features/policies/policy-notices";
 import AdminLayout from "@/app/(admin)/layout";
+import CoordinatorLayout from "@/app/(coordinator)/layout";
 
 // Desktop sidebar groups Jadwal/Kelas under Lesson Plan (more room to show
 // a nested menu); the mobile bottom nav keeps everything flat and Absensi
@@ -60,13 +61,13 @@ export default function TeacherLayout({
   const { data: currentUser, isLoading } = useCurrentUser();
   const { count: lessonPlanBadge } = useComplianceCount();
   const pathname = usePathname();
-  const policies = usePolicyNotices(currentUser?.role === "TEACHER", pathname);
+  // Admins and coordinators get theirs from their own layout, see below.
+  const policies = usePolicyNotices(currentUser?.role === "TEACHER" ? "TEACHER" : undefined, pathname);
 
-  // /lesson-plan/* is the one route both ADMIN and TEACHER can reach, and it
-  // physically lives in this (teacher) route group — without this check, an
-  // admin editing/creating a lesson plan would get swapped into teacher-style
-  // chrome (bottom nav, teacher sidebar) instead of staying in the admin
-  // shell they were just in. Gate on isLoading first so an admin doesn't see
+  // /lesson-plan/* (admin and teacher) and /kebijakan/* (every role) are
+  // shared routes that physically live in this (teacher) route group — without
+  // this check, another role would get swapped into teacher-style chrome
+  // (bottom nav, teacher sidebar) instead of staying in its own shell. Gate on isLoading first so an admin doesn't see
   // a flash of teacher chrome before their role resolves.
   if (isLoading) {
     return (
@@ -77,6 +78,9 @@ export default function TeacherLayout({
   }
   if (currentUser?.role === "ADMIN") {
     return <AdminLayout>{children}</AdminLayout>;
+  }
+  if (currentUser?.role === "COORDINATOR") {
+    return <CoordinatorLayout>{children}</CoordinatorLayout>;
   }
 
   const bottomNavItems = buildTeacherBottomNavItems(t, lessonPlanBadge);
@@ -94,11 +98,13 @@ export default function TeacherLayout({
       <main className="flex-1 overflow-x-auto bg-muted">
         <div className="mx-auto w-full max-w-md px-4 pt-4 pb-24 md:max-w-none md:px-8 md:pb-8 md:pt-8">
           <PolicyBanner pending={policies.pending} pathname={pathname} />
-          {policies.blocked ? <LoadingState /> : children}
+          {/* Wrapped on purpose: as a direct sibling of the banner, the routed
+              page triggers React's missing "key" warning. */}
+          {policies.blocked ? <LoadingState /> : <>{children}</>}
         </div>
       </main>
       <BottomNav items={bottomNavItems} />
-      <PolicyPopup pending={policies.pending} sessionKey={policies.sessionKey} pathname={pathname} />
+      <PolicyPopup popup={policies.popup} onLater={policies.later} onClose={policies.close} />
     </div>
   );
 }

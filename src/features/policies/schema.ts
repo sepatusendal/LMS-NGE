@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { todayLocalDateStr } from "@/lib/date";
+import type { AppRole } from "@/features/auth/role-routes";
+import { isAudienceChosen } from "./audience";
+import { popupSettingsSchema } from "./popup-rules";
 
-// Policy documents that every active tutor reads, signs and acknowledges.
+// Policy documents that the chosen recipients read, sign and acknowledge.
 // Shared by the browser and the API routes, so keep it free of server imports.
 
 export type PolicyPacketStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
@@ -18,6 +21,11 @@ export interface PolicyPacket {
   hrContactName: string | null;
   hrWhatsapp: string | null;
   hrEmail: string | null;
+  /** Pop-up and banner wording; null uses the default text. */
+  noticeTitle: string | null;
+  noticeMessage: string | null;
+  /** Stored JSON; read it with parsePopupSettings. */
+  popupSettings: unknown;
   replacesPacketId: string | null;
   publishedAt: string | null;
   createdAt: string;
@@ -51,16 +59,17 @@ export interface Acknowledgement {
   receiptNumber: string;
   fullName: string;
   email: string;
+  role: AppRole;
   tutorId: string | null;
   acknowledgedAt: string;
 }
 
 export const PACKET_COLUMNS =
-  "id, title, version, status, checklistItems, statement, deadline, hrContactName, hrWhatsapp, hrEmail, replacesPacketId, publishedAt, createdAt";
+  "id, title, version, status, checklistItems, statement, deadline, hrContactName, hrWhatsapp, hrEmail, noticeTitle, noticeMessage, popupSettings, replacesPacketId, publishedAt, createdAt";
 export const DOCUMENT_COLUMNS =
   "id, packetId, sortOrder, title, documentNumber, versionLabel, effectiveDate, fileName, fileSize, sha256, pageCount";
 export const ACKNOWLEDGEMENT_COLUMNS =
-  "id, packetId, userId, receiptNumber, fullName, email, tutorId, acknowledgedAt";
+  "id, packetId, userId, receiptNumber, fullName, email, role, tutorId, acknowledgedAt";
 
 /** Hosting rejects request bodies a little above this, see api/drive/upload. */
 export const MAX_POLICY_FILE_BYTES = 4 * 1024 * 1024;
@@ -80,6 +89,9 @@ export function isOverdue(deadline: string | null, today = todayLocalDateStr()):
   return Boolean(deadline) && today > (deadline as string);
 }
 
+/** The role as written on the receipt and in the identity block. */
+export const ROLE_NAMES: Record<AppRole, string> = { TEACHER: "Tutor", COORDINATOR: "Koordinator", ADMIN: "Admin" };
+
 /** wa.me wants the international number without "+"; local numbers start with 0. */
 export function whatsappLink(number: string, message: string): string {
   const digits = number.replace(/\D/g, "").replace(/^0/, "62");
@@ -87,6 +99,9 @@ export function whatsappLink(number: string, message: string): string {
 }
 
 export const MAX_CHECKLIST_ITEMS = 20;
+// Mirrored by CHECK constraints in the database.
+export const MAX_NOTICE_TITLE_LENGTH = 80;
+export const MAX_NOTICE_MESSAGE_LENGTH = 300;
 const MAX_CHECKLIST_ITEM_LENGTH = 500;
 
 // List markers that come along when a list is copied from a document: boxes and
@@ -116,6 +131,8 @@ export function buildPacketFormSchema(t: (key: string) => string) {
       .refine((v) => checklistFromFields(v).length <= MAX_CHECKLIST_ITEMS, t("validation.checklistMax")),
     statement: z.string().trim().min(1, t("validation.statementRequired")).max(2000, t("validation.statementMax")),
     deadline: z.string(),
+    noticeTitle: z.string().trim().max(MAX_NOTICE_TITLE_LENGTH, t("validation.noticeTitleMax")),
+    noticeMessage: z.string().trim().max(MAX_NOTICE_MESSAGE_LENGTH, t("validation.noticeMessageMax")),
     hrContactName: z.string().trim().max(100),
     hrWhatsapp: z
       .string()
@@ -125,6 +142,15 @@ export function buildPacketFormSchema(t: (key: string) => string) {
       .string()
       .trim()
       .refine((v) => v === "" || z.string().email().safeParse(v).success, t("validation.emailInvalid")),
+    audience: z
+      .object({
+        mode: z.enum(["ALL", "ROLES", "PEOPLE"]),
+        roles: z.array(z.enum(["TEACHER", "COORDINATOR", "ADMIN"])),
+        includedUserIds: z.array(z.string()).max(1000),
+        excludedUserIds: z.array(z.string()).max(1000),
+      })
+      .refine(isAudienceChosen, t("validation.audienceRequired")),
+    popup: popupSettingsSchema,
   });
 }
 export type PacketFormInput = z.infer<ReturnType<typeof buildPacketFormSchema>>;

@@ -21,8 +21,8 @@ export function safeFileName(value: string): string {
 
 /** Drive layout, one folder per packet version:
  *  HR - Policy Acknowledgement / <title> (v1) <short id> / 01 Dokumen Terbit
- *                                                       / 02 Bukti Tutor
- * Only called while an admin is uploading to a draft, so tutors confirming at
+ *                                                       / 02 Bukti Penerimaan
+ * Only called while an admin is uploading to a draft, so people confirming at
  * the same time never race to create folders. */
 export async function ensurePacketFolders(packet: { id: string; title: string; version: number }) {
   const rootId = await findOrCreateFolder("HR - Policy Acknowledgement", getRootFolderId());
@@ -33,7 +33,7 @@ export async function ensurePacketFolders(packet: { id: string; title: string; v
   return {
     driveFolderId: packetFolderId,
     driveDocumentsFolderId: await findOrCreateFolder("01 Dokumen Terbit", packetFolderId),
-    driveReceiptsFolderId: await findOrCreateFolder("02 Bukti Tutor", packetFolderId),
+    driveReceiptsFolderId: await findOrCreateFolder("02 Bukti Penerimaan", packetFolderId),
   };
 }
 
