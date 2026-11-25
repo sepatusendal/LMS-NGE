@@ -7,7 +7,8 @@
       "lessonPlanShort": "Plan",
       "jadwal": "Jadwal",
       "kelas": "Kelas",
-      "profile": "Profil"
+      "profile": "Profil",
+      "documents": "Dokumen"
     },
     "logout": "Keluar",
     "openMenu": "Buka menu",
@@ -574,7 +575,8 @@
       "analyticsDailyTeachingReport": "Daily Teaching Report",
       "analyticsLessonPlan": "Lesson Plan",
       "analyticsClasses": "Kelas",
-      "analyticsCustom": "Custom Report"
+      "analyticsCustom": "Custom Report",
+      "policies": "Dokumen & Kebijakan"
     },
     "holidays": {
       "title": "Hari Libur",
@@ -1487,6 +1489,125 @@
       "resetMeetingHint": "Hapus check-in, check-out, absensi, dan report sekaligus — tutor mulai ulang dari check-in. Tidak bisa dibatalkan.",
       "confirmResetMeeting": "Reset meeting ini? Check-in, check-out, absensi, dan report akan dihapus semua.",
       "resetting": "Mereset..."
+    },
+    "policies": {
+      "title": "Dokumen & Kebijakan",
+      "subtitle": "Dokumen yang wajib dibaca, ditandatangani, dan dikonfirmasi tutor.",
+      "create": "Buat paket dokumen",
+      "createSubmit": "Simpan draft",
+      "empty": "Belum ada paket dokumen.",
+      "version": "Versi {version}",
+      "status": {
+        "DRAFT": "Draft",
+        "PUBLISHED": "Terbit",
+        "ARCHIVED": "Tidak berlaku"
+      },
+      "draftHint": "Belum terbit, tutor belum bisa melihat",
+      "confirmedCount": "{done} dari {total} tutor aktif sudah konfirmasi",
+      "deadlineShort": "Batas {date}",
+      "back": "Semua paket dokumen",
+      "actions": {
+        "publish": "Terbitkan",
+        "archive": "Tandai tidak berlaku",
+        "delete": "Hapus draft",
+        "newVersion": "Buat versi baru"
+      },
+      "draftNotice": "Draft: unggah semua dokumen, periksa checklist dan pernyataan, lalu terbitkan. Setelah terbit, isinya tidak bisa diubah.",
+      "settingsTitle": "Isi konfirmasi, batas waktu, dan kontak HR",
+      "save": "Simpan",
+      "confirm": {
+        "publishTitle": "Terbitkan paket ini?",
+        "publishBody": "Semua tutor aktif akan diminta membaca dan mengonfirmasi. Dokumen, checklist, dan pernyataan tidak bisa diubah lagi. Kalau paket ini versi baru, versi lama otomatis tidak berlaku.",
+        "archiveTitle": "Tandai tidak berlaku?",
+        "archiveBody": "Tutor yang belum konfirmasi tidak akan diminta lagi. Bukti yang sudah ada tetap tersimpan. Tindakan ini tidak bisa dibatalkan.",
+        "deleteTitle": "Hapus draft ini?",
+        "deleteBody": "Draft beserta file dokumennya akan dihapus permanen."
+      },
+      "toasts": {
+        "created": "Draft dibuat",
+        "saved": "Perubahan disimpan",
+        "published": "Paket diterbitkan",
+        "versionCreated": "Draft versi baru siap diisi",
+        "archived": "Paket ditandai tidak berlaku",
+        "draftDeleted": "Draft dihapus",
+        "documentAdded": "Dokumen ditambahkan",
+        "documentRemoved": "Dokumen dihapus",
+        "failed": "Gagal menyimpan"
+      },
+      "form": {
+        "title": "Judul paket",
+        "titlePlaceholder": "Peraturan Perusahaan & Kebijakan HR 2026–2028",
+        "checklist": "Poin checklist",
+        "checklistHint": "Satu kolom untuk satu poin, tutor wajib mencentang semuanya. Tekan Enter untuk poin baru. Tempel daftar beberapa baris, otomatis dipecah jadi beberapa poin.",
+        "statement": "Pernyataan",
+        "deadline": "Batas konfirmasi (opsional)",
+        "deadlineHint": "Lewat tanggal ini portal tutor diarahkan ke halaman dokumen. Absensi tetap terbuka.",
+        "hrContactName": "Nama kontak HR (opsional)",
+        "hrWhatsapp": "WhatsApp HR (opsional)",
+        "hrEmail": "Email HR (opsional)",
+        "lockedHint": "Sudah terbit: hanya batas waktu dan kontak HR yang bisa diubah.",
+        "validation": {
+          "titleRequired": "Judul wajib diisi",
+          "titleMax": "Judul maksimal 150 karakter",
+          "checklistRequired": "Isi minimal satu poin",
+          "checklistMax": "Maksimal 20 poin",
+          "statementRequired": "Pernyataan wajib diisi",
+          "statementMax": "Pernyataan maksimal 2000 karakter",
+          "whatsappInvalid": "Nomor WhatsApp tidak valid",
+          "emailInvalid": "Email tidak valid",
+          "checklistItemMax": "Maksimal 500 karakter per poin"
+        },
+        "addItem": "Tambah poin",
+        "itemLabel": "Poin {number}",
+        "itemPlaceholder": "Tulis isi poin",
+        "moveUp": "Naikkan poin {number}",
+        "moveDown": "Turunkan poin {number}",
+        "removeItem": "Hapus poin {number}"
+      },
+      "documents": {
+        "heading": "Dokumen",
+        "empty": "Belum ada dokumen.",
+        "add": "Tambah dokumen",
+        "file": "File PDF (maksimal 4MB)",
+        "title": "Judul dokumen",
+        "documentNumber": "Nomor dokumen (opsional)",
+        "versionLabel": "Versi dokumen (opsional)",
+        "effectiveDate": "Tanggal berlaku (opsional)",
+        "hint": "File disimpan privat di Google Drive.",
+        "upload": "Unggah",
+        "uploading": "Mengunggah...",
+        "tooLarge": "File terlalu besar (maksimal 4MB)",
+        "unreadable": "PDF tidak bisa dibaca",
+        "effectiveFrom": "Berlaku {date}",
+        "pages": "{count} halaman",
+        "download": "Unduh dokumen",
+        "remove": "Hapus dokumen",
+        "removeConfirm": "Hapus dokumen \"{title}\" dari draft?"
+      },
+      "monitor": {
+        "title": "Status konfirmasi",
+        "summary": "{done} dari {total} tutor aktif sudah konfirmasi",
+        "search": "Cari nama, Tutor ID, atau email",
+        "filter": {
+          "all": "Semua",
+          "pending": "Belum",
+          "done": "Sudah"
+        },
+        "export": "Export rekap",
+        "sheetName": "Rekap",
+        "columns": {
+          "name": "Nama",
+          "tutorId": "Tutor ID",
+          "reading": "Dokumen dibaca",
+          "status": "Status",
+          "confirmedAt": "Waktu konfirmasi",
+          "receipt": "Bukti"
+        },
+        "empty": "Tidak ada tutor yang cocok.",
+        "inactive": "sudah tidak aktif",
+        "done": "Sudah konfirmasi",
+        "pending": "Belum konfirmasi"
+      }
     }
   },
   "coordinator": {
@@ -1496,6 +1617,93 @@
     "monitoring": {
       "title": "Monitoring",
       "subtitle": "Pantau kepatuhan lesson plan dan kualitas pengajaran."
+    }
+  },
+  "policies": {
+    "title": "Dokumen & Kebijakan",
+    "subtitle": "Dokumen perusahaan yang perlu kamu baca dan konfirmasi.",
+    "empty": "Belum ada dokumen.",
+    "loadError": "Dokumen gagal dimuat. Coba lagi sebentar.",
+    "notFound": "Dokumen tidak ditemukan.",
+    "version": "Versi {version}",
+    "status": {
+      "pending": "Perlu dikonfirmasi",
+      "done": "Sudah dikonfirmasi",
+      "retired": "Tidak berlaku"
+    },
+    "deadline": "Batas konfirmasi {date}",
+    "overdue": "sudah lewat",
+    "confirmedOn": "Dikonfirmasi {date}",
+    "readCount": "{done} dari {total} dokumen selesai dibaca",
+    "success": {
+      "title": "Penerimaan sudah dikonfirmasi",
+      "number": "No. bukti {number}",
+      "download": "Unduh bukti (PDF)"
+    },
+    "documents": {
+      "title": "Baca dokumen",
+      "hint": "Checklist aktif setelah semua dokumen dibaca sampai halaman terakhir.",
+      "done": "Selesai dibaca",
+      "reading": "Terbaca sampai halaman {page} dari {total}",
+      "opened": "Sudah dibuka · {total} halaman",
+      "notOpened": "Belum dibuka · {total} halaman",
+      "read": "Baca",
+      "continue": "Lanjutkan",
+      "readAgain": "Baca lagi",
+      "download": "Unduh"
+    },
+    "question": {
+      "button": "Saya punya pertanyaan",
+      "fallback": "Ada pertanyaan? Hubungi HR.",
+      "contact": "Kontak HR: {name}",
+      "hint": "Bertanya ke HR tidak dihitung sebagai konfirmasi.",
+      "message": "Halo HR, saya {name}. Saya punya pertanyaan tentang {title}."
+    },
+    "confirm": {
+      "checklistTitle": "Centang setiap poin",
+      "lockedHint": "Selesaikan membaca semua dokumen dulu.",
+      "statementTitle": "Pernyataan",
+      "signTitle": "Tanda tangan",
+      "identityTitle": "Kamu mengonfirmasi sebagai",
+      "tutorId": "Tutor ID: {id}",
+      "notYou": "Bukan kamu? Keluar",
+      "signLocked": "Kolom tanda tangan aktif setelah semua poin dicentang.",
+      "signHint": "Tanda tangan di sini pakai jari atau mouse",
+      "signClear": "Ulangi",
+      "signTooShort": "Tanda tangan terlalu pendek, coba lagi.",
+      "submit": "Konfirmasi Penerimaan",
+      "submitting": "Menyimpan bukti...",
+      "errors": {
+        "SESSION": "Sesi kamu berakhir. Silakan login ulang.",
+        "NOT_ELIGIBLE": "Akun ini tidak bisa mengonfirmasi. Hubungi admin.",
+        "NOT_AVAILABLE": "Dokumen ini sudah tidak tersedia. Muat ulang halaman.",
+        "ALREADY": "Kamu sudah mengonfirmasi dokumen ini.",
+        "NOT_READ": "Masih ada dokumen yang belum dibaca sampai selesai.",
+        "CHECKLIST": "Semua poin harus dicentang.",
+        "SIGNATURE": "Tanda tangan belum terbaca. Ulangi tanda tanganmu.",
+        "DRIVE": "Bukti belum bisa disimpan, jadi konfirmasi belum tercatat. Coba lagi beberapa saat.",
+        "SERVER": "Konfirmasi gagal. Periksa koneksi lalu coba lagi."
+      }
+    },
+    "reader": {
+      "back": "Kembali",
+      "loading": "Memuat dokumen...",
+      "error": "Dokumen gagal dimuat.",
+      "retry": "Coba lagi",
+      "page": "Halaman {page} dari {total}",
+      "completed": "Dokumen selesai dibaca",
+      "readUpTo": "Terbaca sampai halaman {page} dari {total}",
+      "goToPage": "Hal. {page}",
+      "saveError": "Progres gagal disimpan. Periksa koneksi."
+    },
+    "notices": {
+      "bell": "Notifikasi dokumen: {count} perlu dikonfirmasi",
+      "title": "Ada dokumen yang wajib kamu konfirmasi",
+      "bannerOverdue": "Batas konfirmasi dokumen sudah lewat",
+      "readNow": "Baca sekarang",
+      "popupBody": "{title}. Baca dokumennya, lalu konfirmasi penerimaan.",
+      "popupDeadline": "Batas konfirmasi {date}",
+      "later": "Nanti"
     }
   }
 }

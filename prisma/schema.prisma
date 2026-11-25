@@ -74,6 +74,9 @@ model User {
   parentReportsCreated    ParentReport[]     @relation("ParentReportGeneratedBy")
   announcementsAuthored   Announcement[]
   announcementReads       AnnouncementRead[]
+  policyPacketsCreated    PolicyPacket[]
+  policyReadProgress      PolicyReadProgress[]
+  policyAcknowledgements  PolicyAcknowledgement[]
 
   // Admin backfill/correction trail (see 20260915000000) — populated only
   // when an admin, not the owning teacher, created or fixed the record.
@@ -702,4 +705,107 @@ model AnnouncementRead {
 
   @@unique([announcementId, userId])
   @@map("announcement_reads")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Policy acknowledgements (files live in Google Drive; these tables hold
+// only Drive ids, hashes and short text). Guards and RLS are in the SQL
+// migration 20261125000000_policy_acknowledgements.
+// ─────────────────────────────────────────────────────────────
+
+enum PolicyPacketStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model PolicyPacket {
+  id                     String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title                  String
+  version                Int                @default(1)
+  status                 PolicyPacketStatus @default(DRAFT)
+  checklistItems         String[]           @default([])
+  statement              String
+  deadline               DateTime?          @db.Date
+  hrContactName          String?
+  hrWhatsapp             String?
+  hrEmail                String?
+  replacesPacketId       String?            @db.Uuid
+  driveFolderId          String?
+  driveDocumentsFolderId String?
+  driveReceiptsFolderId  String?
+  createdByUserId        String             @db.Uuid
+  publishedAt            DateTime?          @db.Timestamptz(3)
+  archivedAt             DateTime?          @db.Timestamptz(3)
+  createdAt              DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime           @default(now()) @updatedAt @db.Timestamptz(3)
+
+  createdBy        User                    @relation(fields: [createdByUserId], references: [id])
+  replaces         PolicyPacket?           @relation("PolicyPacketVersions", fields: [replacesPacketId], references: [id], onDelete: Restrict)
+  replacedBy       PolicyPacket[]          @relation("PolicyPacketVersions")
+  documents        PolicyDocument[]
+  acknowledgements PolicyAcknowledgement[]
+
+  @@index([status])
+  @@map("policy_packets")
+}
+
+model PolicyDocument {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  packetId       String    @db.Uuid
+  sortOrder      Int       @default(0)
+  title          String
+  documentNumber String?
+  versionLabel   String?
+  effectiveDate  DateTime? @db.Date
+  driveFileId    String
+  fileName       String
+  fileSize       Int
+  sha256         String
+  pageCount      Int
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+
+  packet       PolicyPacket         @relation(fields: [packetId], references: [id], onDelete: Cascade)
+  readProgress PolicyReadProgress[]
+
+  @@index([packetId])
+  @@map("policy_documents")
+}
+
+model PolicyReadProgress {
+  userId        String    @db.Uuid
+  documentId    String    @db.Uuid
+  furthestPage  Int       @default(0)
+  firstOpenedAt DateTime  @default(now()) @db.Timestamptz(3)
+  completedAt   DateTime? @db.Timestamptz(3)
+  updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document PolicyDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, documentId])
+  @@index([documentId])
+  @@map("policy_read_progress")
+}
+
+model PolicyAcknowledgement {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  packetId           String   @db.Uuid
+  userId             String   @db.Uuid
+  receiptNumber      String   @unique
+  fullName           String
+  email              String
+  tutorId            String?
+  userAgent          String?
+  receiptDriveFileId String
+  receiptFileName    String
+  receiptSha256      String
+  acknowledgedAt     DateTime @default(now()) @db.Timestamptz(3)
+
+  packet PolicyPacket @relation(fields: [packetId], references: [id], onDelete: Restrict)
+  user   User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([packetId, userId])
+  @@index([userId])
+  @@map("policy_acknowledgements")
 }

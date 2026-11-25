@@ -34,6 +34,10 @@ const ROUTE_PREFIX_ROLES: Array<{ prefix: string; roles: AppRole[] }> = [
   { prefix: "/api/curriculum", roles: ["ADMIN"] },
   { prefix: "/settings", roles: ["ADMIN"] },
   { prefix: "/announcements", roles: ["ADMIN"] },
+  { prefix: "/policies", roles: ["ADMIN"] },
+  // Signed-in only; each route handler and RLS decide who may do what.
+  { prefix: "/api/policies", roles: ALL_ROLES },
+  { prefix: "/kebijakan", roles: ["TEACHER"] },
   { prefix: "/monitoring", roles: ["COORDINATOR"] },
   { prefix: "/today", roles: ["TEACHER"] },
   { prefix: "/absensi", roles: ["TEACHER"] },
