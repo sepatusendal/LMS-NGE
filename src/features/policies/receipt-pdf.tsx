@@ -24,22 +24,23 @@ export interface ReceiptData {
   acknowledgedAt: Date;
   userAgent: string | null;
   signature: Signature;
-  logoDataUri: string;
+  letterheadDataUri: string;
 }
 
 const BRAND = "#4b60ac";
 const INK = "#1e293b";
 const MUTED = "#64748b";
 const LINE = "#d9deea";
+const LETTERHEAD_FOOTER = "#5f6fc0";
 
 const styles = StyleSheet.create({
-  page: { paddingHorizontal: 40, paddingTop: 34, paddingBottom: 52, fontFamily: "Helvetica", fontSize: 9.5, color: INK },
-  header: { flexDirection: "row", alignItems: "center", borderBottomWidth: 2, borderBottomColor: BRAND, paddingBottom: 10 },
-  logo: { width: 112, height: 30, objectFit: "contain" },
-  headerText: { marginLeft: "auto", alignItems: "flex-end" },
-  title: { fontFamily: "Helvetica-Bold", fontSize: 12.5, color: BRAND },
-  subtitle: { fontSize: 8.5, color: MUTED, marginTop: 2 },
-  receiptNumber: { marginTop: 10, fontFamily: "Helvetica-Bold", fontSize: 10 },
+  // The letterhead follows the company's own documents (logo position and size
+  // measured from them): logo top left, centred title, centred address footer.
+  page: { paddingHorizontal: 45, paddingTop: 30, paddingBottom: 74, fontFamily: "Helvetica", fontSize: 9.5, color: INK },
+  // The bottom margin also keeps the repeated header clear of text on later pages.
+  letterhead: { width: 230, height: 44, marginLeft: -1, marginBottom: 12 },
+  title: { textAlign: "center", fontFamily: "Helvetica-Bold", fontSize: 13.5, color: "#000000" },
+  receiptNumber: { marginTop: 4, textAlign: "center", fontSize: 9.5 },
   section: { marginTop: 10 },
   sectionTitle: { fontFamily: "Helvetica-Bold", fontSize: 10, color: BRAND, marginBottom: 5 },
   row: { flexDirection: "row", marginBottom: 3 },
@@ -57,16 +58,9 @@ const styles = StyleSheet.create({
   confirmation: { fontSize: 9.5, lineHeight: 1.3, marginBottom: 5 },
   signatureBox: { marginTop: 6, width: 240, borderWidth: 1, borderColor: LINE, borderRadius: 4, padding: 8 },
   signatureName: { marginTop: 4, borderTopWidth: 1, borderTopColor: INK, paddingTop: 4, fontFamily: "Helvetica-Bold" },
-  footer: {
-    position: "absolute",
-    bottom: 24,
-    left: 40,
-    right: 40,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    fontSize: 7.5,
-    color: MUTED,
-  },
+  footer: { position: "absolute", bottom: 34, left: 45, right: 45, alignItems: "center" },
+  footerText: { fontSize: 9.5, color: LETTERHEAD_FOOTER, lineHeight: 1.25 },
+  pageNumber: { position: "absolute", bottom: 18, right: 45, fontSize: 7, color: MUTED },
 });
 
 const SIGNATURE_WIDTH = 222;
@@ -109,15 +103,9 @@ export function PolicyReceiptPdf({ data }: { data: ReceiptData }) {
   return (
     <Document title={`${data.receiptNumber} - ${data.fullName}`} author="PT NUFA GLOBAL EDUKASI">
       <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          {data.logoDataUri ? <Image src={data.logoDataUri} style={styles.logo} /> : null}
-          <View style={styles.headerText}>
-            <Text style={styles.title}>EMPLOYEE POLICY ACKNOWLEDGEMENT</Text>
-            <Text style={styles.subtitle}>PT NUFA GLOBAL EDUKASI</Text>
-          </View>
-        </View>
-
+        {/* eslint-disable-next-line jsx-a11y/alt-text */}
+        {data.letterheadDataUri ? <Image src={data.letterheadDataUri} style={styles.letterhead} fixed /> : null}
+        <Text style={styles.title}>EMPLOYEE POLICY ACKNOWLEDGEMENT</Text>
         <Text style={styles.receiptNumber}>No. {data.receiptNumber}</Text>
 
         <View style={styles.section}>
@@ -201,9 +189,16 @@ export function PolicyReceiptPdf({ data }: { data: ReceiptData }) {
         </View>
 
         <View style={styles.footer} fixed>
-          <Text>{data.receiptNumber}</Text>
-          <Text render={({ pageNumber, totalPages }) => `Halaman ${pageNumber} dari ${totalPages}`} />
+          <Text style={styles.footerText}>NUFA Global Education</Text>
+          <Text style={styles.footerText}>
+            Metland Cibitung Ruko Melawai 2 Blok CA 3 No. 25 Cibitung, Kabupaten Bekasi 17520
+          </Text>
         </View>
+        <Text
+          style={styles.pageNumber}
+          fixed
+          render={({ pageNumber, totalPages }) => `${data.receiptNumber}  |  Halaman ${pageNumber} dari ${totalPages}`}
+        />
       </Page>
     </Document>
   );

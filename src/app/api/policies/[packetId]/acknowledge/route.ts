@@ -18,9 +18,9 @@ function fail(code: AcknowledgeError, status: number) {
   return NextResponse.json({ code }, { status });
 }
 
-function logoDataUri(): string {
+function letterheadDataUri(): string {
   try {
-    const buffer = readFileSync(resolve(process.cwd(), "public/brand/nufa-logo.png"));
+    const buffer = readFileSync(resolve(process.cwd(), "public/brand/nufa-letterhead.png"));
     return `data:image/png;base64,${buffer.toString("base64")}`;
   } catch {
     return "";
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             acknowledgedAt,
             userAgent,
             signature,
-            logoDataUri: logoDataUri(),
+            letterheadDataUri: letterheadDataUri(),
           },
         }),
       ),
