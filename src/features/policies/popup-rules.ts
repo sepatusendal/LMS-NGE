@@ -74,8 +74,9 @@ export function presetOf(settings: PopupSettings): PopupPreset | "CUSTOM" {
 // ── Pages ──────────────────────────────────────────────────────────────────
 
 /** Never interrupted: reading and signing, attendance (which the company rules
- * require), and the profile page, where signing out lives. */
-const NO_POPUP = ["/kebijakan", "/absensi", "/profile"];
+ * require) including writing the plan a check-in may ask for, and the profile
+ * page, where signing out lives. */
+const NO_POPUP = ["/kebijakan", "/absensi", "/lesson-plan/new", "/profile"];
 
 export function isUnder(pathname: string, prefixes: string[]): boolean {
   return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));

@@ -4,9 +4,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Eraser } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { isSignatureSufficient, type Signature } from "./schema";
+import {
+  isSignatureSufficient,
+  MAX_SIGNATURE_POINTS,
+  MAX_SIGNATURE_STROKES,
+  MAX_STROKE_POINTS,
+  type Signature,
+} from "./schema";
 
 type Stroke = Signature["strokes"][number];
+
+const countPoints = (list: Stroke[]) => list.reduce((sum, stroke) => sum + stroke.length, 0);
 
 /** Draw-with-a-finger signature field. Reports pen strokes, not an image. */
 export function SignaturePad({
@@ -70,6 +78,7 @@ export function SignaturePad({
 
   function start(event: React.PointerEvent<HTMLCanvasElement>) {
     if (disabled || activePointer.current !== null) return;
+    if (strokes.current.length >= MAX_SIGNATURE_STROKES || countPoints(strokes.current) >= MAX_SIGNATURE_POINTS) return;
     activePointer.current = event.pointerId;
     event.currentTarget.setPointerCapture(event.pointerId);
     const point = pointAt(event);
@@ -86,6 +95,7 @@ export function SignaturePad({
     const previous = stroke[stroke.length - 1];
     const point = pointAt(event);
     if (Math.hypot(point[0] - previous[0], point[1] - previous[1]) < 1.5) return;
+    if (stroke.length >= MAX_STROKE_POINTS || countPoints(strokes.current) >= MAX_SIGNATURE_POINTS) return;
     stroke.push(point);
     const context = canvasRef.current?.getContext("2d");
     context?.beginPath();

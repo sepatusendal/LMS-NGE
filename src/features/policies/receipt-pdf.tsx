@@ -1,5 +1,6 @@
 import { Document, Image, Page, Path, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import type { AppRole } from "@/features/auth/role-routes";
+import { bestEffortPrintable } from "./printable";
 import { ROLE_NAMES, strokePath, type Signature } from "./schema";
 
 // The signed receipt kept in Drive for each recipient. It records that the
@@ -101,12 +102,13 @@ function Field({ label, value }: { label: string; value: string }) {
 
 export function PolicyReceiptPdf({ data }: { data: ReceiptData }) {
   const { signature } = data;
+  const fullName = bestEffortPrintable(data.fullName) || data.email;
   const isTutor = data.role === "TEACHER";
   const identity = isTutor ? `Tutor ID: ${data.tutorId || "-"}` : `Peran: ${ROLE_NAMES[data.role]}`;
   const scale = Math.min(SIGNATURE_WIDTH / signature.width, SIGNATURE_MAX_HEIGHT / signature.height);
 
   return (
-    <Document title={`${data.receiptNumber} - ${data.fullName}`} author="PT NUFA GLOBAL EDUKASI">
+    <Document title={`${data.receiptNumber} - ${fullName}`} author="PT NUFA GLOBAL EDUKASI">
       <Page size="A4" style={styles.page}>
         {/* eslint-disable-next-line jsx-a11y/alt-text */}
         {data.letterheadDataUri ? <Image src={data.letterheadDataUri} style={styles.letterhead} fixed /> : null}
@@ -115,7 +117,7 @@ export function PolicyReceiptPdf({ data }: { data: ReceiptData }) {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Identitas</Text>
-          <Field label="Nama" value={data.fullName} />
+          <Field label="Nama" value={fullName} />
           <Field label="Peran" value={ROLE_NAMES[data.role]} />
           {isTutor && <Field label="Tutor ID" value={data.tutorId || "-"} />}
           <Field label="Email" value={data.email} />
@@ -189,7 +191,7 @@ export function PolicyReceiptPdf({ data }: { data: ReceiptData }) {
                 />
               ))}
             </Svg>
-            <Text style={styles.signatureName}>{data.fullName}</Text>
+            <Text style={styles.signatureName}>{fullName}</Text>
             <Text style={styles.meta}>{identity}</Text>
           </View>
         </View>

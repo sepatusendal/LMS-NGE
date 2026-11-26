@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
@@ -47,12 +47,15 @@ export function PacketForm({
   submitLabel,
   isPending,
   onSubmit,
+  onDirtyChange,
 }: {
   packet?: PolicyPacket;
   audience?: PolicyAudience;
   submitLabel: string;
   isPending: boolean;
   onSubmit: (values: PacketFormInput) => void;
+  /** Told whether the form holds edits that are not saved yet. */
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const t = useTranslations("admin.policies.form");
   // The placeholders show the exact default text tutors see.
@@ -67,8 +70,12 @@ export function PacketForm({
     getValues,
     handleSubmit,
     watch,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<PacketFormInput>({ resolver: zodResolver(schema), values });
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   const message = (text?: string) => (text ? <p className="text-destructive text-sm">{text}</p> : null);
 

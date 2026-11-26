@@ -27,7 +27,10 @@ export function PdfReader({ document: doc }: { document: MyPolicyDocument }) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [furthest, setFurthest] = useState(doc.furthestPage);
-  const [saveFailed, setSaveFailed] = useState(false);
+  /** The furthest page the server has confirmed. */
+  const [stored, setStored] = useState(doc.completed ? doc.pageCount : doc.furthestPage);
+  /** Failed saves in a row; each one schedules another try. */
+  const [failures, setFailures] = useState(0);
   const furthestRef = useRef(doc.furthestPage);
   const savedRef = useRef(doc.opened ? doc.furthestPage : -1);
   const drawn = useRef(new Set<number>());
@@ -39,15 +42,18 @@ export function PdfReader({ document: doc }: { document: MyPolicyDocument }) {
   const save = useCallback(async () => {
     const page = furthestRef.current;
     if (page <= savedRef.current) return;
+    const previous = savedRef.current;
     savedRef.current = page;
     try {
       await saveReadProgress(doc.id, page);
-      setSaveFailed(false);
+      setFailures(0);
+      setStored((current) => Math.max(current, page));
       await queryClient.invalidateQueries({ queryKey: MY_POLICIES_KEY });
     } catch (error) {
       console.error(error);
-      savedRef.current = page - 1;
-      setSaveFailed(true);
+      // Forget the claim, unless a later page was queued in the meantime.
+      if (savedRef.current === page) savedRef.current = previous;
+      setFailures((count) => count + 1);
     }
   }, [doc.id, queryClient]);
 
@@ -66,6 +72,13 @@ export function PdfReader({ document: doc }: { document: MyPolicyDocument }) {
     return () => window.clearTimeout(timer);
   }, [furthest, total, save]);
   useEffect(() => () => void save(), [save]);
+  // On a weak connection keep trying; the last page has nothing after it that
+  // would trigger another save.
+  useEffect(() => {
+    if (failures === 0) return;
+    const timer = window.setTimeout(() => void save(), 5000);
+    return () => window.clearTimeout(timer);
+  }, [failures, save]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,7 +111,7 @@ export function PdfReader({ document: doc }: { document: MyPolicyDocument }) {
     };
   }, [doc.id, attempt]);
 
-  // Continue where the tutor left off.
+  // Continue where the reader left off.
   useEffect(() => {
     if (!loaded || resumedRef.current) return;
     resumedRef.current = true;
@@ -118,7 +131,8 @@ export function PdfReader({ document: doc }: { document: MyPolicyDocument }) {
   }
   if (!loaded) return <LoadingState label={t("loading")} />;
 
-  const done = furthest >= total;
+  const reachedEnd = furthest >= total;
+  const done = stored >= total;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -154,6 +168,17 @@ export function PdfReader({ document: doc }: { document: MyPolicyDocument }) {
             <CheckCircle2 className="text-chart-3 size-5 shrink-0" />
             <p className="text-sm font-medium">{t("completed")}</p>
           </>
+        ) : reachedEnd ? (
+          <>
+            <p className={failures > 0 ? "text-destructive min-w-0 flex-1 text-xs" : "min-w-0 flex-1 text-xs font-medium"}>
+              {failures > 0 ? t("saveError") : t("saving")}
+            </p>
+            {failures > 0 && (
+              <Button size="sm" variant="outline" onClick={() => void save()}>
+                {t("retry")}
+              </Button>
+            )}
+          </>
         ) : (
           <>
             <div className="min-w-0 flex-1">
@@ -161,7 +186,7 @@ export function PdfReader({ document: doc }: { document: MyPolicyDocument }) {
               <div className="bg-muted mt-1 h-1.5 overflow-hidden rounded-full">
                 <div className="bg-primary h-full transition-all" style={{ width: `${(furthest / total) * 100}%` }} />
               </div>
-              {saveFailed && <p className="text-destructive mt-1 text-xs">{t("saveError")}</p>}
+              {failures > 0 && <p className="text-destructive mt-1 text-xs">{t("saveError")}</p>}
             </div>
             <Button
               size="sm"

@@ -234,33 +234,38 @@ async function createDriveFile(
   return (await res.json()) as { id: string; webViewLink?: string };
 }
 
+async function isSharedByLink(driveId: string): Promise<boolean> {
+  const res = await driveRequest(
+    (token) =>
+      fetch(`https://www.googleapis.com/drive/v3/files/${driveId}/permissions?fields=permissions(type)`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    "Memeriksa izin Drive",
+  );
+  const { permissions = [] } = (await res.json()) as { permissions?: { type: string }[] };
+  return permissions.some((p) => p.type === "anyone");
+}
+
+const SHARED_FOLDER_MESSAGE =
+  "Folder Drive tujuan dibagikan ke siapa saja yang punya link. Matikan dulu pembagian publik folder itu.";
+
 /** For files that must never be reachable by link (policy documents and signed
  * receipts): no sharing is added, so only the owning Drive account — and anyone
- * it explicitly shares the folder with — can open them. A file still inherits
- * its parent folder's sharing, so if that makes it public the upload is undone
- * and fails loudly instead of leaving an exposed copy behind. Read it back
- * through the app with downloadFile(). */
+ * it explicitly shares the folder with — can open them. A file inherits its
+ * parent folder's sharing, so a folder shared by link is refused before any
+ * byte is sent, and the new file is checked again in case that changed in
+ * between. Read it back through the app with downloadFile(). */
 export async function uploadPrivateFile(
   fileBuffer: Buffer,
   fileName: string,
   mimeType: string,
   folderId: string,
 ): Promise<string> {
+  if (await isSharedByLink(folderId)) throw new Error(SHARED_FOLDER_MESSAGE);
+
   const { id } = await createDriveFile(fileBuffer, fileName, mimeType, folderId);
   try {
-    const res = await driveRequest(
-      (token) =>
-        fetch(`https://www.googleapis.com/drive/v3/files/${id}/permissions?fields=permissions(type)`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      "Memeriksa izin file Drive",
-    );
-    const { permissions = [] } = (await res.json()) as { permissions?: { type: string }[] };
-    if (permissions.some((p) => p.type === "anyone")) {
-      throw new Error(
-        "Folder Drive tujuan dibagikan ke siapa saja yang punya link. Matikan dulu pembagian publik folder itu.",
-      );
-    }
+    if (await isSharedByLink(id)) throw new Error(SHARED_FOLDER_MESSAGE);
   } catch (privacyErr) {
     await deleteFile(id).catch(() => {});
     throw privacyErr;

@@ -19,8 +19,9 @@ import { usePolicyPopup, type ActivePopup } from "./use-policy-popup";
 
 /** Pages that stay open for a tutor after the deadline. Attendance is never
  * blocked: the company rules require tutors to check in and out through this
- * app. */
-const OPEN_WHEN_OVERDUE = ["/kebijakan", "/absensi", "/profile"];
+ * app. Lesson plans stay open for the same reason, because checking in can
+ * require writing that day's plan first. */
+const OPEN_WHEN_OVERDUE = ["/kebijakan", "/absensi", "/lesson-plan", "/profile"];
 
 /** What this account still has to confirm, the pop-up to show, and whether this
  * page is locked. Only tutors are ever locked, and the lock is a reminder in the

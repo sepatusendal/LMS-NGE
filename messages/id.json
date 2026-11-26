@@ -1542,7 +1542,7 @@
         "checklistHint": "Satu kolom untuk satu poin, penerima wajib mencentang semuanya. Tekan Enter untuk poin baru. Tempel daftar beberapa baris, otomatis dipecah jadi beberapa poin.",
         "statement": "Pernyataan",
         "deadline": "Batas konfirmasi (opsional)",
-        "deadlineHint": "Lewat tanggal ini portal tutor diarahkan ke halaman dokumen, absensi tetap terbuka. Admin dan Koordinator tidak dikunci.",
+        "deadlineHint": "Lewat tanggal ini portal tutor diarahkan ke halaman dokumen. Absensi dan lesson plan tetap terbuka. Admin dan Koordinator tidak dikunci.",
         "hrContactName": "Nama kontak HR (opsional)",
         "hrWhatsapp": "WhatsApp HR (opsional)",
         "hrEmail": "Email HR (opsional)",
@@ -1560,7 +1560,8 @@
           "noticeTitleMax": "Judul pengumuman maksimal 80 karakter",
           "noticeMessageMax": "Isi pengumuman maksimal 300 karakter",
           "audienceRequired": "Pilih siapa yang harus menerima",
-          "popupInvalid": "Periksa angka di pengaturan pop-up"
+          "popupInvalid": "Periksa angka di pengaturan pop-up",
+          "unprintable": "Karakter ini tidak bisa dicetak di bukti PDF, ganti dulu: {characters}"
         },
         "addItem": "Tambah poin",
         "itemLabel": "Poin {number}",
@@ -1706,6 +1707,11 @@
         "by": "{name} · {date}",
         "included": "{count} orang dipilih",
         "excluded": "{count} dikecualikan"
+      },
+      "publishBlocked": {
+        "documents": "Tombol Terbitkan aktif setelah minimal satu dokumen diunggah.",
+        "unsaved": "Ada perubahan yang belum disimpan. Klik Simpan dulu sebelum menerbitkan.",
+        "recipients": "Belum ada penerima. Pilih penerima lalu klik Simpan sebelum menerbitkan."
       }
     }
   },
@@ -1795,7 +1801,8 @@
       "completed": "Dokumen selesai dibaca",
       "readUpTo": "Terbaca sampai halaman {page} dari {total}",
       "goToPage": "Hal. {page}",
-      "saveError": "Progres gagal disimpan. Periksa koneksi."
+      "saveError": "Progres gagal disimpan. Periksa koneksi.",
+      "saving": "Menyimpan progres baca..."
     },
     "notices": {
       "bell": "Notifikasi dokumen: {count} perlu dikonfirmasi",
