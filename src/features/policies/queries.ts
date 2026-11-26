@@ -22,6 +22,7 @@ import {
 } from "./audience";
 import type { AppRole } from "@/features/auth/role-routes";
 import { EMPTY_POPUP_STATE, type PopupEvent, type PopupState } from "./popup-rules";
+import { toPrintable } from "./printable";
 
 async function fetchDocuments(packetIds: string[]): Promise<PolicyDocument[]> {
   const supabase = createClient();
@@ -400,9 +401,9 @@ async function saveAudience(packetId: string, input: PacketFormInput): Promise<v
 
 function wording(input: PacketFormInput) {
   return {
-    title: input.title,
+    title: toPrintable(input.title),
     checklistItems: checklistFromFields(input.checklist),
-    statement: input.statement,
+    statement: toPrintable(input.statement),
   };
 }
 
@@ -418,8 +419,13 @@ export async function createPacket(input: PacketFormInput): Promise<string> {
     .select("id")
     .single();
   if (error) throw error;
-  // Should this fail, the draft simply cannot be published until saved again.
-  await saveAudience(data.id as string, input);
+  try {
+    await saveAudience(data.id as string, input);
+  } catch (audienceError) {
+    // The form stays open for another try, which must not leave a twin behind.
+    await supabase.from("policy_packets").delete().eq("id", data.id);
+    throw audienceError;
+  }
   return data.id as string;
 }
 

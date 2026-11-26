@@ -105,7 +105,17 @@ function PolicyDetail({ packet, documents, audience, audienceChanges }: PacketDe
   const newVersion = useCreatePacketVersion();
   const deleteDraft = useDeleteDraftPacket();
   const [action, setAction] = useState<PendingAction>(null);
+  const [unsaved, setUnsaved] = useState(false);
   const isDraft = packet.status === "DRAFT";
+  // Publishing takes what is saved and cannot be undone, so say what is missing.
+  const publishBlocker =
+    documents.length === 0
+      ? "documents"
+      : unsaved
+        ? "unsaved"
+        : people && recipientCount === 0
+          ? "recipients"
+          : null;
   const busy = publish.isPending || archive.isPending || deleteDraft.isPending;
 
   function runAction() {
@@ -130,7 +140,7 @@ function PolicyDetail({ packet, documents, audience, audienceChanges }: PacketDe
                 <Trash2 className="size-4" />
                 {t("actions.delete")}
               </Button>
-              <Button disabled={documents.length === 0} onClick={() => setAction("publish")}>
+              <Button disabled={publishBlocker !== null || !people} onClick={() => setAction("publish")}>
                 <Send className="size-4" />
                 {t("actions.publish")}
               </Button>
@@ -157,6 +167,11 @@ function PolicyDetail({ packet, documents, audience, audienceChanges }: PacketDe
       </div>
 
       {isDraft && <p className="bg-chart-4/10 text-chart-4 rounded-lg px-3 py-2 text-sm">{t("draftNotice")}</p>}
+      {isDraft && publishBlocker && (
+        <p role="status" className="text-muted-foreground text-sm">
+          {t(`publishBlocked.${publishBlocker}`)}
+        </p>
+      )}
 
       {!isDraft && (
         <Card>
@@ -189,6 +204,7 @@ function PolicyDetail({ packet, documents, audience, audienceChanges }: PacketDe
             submitLabel={t("save")}
             isPending={update.isPending}
             onSubmit={(values) => update.mutate(values)}
+            onDirtyChange={setUnsaved}
           />
         </CardContent>
       </Card>

@@ -4,13 +4,17 @@ import { isAdminUser } from "@/features/auth/assert-admin";
 import { deleteFile, uploadPrivateFile } from "@/lib/google-drive/drive-client";
 import { ensurePacketFolders, safeFileName, sha256Hex } from "@/features/policies/server";
 import { MAX_POLICY_FILE_BYTES } from "@/features/policies/schema";
+import { toPrintable, unprintableCharacters } from "@/features/policies/printable";
+
+/** A first upload also creates the Drive folders; allow for a slow Drive. */
+export const maxDuration = 60;
 
 function error(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
 function optionalText(value: FormDataEntryValue | null, max: number): string | null {
-  const text = typeof value === "string" ? value.trim().slice(0, max) : "";
+  const text = typeof value === "string" ? toPrintable(value).trim().slice(0, max) : "";
   return text || null;
 }
 
@@ -34,6 +38,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const pageCount = Number(form.get("pageCount"));
 
     if (!(file instanceof File) || !title) return error("Judul dan file PDF wajib diisi", 400);
+    // These are printed in every signed receipt.
+    const unprintable = unprintableCharacters([title, documentNumber, versionLabel].join(" "));
+    if (unprintable.length > 0) {
+      return error(`Karakter ini tidak bisa dicetak di bukti PDF, ganti dulu: ${unprintable.join(" ")}`, 400);
+    }
     if (file.size > MAX_POLICY_FILE_BYTES) return error("File terlalu besar (max 4MB)", 400);
     if (!Number.isInteger(pageCount) || pageCount < 1 || pageCount > 500) {
       return error("Jumlah halaman PDF tidak terbaca", 400);
@@ -53,14 +62,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!packet) return error("Paket dokumen tidak ditemukan", 404);
     if (packet.status !== "DRAFT") return error("Dokumen yang sudah terbit tidak bisa diubah", 409);
 
-    let documentsFolderId: string | null = packet.driveDocumentsFolderId;
-    if (!documentsFolderId || !packet.driveReceiptsFolderId) {
-      const folders = await ensurePacketFolders(packet);
-      const { error: folderError } = await supabase.from("policy_packets").update(folders).eq("id", packetId);
-      if (folderError) throw folderError;
-      documentsFolderId = folders.driveDocumentsFolderId;
-    }
-
     const { data: last, error: lastError } = await supabase
       .from("policy_documents")
       .select("sortOrder")
@@ -70,6 +71,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .maybeSingle();
     if (lastError) throw lastError;
     const sortOrder = (last?.sortOrder ?? 0) + 1;
+
+    // A draft without documents is resolved afresh, so folders remembered from
+    // an attempt that failed (for instance in a shared location) are dropped.
+    let documentsFolderId: string | null = packet.driveDocumentsFolderId;
+    if (!last || !documentsFolderId || !packet.driveReceiptsFolderId) {
+      const folders = await ensurePacketFolders(packet);
+      const { error: folderError } = await supabase.from("policy_packets").update(folders).eq("id", packetId);
+      if (folderError) throw folderError;
+      documentsFolderId = folders.driveDocumentsFolderId;
+    }
 
     const fileName = `${safeFileName(`${sortOrder} - ${title}`)}.pdf`;
     const driveFileId = await uploadPrivateFile(buffer, fileName, "application/pdf", documentsFolderId);

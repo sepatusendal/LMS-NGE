@@ -21,6 +21,7 @@ function buildTeacherSidebarItems(
   t: ReturnType<typeof useTranslations>,
   lessonPlanBadge: number,
   policyBadge: number,
+  hasDocuments: boolean,
 ): NavItem[] {
   return [
     { href: "/today", label: t("nav.today"), icon: House },
@@ -34,7 +35,9 @@ function buildTeacherSidebarItems(
         { href: "/kelas", label: t("nav.kelas"), icon: Users },
       ],
     },
-    { href: "/kebijakan", label: t("nav.documents"), icon: FileCheck2, badge: policyBadge },
+    ...(hasDocuments
+      ? [{ href: "/kebijakan", label: t("nav.documents"), icon: FileCheck2, badge: policyBadge }]
+      : []),
     { href: "/profile", label: t("nav.profile"), icon: User },
   ];
 }
@@ -88,11 +91,14 @@ export default function TeacherLayout({
   return (
     <div className="flex min-h-dvh w-full flex-col md:flex-row">
       <div className="md:hidden">
-        <TeacherTopbar navItems={bottomNavItems} actions={<PolicyBell count={policies.pending.length} />} />
+        <TeacherTopbar
+          navItems={bottomNavItems}
+          actions={policies.hasDocuments ? <PolicyBell count={policies.pending.length} /> : null}
+        />
       </div>
       <AppSidebar
         roleLabel="Teacher"
-        navItems={buildTeacherSidebarItems(t, lessonPlanBadge, policies.pending.length)}
+        navItems={buildTeacherSidebarItems(t, lessonPlanBadge, policies.pending.length, policies.hasDocuments)}
         showLanguageSwitcher
       />
       <main className="flex-1 overflow-x-auto bg-muted">

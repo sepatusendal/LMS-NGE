@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "crypto";
 import { NextResponse } from "next/server";
-import { downloadFile, findOrCreateFolder, getRootFolderId } from "@/lib/google-drive/drive-client";
+import { downloadFile, findOrCreateFolder } from "@/lib/google-drive/drive-client";
 
 export function sha256Hex(data: Buffer): string {
   return createHash("sha256").update(data).digest("hex");
@@ -22,10 +22,14 @@ export function safeFileName(value: string): string {
 /** Drive layout, one folder per packet version:
  *  HR - Policy Acknowledgement / <title> (v1) <short id> / 01 Dokumen Terbit
  *                                                       / 02 Bukti Penerimaan
+ * It starts at the top of My Drive, which only the owning account can open,
+ * and deliberately not under GOOGLE_DRIVE_ROOT_FOLDER_ID: that folder may be
+ * shared by link for the app's public files, and everything below it inherits
+ * the sharing. Share the HR folder with specific people only.
  * Only called while an admin is uploading to a draft, so people confirming at
  * the same time never race to create folders. */
 export async function ensurePacketFolders(packet: { id: string; title: string; version: number }) {
-  const rootId = await findOrCreateFolder("HR - Policy Acknowledgement", getRootFolderId());
+  const rootId = await findOrCreateFolder("HR - Policy Acknowledgement", "root");
   const packetFolderId = await findOrCreateFolder(
     `${safeFileName(packet.title)} (v${packet.version}) ${packet.id.slice(0, 8)}`,
     rootId,

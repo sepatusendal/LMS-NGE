@@ -16,6 +16,9 @@ import {
 } from "@/features/policies/schema";
 import type { AppRole } from "@/features/auth/role-routes";
 
+/** Rendering the receipt and saving it to Drive can take a while. */
+export const maxDuration = 60;
+
 function fail(code: AcknowledgeError, status: number) {
   return NextResponse.json({ code }, { status });
 }

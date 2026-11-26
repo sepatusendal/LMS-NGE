@@ -1518,7 +1518,7 @@
       "save": "Save",
       "confirm": {
         "publishTitle": "Publish this packet?",
-        "publishBody": "{count} people will be asked to read and confirm it. Documents, checklist, and statement can no longer be changed. If this is a new version, the old one is retired automatically.",
+        "publishBody": "{count, plural, one {# person} other {# people}} will be asked to read and confirm it. Documents, checklist, and statement can no longer be changed. If this is a new version, the old one is retired automatically.",
         "archiveTitle": "Retire this packet?",
         "archiveBody": "Recipients who have not confirmed will no longer be asked. Existing receipts are kept. This cannot be undone.",
         "deleteTitle": "Delete this draft?",
@@ -1542,7 +1542,7 @@
         "checklistHint": "One field per item; recipients must tick all of them. Press Enter for a new item. Pasting a list of several lines splits it into separate items.",
         "statement": "Statement",
         "deadline": "Confirmation deadline (optional)",
-        "deadlineHint": "After this date the tutor portal redirects to the documents page; attendance stays open. Admins and coordinators are never locked.",
+        "deadlineHint": "After this date the tutor portal redirects to the documents page. Attendance and lesson plans stay open. Admins and coordinators are never locked.",
         "hrContactName": "HR contact name (optional)",
         "hrWhatsapp": "HR WhatsApp (optional)",
         "hrEmail": "HR email (optional)",
@@ -1560,7 +1560,8 @@
           "noticeTitleMax": "Notice title can be at most 80 characters",
           "noticeMessageMax": "Notice message can be at most 300 characters",
           "audienceRequired": "Choose who has to receive this",
-          "popupInvalid": "Check the numbers in the pop-up settings"
+          "popupInvalid": "Check the numbers in the pop-up settings",
+          "unprintable": "These characters cannot be printed in the PDF receipt, please replace them: {characters}"
         },
         "addItem": "Add item",
         "itemLabel": "Item {number}",
@@ -1704,8 +1705,13 @@
       "history": {
         "title": "Recipient change history",
         "by": "{name} · {date}",
-        "included": "{count} people chosen",
+        "included": "{count, plural, one {# person} other {# people}} chosen",
         "excluded": "{count} excluded"
+      },
+      "publishBlocked": {
+        "documents": "Publish unlocks after at least one document is uploaded.",
+        "unsaved": "There are unsaved changes. Press Save before publishing.",
+        "recipients": "There are no recipients yet. Choose them and press Save before publishing."
       }
     }
   },
@@ -1795,7 +1801,8 @@
       "completed": "Document fully read",
       "readUpTo": "Read up to page {page} of {total}",
       "goToPage": "Page {page}",
-      "saveError": "Progress was not saved. Check your connection."
+      "saveError": "Progress was not saved. Check your connection.",
+      "saving": "Saving your reading progress..."
     },
     "notices": {
       "bell": "Document notifications: {count} to confirm",

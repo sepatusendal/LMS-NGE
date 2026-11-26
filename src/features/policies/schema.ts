@@ -3,6 +3,7 @@ import { todayLocalDateStr } from "@/lib/date";
 import type { AppRole } from "@/features/auth/role-routes";
 import { isAudienceChosen } from "./audience";
 import { popupSettingsSchema } from "./popup-rules";
+import { toPrintable, unprintableCharacters } from "./printable";
 
 // Policy documents that the chosen recipients read, sign and acknowledge.
 // Shared by the browser and the API routes, so keep it free of server imports.
@@ -118,18 +119,41 @@ export function splitChecklist(text: string): string[] {
 
 /** What gets stored: one tidy line per filled-in field. */
 export function checklistFromFields(fields: { text: string }[]): string[] {
-  return fields.map((field) => field.text.replace(/\s+/g, " ").trim()).filter(Boolean);
+  return fields.map((field) => toPrintable(field.text).replace(/\s+/g, " ").trim()).filter(Boolean);
 }
 
-export function buildPacketFormSchema(t: (key: string) => string) {
+export function buildPacketFormSchema(t: (key: string, values?: { characters: string }) => string) {
+  /** These words end up in the receipt PDF, so they have to be printable. */
+  const checkPrintable = (value: string, context: z.RefinementCtx) => {
+    const characters = unprintableCharacters(value);
+    if (characters.length === 0) return;
+    context.addIssue({
+      code: "custom",
+      message: t("validation.unprintable", { characters: characters.join(" ") }),
+    });
+  };
   return z.object({
-    title: z.string().trim().min(1, t("validation.titleRequired")).max(150, t("validation.titleMax")),
+    title: z
+      .string()
+      .trim()
+      .min(1, t("validation.titleRequired"))
+      .max(150, t("validation.titleMax"))
+      .superRefine(checkPrintable),
     // One object per item because react-hook-form field arrays need objects.
     checklist: z
-      .array(z.object({ text: z.string().max(MAX_CHECKLIST_ITEM_LENGTH, t("validation.checklistItemMax")) }))
+      .array(
+        z.object({
+          text: z.string().max(MAX_CHECKLIST_ITEM_LENGTH, t("validation.checklistItemMax")).superRefine(checkPrintable),
+        }),
+      )
       .refine((v) => checklistFromFields(v).length > 0, t("validation.checklistRequired"))
       .refine((v) => checklistFromFields(v).length <= MAX_CHECKLIST_ITEMS, t("validation.checklistMax")),
-    statement: z.string().trim().min(1, t("validation.statementRequired")).max(2000, t("validation.statementMax")),
+    statement: z
+      .string()
+      .trim()
+      .min(1, t("validation.statementRequired"))
+      .max(2000, t("validation.statementMax"))
+      .superRefine(checkPrintable),
     deadline: z.string(),
     noticeTitle: z.string().trim().max(MAX_NOTICE_TITLE_LENGTH, t("validation.noticeTitleMax")),
     noticeMessage: z.string().trim().max(MAX_NOTICE_MESSAGE_LENGTH, t("validation.noticeMessageMax")),
@@ -162,14 +186,18 @@ export type PacketFormInput = z.infer<ReturnType<typeof buildPacketFormSchema>>;
 
 const point = z.tuple([z.number().finite(), z.number().finite()]);
 
+// The pad stops recording here, so a long scribble is cut off, never rejected.
+export const MAX_SIGNATURE_POINTS = 10000;
+export const MAX_STROKE_POINTS = 5000;
+export const MAX_SIGNATURE_STROKES = 300;
+
 export const signatureSchema = z.object({
   width: z.number().positive().max(4000),
   height: z.number().positive().max(2000),
-  strokes: z.array(z.array(point).min(1).max(5000)).min(1).max(300),
+  strokes: z.array(z.array(point).min(1).max(MAX_STROKE_POINTS)).min(1).max(MAX_SIGNATURE_STROKES),
 });
 export type Signature = z.infer<typeof signatureSchema>;
 
-const MAX_SIGNATURE_POINTS = 10000;
 const MIN_SIGNATURE_LENGTH = 100;
 const MIN_SIGNATURE_WIDTH = 40;
 
